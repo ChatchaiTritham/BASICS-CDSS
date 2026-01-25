@@ -1,0 +1,21 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-activate-base: false
+          environment-file: environment.yml
+          activate-environment: basics-cdss
+      - name: Run tests
+        shell: bash -l {0}
+        run: |
+          python -m pip install -e .
+          pytest -q
