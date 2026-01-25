@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+title: "BASICS-CDSS: Beyond Accuracy—A Simulation-Based Evaluation Framework for Safety-Critical Clinical Decision Support Systems"
+message: "If you use this software or framework, please cite the associated manuscript."
+authors:
+  - family-names: Tritham
+    given-names: Chatchai
+    email: chatchait66@nu.ac.th
+    affiliation: "Department of Computer Science and Information Technology, Faculty of Science, Naresuan University"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+  - family-names: Snae Namahoot
+    given-names: Chakkrit
+    email: chakkrits@nu.ac.th
+    affiliation: "Department of Computer Science and Information Technology, Faculty of Science, Naresuan University"
+date-released: 2026-01-25
+version: 1.1.0
+license: MIT
+repository-code: "https://github.com/ChatchaiTritham/basics-cdss"
+url: "https://github.com/ChatchaiTritham/basics-cdss"
+keywords:
+  - clinical decision support
+  - simulation-based evaluation
+  - patient safety
+  - uncertainty
+  - beyond accuracy
+  - medical ai
+  - healthcare informatics
+references:
+  - type: software
+    title: "SynDX: Privacy-Preserving Synthetic Medical Data Generation"
+    authors:
+      - family-names: Tritham
+        given-names: Chatchai
+      - family-names: Snae Namahoot
+        given-names: Chakkrit
+    repository-code: "https://github.com/ChatchaiTritham/SynDX"
+  - type: software
+    title: "SAFE-Gate: Formally Verified Clinical Triage System"
+    authors:
+      - family-names: Tritham
+        given-names: Chatchai
+      - family-names: Snae Namahoot
+        given-names: Chakkrit
+    repository-code: "https://github.com/ChatchaiTritham/SAFE-Gate"
