@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "basics-cdss"
+version = "0.1.0"
+description = "BASICS-CDSS: Simulation-based evaluation for safety-critical clinical decision support systems"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+  {name = "Chatchai Tritham"},
+  {name = "Chakkrit Snae Namahoot"}
+]
+dependencies = [
+  "numpy",
+  "pandas",
+  "scipy",
+  "scikit-learn",
+  "matplotlib",
+  "pyyaml",
+  "tqdm",
+  "pydantic>=2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "rich"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
