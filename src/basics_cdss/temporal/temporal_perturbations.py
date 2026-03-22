@@ -9,10 +9,11 @@ to the temporal domain, enabling simulation of time-varying uncertainty:
 - Delayed observations (real-world reporting lag)
 """
 
-from typing import List, Dict, Any, Optional
+import copy
+from typing import Any, Dict, List, Optional
+
 import numpy as np
 from basics_cdss.temporal.digital_twin import PatientState
-import copy
 
 
 class TemporalPerturbationOperator:
@@ -81,7 +82,7 @@ class TemporalMaskOperator(TemporalPerturbationOperator):
         burst_length: int = 1,
         feature_specific_rates: Optional[Dict[str, float]] = None,
         protected_features: Optional[List[str]] = None,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
     ):
         """Initialize temporal masking operator.
 
@@ -99,7 +100,9 @@ class TemporalMaskOperator(TemporalPerturbationOperator):
         self.burst_length = burst_length
         self.feature_specific_rates = feature_specific_rates or {}
         self.protected_features = protected_features or [
-            'archetype_id', 'patient_id', 'timestamp'
+            'archetype_id',
+            'patient_id',
+            'timestamp',
         ]
 
     def apply(self, trajectory: List[PatientState]) -> List[PatientState]:
@@ -108,8 +111,7 @@ class TemporalMaskOperator(TemporalPerturbationOperator):
 
         # Identify maskable features from first state
         maskable_features = [
-            f for f in trajectory[0].features.keys()
-            if f not in self.protected_features
+            f for f in trajectory[0].features.keys() if f not in self.protected_features
         ]
 
         for state in trajectory:
@@ -134,8 +136,7 @@ class TemporalMaskOperator(TemporalPerturbationOperator):
         return perturbed_trajectory
 
     def compute_uncertainty_profile(
-        self,
-        trajectory: List[PatientState]
+        self, trajectory: List[PatientState]
     ) -> Dict[str, float]:
         """Compute missingness statistics for trajectory.
 
@@ -159,7 +160,7 @@ class TemporalMaskOperator(TemporalPerturbationOperator):
             'missingness': missingness,
             'ambiguity': 0.0,
             'conflict': 0.0,
-            'degradation': 0.0
+            'degradation': 0.0,
         }
 
 
@@ -197,7 +198,7 @@ class TemporalNoiseOperator(TemporalPerturbationOperator):
         temporal_correlation: float = 0.5,
         feature_specific_sigma: Optional[Dict[str, float]] = None,
         protected_features: Optional[List[str]] = None,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
     ):
         """Initialize temporal noise operator.
 
@@ -213,7 +214,9 @@ class TemporalNoiseOperator(TemporalPerturbationOperator):
         self.temporal_correlation = temporal_correlation
         self.feature_specific_sigma = feature_specific_sigma or {}
         self.protected_features = protected_features or [
-            'archetype_id', 'patient_id', 'timestamp'
+            'archetype_id',
+            'patient_id',
+            'timestamp',
         ]
 
     def apply(self, trajectory: List[PatientState]) -> List[PatientState]:
@@ -238,7 +241,9 @@ class TemporalNoiseOperator(TemporalPerturbationOperator):
             noise[0] = self.rng.normal(0, sigma)
 
             for t in range(1, T):
-                noise[t] = rho * noise[t-1] + self.rng.normal(0, sigma * np.sqrt(1 - rho**2))
+                noise[t] = rho * noise[t - 1] + self.rng.normal(
+                    0, sigma * np.sqrt(1 - rho**2)
+                )
 
             noise_processes[feature] = noise
 
@@ -255,7 +260,9 @@ class TemporalNoiseOperator(TemporalPerturbationOperator):
                     noise_value = noise_processes[feature][t] * abs(original_value)
                     perturbed_value = original_value + noise_value
 
-                    perturbed_state.features[feature] = type(original_value)(perturbed_value)
+                    perturbed_state.features[feature] = type(original_value)(
+                        perturbed_value
+                    )
 
             # Record noise magnitude in metadata
             perturbed_state.metadata['noise_applied'] = True
@@ -264,15 +271,14 @@ class TemporalNoiseOperator(TemporalPerturbationOperator):
         return perturbed_trajectory
 
     def compute_uncertainty_profile(
-        self,
-        trajectory: List[PatientState]
+        self, trajectory: List[PatientState]
     ) -> Dict[str, float]:
         """Compute noise statistics."""
         return {
             'missingness': 0.0,
             'ambiguity': self.noise_sigma,
             'conflict': 0.0,
-            'degradation': 0.0
+            'degradation': 0.0,
         }
 
 
@@ -299,7 +305,7 @@ class TemporalConflictOperator(TemporalPerturbationOperator):
         p_conflict: float = 0.1,
         conflict_pairs: Optional[List[tuple]] = None,
         protected_features: Optional[List[str]] = None,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
     ):
         """Initialize temporal conflict operator.
 
@@ -314,7 +320,9 @@ class TemporalConflictOperator(TemporalPerturbationOperator):
         self.p_conflict = p_conflict
         self.conflict_pairs = conflict_pairs or []
         self.protected_features = protected_features or [
-            'archetype_id', 'patient_id', 'timestamp'
+            'archetype_id',
+            'patient_id',
+            'timestamp',
         ]
 
     def apply(self, trajectory: List[PatientState]) -> List[PatientState]:
@@ -329,11 +337,16 @@ class TemporalConflictOperator(TemporalPerturbationOperator):
                 pair = self.conflict_pairs[self.rng.randint(len(self.conflict_pairs))]
                 feature1, feature2 = pair
 
-                if feature1 in perturbed_state.features and feature2 in perturbed_state.features:
+                if (
+                    feature1 in perturbed_state.features
+                    and feature2 in perturbed_state.features
+                ):
                     # Introduce contradiction (implementation depends on feature types)
                     # For now, just flip boolean or reverse numeric trend
                     if isinstance(perturbed_state.features[feature1], bool):
-                        perturbed_state.features[feature1] = not perturbed_state.features[feature1]
+                        perturbed_state.features[feature1] = (
+                            not perturbed_state.features[feature1]
+                        )
 
                     perturbed_state.metadata['conflict_introduced'] = True
 
@@ -342,12 +355,12 @@ class TemporalConflictOperator(TemporalPerturbationOperator):
         return perturbed_trajectory
 
     def compute_uncertainty_profile(
-        self,
-        trajectory: List[PatientState]
+        self, trajectory: List[PatientState]
     ) -> Dict[str, float]:
         """Compute conflict statistics."""
         n_conflicts = sum(
-            1 for state in trajectory
+            1
+            for state in trajectory
             if state.metadata.get('conflict_introduced', False)
         )
 
@@ -357,7 +370,7 @@ class TemporalConflictOperator(TemporalPerturbationOperator):
             'missingness': 0.0,
             'ambiguity': 0.0,
             'conflict': conflict_rate,
-            'degradation': 0.0
+            'degradation': 0.0,
         }
 
 
@@ -385,9 +398,7 @@ class CompositeTemporalPerturbation(TemporalPerturbationOperator):
     """
 
     def __init__(
-        self,
-        operators: List[TemporalPerturbationOperator],
-        seed: Optional[int] = None
+        self, operators: List[TemporalPerturbationOperator], seed: Optional[int] = None
     ):
         """Initialize composite perturbation.
 
@@ -408,15 +419,14 @@ class CompositeTemporalPerturbation(TemporalPerturbationOperator):
         return perturbed
 
     def compute_uncertainty_profile(
-        self,
-        trajectory: List[PatientState]
+        self, trajectory: List[PatientState]
     ) -> Dict[str, float]:
         """Aggregate uncertainty profiles from all operators."""
         profile = {
             'missingness': 0.0,
             'ambiguity': 0.0,
             'conflict': 0.0,
-            'degradation': 0.0
+            'degradation': 0.0,
         }
 
         for operator in self.operators:
@@ -428,9 +438,7 @@ class CompositeTemporalPerturbation(TemporalPerturbationOperator):
 
 
 def create_default_temporal_perturbation(
-    perturbation_type: str,
-    seed: Optional[int] = None,
-    **kwargs
+    perturbation_type: str, seed: Optional[int] = None, **kwargs
 ) -> TemporalPerturbationOperator:
     """Factory function for creating temporal perturbations.
 
@@ -450,31 +458,27 @@ def create_default_temporal_perturbation(
         >>> composite = create_default_temporal_perturbation('composite', seed=42)
     """
     if perturbation_type == 'mask':
-        return TemporalMaskOperator(
-            p_mask=kwargs.get('p_mask', 0.15),
-            seed=seed
-        )
+        return TemporalMaskOperator(p_mask=kwargs.get('p_mask', 0.15), seed=seed)
 
     elif perturbation_type == 'noise':
         return TemporalNoiseOperator(
             noise_sigma=kwargs.get('noise_sigma', 0.1),
             temporal_correlation=kwargs.get('temporal_correlation', 0.5),
-            seed=seed
+            seed=seed,
         )
 
     elif perturbation_type == 'conflict':
         return TemporalConflictOperator(
-            p_conflict=kwargs.get('p_conflict', 0.1),
-            seed=seed
+            p_conflict=kwargs.get('p_conflict', 0.1), seed=seed
         )
 
     elif perturbation_type == 'composite':
         return CompositeTemporalPerturbation(
             operators=[
                 TemporalMaskOperator(p_mask=0.15, seed=seed),
-                TemporalNoiseOperator(noise_sigma=0.1, seed=seed+1 if seed else None)
+                TemporalNoiseOperator(noise_sigma=0.1, seed=seed + 1 if seed else None),
             ],
-            seed=seed
+            seed=seed,
         )
 
     else:

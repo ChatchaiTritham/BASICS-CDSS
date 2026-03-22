@@ -5,13 +5,15 @@ dependencies, timing constraints, and decision points.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional, Set, Callable
 from enum import Enum
+from typing import Any, Callable, Dict, List, Optional, Set
+
 import numpy as np
 
 
 class TaskStatus(Enum):
     """Status of a workflow task."""
+
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
@@ -21,6 +23,7 @@ class TaskStatus(Enum):
 
 class WorkflowState(Enum):
     """State of clinical workflow."""
+
     NOT_STARTED = "not_started"
     ACTIVE = "active"
     SUSPENDED = "suspended"
@@ -53,6 +56,7 @@ class Task:
         ...     dependencies=[]
         ... )
     """
+
     task_id: str
     name: str
     description: str = ""
@@ -150,7 +154,7 @@ class ClinicalWorkflow:
         workflow_id: str,
         name: str,
         description: str = "",
-        time_limit_hours: Optional[float] = None
+        time_limit_hours: Optional[float] = None,
     ):
         """Initialize workflow.
 
@@ -185,13 +189,13 @@ class ClinicalWorkflow:
             List of tasks that can be started
         """
         completed_task_ids = {
-            task_id for task_id, task in self.tasks.items()
+            task_id
+            for task_id, task in self.tasks.items()
             if task.status == TaskStatus.COMPLETED
         }
 
         ready_tasks = [
-            task for task in self.tasks.values()
-            if task.is_ready(completed_task_ids)
+            task for task in self.tasks.values() if task.is_ready(completed_task_ids)
         ]
 
         return ready_tasks
@@ -203,7 +207,8 @@ class ClinicalWorkflow:
             List of active tasks
         """
         return [
-            task for task in self.tasks.values()
+            task
+            for task in self.tasks.values()
             if task.status == TaskStatus.IN_PROGRESS
         ]
 
@@ -227,8 +232,7 @@ class ClinicalWorkflow:
 
         # Check if all tasks completed
         all_completed = all(
-            task.status == TaskStatus.COMPLETED
-            for task in self.tasks.values()
+            task.status == TaskStatus.COMPLETED for task in self.tasks.values()
         )
 
         if all_completed:
@@ -256,8 +260,7 @@ class ClinicalWorkflow:
             return 0.0
 
         n_completed = sum(
-            1 for task in self.tasks.values()
-            if task.status == TaskStatus.COMPLETED
+            1 for task in self.tasks.values() if task.status == TaskStatus.COMPLETED
         )
 
         return n_completed / len(self.tasks)
@@ -291,10 +294,10 @@ class ClinicalWorkflow:
                     'status': task.status.value,
                     'duration_minutes': task.duration_minutes,
                     'start_time': task.start_time,
-                    'end_time': task.end_time
+                    'end_time': task.end_time,
                 }
                 for task in self.tasks.values()
-            ]
+            ],
         }
 
 
@@ -314,58 +317,68 @@ def create_sepsis_workflow() -> ClinicalWorkflow:
         workflow_id='sepsis_3hr',
         name='Sepsis 3-Hour Bundle',
         description='Surviving Sepsis Campaign 3-hour bundle',
-        time_limit_hours=3.0
+        time_limit_hours=3.0,
     )
 
     # Task 1: Measure lactate
-    workflow.add_task(Task(
-        task_id='measure_lactate',
-        name='Measure serum lactate',
-        description='Obtain blood sample and measure lactate level',
-        required_agent_type='nurse',
-        duration_minutes=10,
-        dependencies=[]
-    ))
+    workflow.add_task(
+        Task(
+            task_id='measure_lactate',
+            name='Measure serum lactate',
+            description='Obtain blood sample and measure lactate level',
+            required_agent_type='nurse',
+            duration_minutes=10,
+            dependencies=[],
+        )
+    )
 
     # Task 2: Obtain blood cultures
-    workflow.add_task(Task(
-        task_id='obtain_cultures',
-        name='Obtain blood cultures',
-        description='Obtain blood cultures before antibiotic administration',
-        required_agent_type='nurse',
-        duration_minutes=15,
-        dependencies=[]
-    ))
+    workflow.add_task(
+        Task(
+            task_id='obtain_cultures',
+            name='Obtain blood cultures',
+            description='Obtain blood cultures before antibiotic administration',
+            required_agent_type='nurse',
+            duration_minutes=15,
+            dependencies=[],
+        )
+    )
 
     # Task 3: Administer broad-spectrum antibiotics
-    workflow.add_task(Task(
-        task_id='administer_antibiotics',
-        name='Administer broad-spectrum antibiotics',
-        description='Give IV antibiotics within 1 hour of recognition',
-        required_agent_type='nurse',
-        duration_minutes=20,
-        dependencies=['obtain_cultures']  # After cultures
-    ))
+    workflow.add_task(
+        Task(
+            task_id='administer_antibiotics',
+            name='Administer broad-spectrum antibiotics',
+            description='Give IV antibiotics within 1 hour of recognition',
+            required_agent_type='nurse',
+            duration_minutes=20,
+            dependencies=['obtain_cultures'],  # After cultures
+        )
+    )
 
     # Task 4: Administer crystalloid fluids
-    workflow.add_task(Task(
-        task_id='administer_fluids',
-        name='Administer 30 mL/kg crystalloid',
-        description='Rapid IV fluid resuscitation for hypotension/lactate ≥4',
-        required_agent_type='nurse',
-        duration_minutes=60,
-        dependencies=['measure_lactate']  # After lactate measurement
-    ))
+    workflow.add_task(
+        Task(
+            task_id='administer_fluids',
+            name='Administer 30 mL/kg crystalloid',
+            description='Rapid IV fluid resuscitation for hypotension/lactate ≥4',
+            required_agent_type='nurse',
+            duration_minutes=60,
+            dependencies=['measure_lactate'],  # After lactate measurement
+        )
+    )
 
     # Task 5: Reassess hemodynamics
-    workflow.add_task(Task(
-        task_id='reassess',
-        name='Reassess hemodynamics',
-        description='Reassess volume status and tissue perfusion',
-        required_agent_type='clinician',
-        duration_minutes=10,
-        dependencies=['administer_fluids']
-    ))
+    workflow.add_task(
+        Task(
+            task_id='reassess',
+            name='Reassess hemodynamics',
+            description='Reassess volume status and tissue perfusion',
+            required_agent_type='clinician',
+            duration_minutes=10,
+            dependencies=['administer_fluids'],
+        )
+    )
 
     return workflow
 
@@ -384,58 +397,68 @@ def create_acs_workflow() -> ClinicalWorkflow:
         workflow_id='acs_stemi',
         name='STEMI Management',
         description='ST-elevation myocardial infarction protocol',
-        time_limit_hours=2.0  # Door-to-balloon time
+        time_limit_hours=2.0,  # Door-to-balloon time
     )
 
     # Task 1: ECG
-    workflow.add_task(Task(
-        task_id='obtain_ecg',
-        name='Obtain 12-lead ECG',
-        description='ECG within 10 minutes of arrival',
-        required_agent_type='nurse',
-        duration_minutes=10,
-        dependencies=[]
-    ))
+    workflow.add_task(
+        Task(
+            task_id='obtain_ecg',
+            name='Obtain 12-lead ECG',
+            description='ECG within 10 minutes of arrival',
+            required_agent_type='nurse',
+            duration_minutes=10,
+            dependencies=[],
+        )
+    )
 
     # Task 2: Aspirin
-    workflow.add_task(Task(
-        task_id='administer_aspirin',
-        name='Administer aspirin',
-        description='Give 325mg aspirin PO',
-        required_agent_type='nurse',
-        duration_minutes=5,
-        dependencies=['obtain_ecg']
-    ))
+    workflow.add_task(
+        Task(
+            task_id='administer_aspirin',
+            name='Administer aspirin',
+            description='Give 325mg aspirin PO',
+            required_agent_type='nurse',
+            duration_minutes=5,
+            dependencies=['obtain_ecg'],
+        )
+    )
 
     # Task 3: Cardiac biomarkers
-    workflow.add_task(Task(
-        task_id='obtain_troponin',
-        name='Obtain troponin',
-        description='Draw blood for troponin measurement',
-        required_agent_type='nurse',
-        duration_minutes=10,
-        dependencies=[]
-    ))
+    workflow.add_task(
+        Task(
+            task_id='obtain_troponin',
+            name='Obtain troponin',
+            description='Draw blood for troponin measurement',
+            required_agent_type='nurse',
+            duration_minutes=10,
+            dependencies=[],
+        )
+    )
 
     # Task 4: Activate cath lab
-    workflow.add_task(Task(
-        task_id='activate_cathlab',
-        name='Activate cardiac catheterization lab',
-        description='Call interventional cardiology for STEMI',
-        required_agent_type='clinician',
-        duration_minutes=15,
-        dependencies=['obtain_ecg']
-    ))
+    workflow.add_task(
+        Task(
+            task_id='activate_cathlab',
+            name='Activate cardiac catheterization lab',
+            description='Call interventional cardiology for STEMI',
+            required_agent_type='clinician',
+            duration_minutes=15,
+            dependencies=['obtain_ecg'],
+        )
+    )
 
     # Task 5: Transfer to cath lab
-    workflow.add_task(Task(
-        task_id='transfer_cathlab',
-        name='Transfer to cath lab',
-        description='Transport patient for PCI',
-        required_agent_type='nurse',
-        duration_minutes=20,
-        dependencies=['activate_cathlab', 'administer_aspirin']
-    ))
+    workflow.add_task(
+        Task(
+            task_id='transfer_cathlab',
+            name='Transfer to cath lab',
+            description='Transport patient for PCI',
+            required_agent_type='nurse',
+            duration_minutes=20,
+            dependencies=['activate_cathlab', 'administer_aspirin'],
+        )
+    )
 
     return workflow
 
@@ -453,47 +476,55 @@ def create_respiratory_distress_workflow() -> ClinicalWorkflow:
         workflow_id='respiratory_distress',
         name='Respiratory Distress Management',
         description='Acute respiratory failure protocol',
-        time_limit_hours=1.0
+        time_limit_hours=1.0,
     )
 
     # Task 1: Oxygen therapy
-    workflow.add_task(Task(
-        task_id='apply_oxygen',
-        name='Apply supplemental oxygen',
-        description='Administer oxygen to maintain SpO2 > 90%',
-        required_agent_type='nurse',
-        duration_minutes=5,
-        dependencies=[]
-    ))
+    workflow.add_task(
+        Task(
+            task_id='apply_oxygen',
+            name='Apply supplemental oxygen',
+            description='Administer oxygen to maintain SpO2 > 90%',
+            required_agent_type='nurse',
+            duration_minutes=5,
+            dependencies=[],
+        )
+    )
 
     # Task 2: ABG
-    workflow.add_task(Task(
-        task_id='obtain_abg',
-        name='Obtain arterial blood gas',
-        description='Draw ABG for pH, PaO2, PaCO2',
-        required_agent_type='nurse',
-        duration_minutes=15,
-        dependencies=[]
-    ))
+    workflow.add_task(
+        Task(
+            task_id='obtain_abg',
+            name='Obtain arterial blood gas',
+            description='Draw ABG for pH, PaO2, PaCO2',
+            required_agent_type='nurse',
+            duration_minutes=15,
+            dependencies=[],
+        )
+    )
 
     # Task 3: CXR
-    workflow.add_task(Task(
-        task_id='obtain_cxr',
-        name='Obtain chest X-ray',
-        description='Portable CXR',
-        required_agent_type='nurse',
-        duration_minutes=20,
-        dependencies=[]
-    ))
+    workflow.add_task(
+        Task(
+            task_id='obtain_cxr',
+            name='Obtain chest X-ray',
+            description='Portable CXR',
+            required_agent_type='nurse',
+            duration_minutes=20,
+            dependencies=[],
+        )
+    )
 
     # Task 4: Assess for intubation
-    workflow.add_task(Task(
-        task_id='assess_intubation',
-        name='Assess need for intubation',
-        description='Evaluate airway and ventilatory status',
-        required_agent_type='clinician',
-        duration_minutes=10,
-        dependencies=['obtain_abg', 'obtain_cxr']
-    ))
+    workflow.add_task(
+        Task(
+            task_id='assess_intubation',
+            name='Assess need for intubation',
+            description='Evaluate airway and ventilatory status',
+            required_agent_type='clinician',
+            duration_minutes=10,
+            dependencies=['obtain_abg', 'obtain_cxr'],
+        )
+    )
 
     return workflow

@@ -8,10 +8,11 @@ Theoretical foundation:
     Pearl, J. (2009). Causality: Models, Reasoning, and Inference.
 """
 
-from typing import List, Set, Dict, Any, Optional, Tuple
-import networkx as nx
-import matplotlib.pyplot as plt
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Set, Tuple
+
+import matplotlib.pyplot as plt
+import networkx as nx
 
 
 @dataclass
@@ -24,6 +25,7 @@ class CausalEdge:
         strength: Optional edge weight (causal strength)
         mechanism: Optional description of causal mechanism
     """
+
     cause: str
     effect: str
     strength: Optional[float] = None
@@ -70,7 +72,7 @@ class CausalGraph:
         cause: str,
         effect: str,
         strength: Optional[float] = None,
-        mechanism: Optional[str] = None
+        mechanism: Optional[str] = None,
     ):
         """Add causal edge to graph.
 
@@ -85,9 +87,7 @@ class CausalGraph:
         """
         # Check if edge would create cycle
         if effect in self.get_ancestors(cause):
-            raise ValueError(
-                f"Adding edge {cause} → {effect} would create a cycle"
-            )
+            raise ValueError(f"Adding edge {cause} → {effect} would create a cycle")
 
         self.graph.add_edge(cause, effect)
 
@@ -135,12 +135,7 @@ class CausalGraph:
             raise ValueError("Graph contains cycles")
         return list(nx.topological_sort(self.graph))
 
-    def d_separated(
-        self,
-        X: Set[str],
-        Y: Set[str],
-        Z: Set[str]
-    ) -> bool:
+    def d_separated(self, X: Set[str], Y: Set[str], Z: Set[str]) -> bool:
         """Check if X and Y are d-separated given Z.
 
         D-separation determines conditional independence in causal graphs.
@@ -181,7 +176,7 @@ class CausalGraph:
         self,
         figsize: Tuple[int, int] = (12, 8),
         node_color: str = '#87CEEB',
-        save_path: Optional[str] = None
+        save_path: Optional[str] = None,
     ) -> plt.Figure:
         """Visualize causal graph.
 
@@ -200,31 +195,25 @@ class CausalGraph:
 
         # Draw nodes
         nx.draw_networkx_nodes(
-            self.graph, pos,
-            node_color=node_color,
-            node_size=3000,
-            alpha=0.9,
-            ax=ax
+            self.graph, pos, node_color=node_color, node_size=3000, alpha=0.9, ax=ax
         )
 
         # Draw edges
         nx.draw_networkx_edges(
-            self.graph, pos,
+            self.graph,
+            pos,
             edge_color='gray',
             arrows=True,
             arrowsize=20,
             width=2,
             arrowstyle='->',
             connectionstyle='arc3,rad=0.1',
-            ax=ax
+            ax=ax,
         )
 
         # Draw labels
         nx.draw_networkx_labels(
-            self.graph, pos,
-            font_size=10,
-            font_weight='bold',
-            ax=ax
+            self.graph, pos, font_size=10, font_weight='bold', ax=ax
         )
 
         ax.set_title('Causal Graph', fontsize=14, fontweight='bold')
@@ -245,10 +234,10 @@ class CausalGraph:
                     'cause': edge.cause,
                     'effect': edge.effect,
                     'strength': edge.strength,
-                    'mechanism': edge.mechanism
+                    'mechanism': edge.mechanism,
                 }
                 for edge in self.edge_metadata.values()
-            ]
+            ],
         }
 
     @classmethod
@@ -266,7 +255,7 @@ class CausalGraph:
                 edge_data['cause'],
                 edge_data['effect'],
                 strength=edge_data.get('strength'),
-                mechanism=edge_data.get('mechanism')
+                mechanism=edge_data.get('mechanism'),
             )
 
         return graph
@@ -303,56 +292,69 @@ def create_sepsis_causal_graph() -> CausalGraph:
         'lactate',
         'antibiotic',
         'fluid_bolus',
-        'outcome'
+        'outcome',
     ]
 
     for node in nodes:
         graph.add_node(node)
 
     # Baseline factors
-    graph.add_edge('age', 'comorbidities',
-                   mechanism='Older patients have more comorbidities')
-    graph.add_edge('comorbidities', 'infection_severity',
-                   mechanism='Comorbidities worsen infection')
+    graph.add_edge(
+        'age', 'comorbidities', mechanism='Older patients have more comorbidities'
+    )
+    graph.add_edge(
+        'comorbidities',
+        'infection_severity',
+        mechanism='Comorbidities worsen infection',
+    )
     graph.add_edge('age', 'baseline_heart_rate')
 
     # Infection dynamics
-    graph.add_edge('infection', 'infection_severity',
-                   mechanism='Infection drives severity')
-    graph.add_edge('infection_severity', 'temperature',
-                   mechanism='Inflammation causes fever')
-    graph.add_edge('infection_severity', 'white_blood_cell_count',
-                   mechanism='Immune response')
-    graph.add_edge('infection_severity', 'lactate',
-                   mechanism='Tissue hypoperfusion')
+    graph.add_edge(
+        'infection', 'infection_severity', mechanism='Infection drives severity'
+    )
+    graph.add_edge(
+        'infection_severity', 'temperature', mechanism='Inflammation causes fever'
+    )
+    graph.add_edge(
+        'infection_severity', 'white_blood_cell_count', mechanism='Immune response'
+    )
+    graph.add_edge('infection_severity', 'lactate', mechanism='Tissue hypoperfusion')
 
     # Hemodynamic cascade
-    graph.add_edge('temperature', 'heart_rate',
-                   mechanism='Fever increases metabolic demand')
-    graph.add_edge('infection_severity', 'blood_pressure_sys',
-                   mechanism='Vasodilation from inflammation')
-    graph.add_edge('infection_severity', 'heart_rate',
-                   mechanism='Compensatory tachycardia')
-    graph.add_edge('infection_severity', 'respiratory_rate',
-                   mechanism='Metabolic acidosis compensation')
+    graph.add_edge(
+        'temperature', 'heart_rate', mechanism='Fever increases metabolic demand'
+    )
+    graph.add_edge(
+        'infection_severity',
+        'blood_pressure_sys',
+        mechanism='Vasodilation from inflammation',
+    )
+    graph.add_edge(
+        'infection_severity', 'heart_rate', mechanism='Compensatory tachycardia'
+    )
+    graph.add_edge(
+        'infection_severity',
+        'respiratory_rate',
+        mechanism='Metabolic acidosis compensation',
+    )
 
     # Interventions
-    graph.add_edge('antibiotic', 'infection_severity',
-                   mechanism='Antibiotics reduce bacterial load')
-    graph.add_edge('fluid_bolus', 'blood_pressure_sys',
-                   mechanism='Volume expansion')
-    graph.add_edge('fluid_bolus', 'lactate',
-                   mechanism='Improved perfusion')
+    graph.add_edge(
+        'antibiotic',
+        'infection_severity',
+        mechanism='Antibiotics reduce bacterial load',
+    )
+    graph.add_edge('fluid_bolus', 'blood_pressure_sys', mechanism='Volume expansion')
+    graph.add_edge('fluid_bolus', 'lactate', mechanism='Improved perfusion')
 
     # Outcome
-    graph.add_edge('infection_severity', 'outcome',
-                   mechanism='Disease severity determines outcome')
-    graph.add_edge('age', 'outcome',
-                   mechanism='Age affects mortality')
-    graph.add_edge('blood_pressure_sys', 'outcome',
-                   mechanism='Hemodynamic stability')
-    graph.add_edge('lactate', 'outcome',
-                   mechanism='Perfusion marker')
+    graph.add_edge(
+        'infection_severity', 'outcome', mechanism='Disease severity determines outcome'
+    )
+    graph.add_edge('age', 'outcome', mechanism='Age affects mortality')
+    graph.add_edge('blood_pressure_sys', 'outcome', mechanism='Hemodynamic stability')
+    graph.add_edge('lactate', 'outcome', mechanism='Perfusion marker')
 
     return graph
 
@@ -366,9 +368,18 @@ def create_respiratory_causal_graph() -> CausalGraph:
     graph = CausalGraph()
 
     # Add nodes
-    for node in ['age', 'lung_injury', 'oxygen_saturation', 'respiratory_rate',
-                 'pf_ratio', 'heart_rate', 'oxygen_therapy', 'peep',
-                 'prone_positioning', 'outcome']:
+    for node in [
+        'age',
+        'lung_injury',
+        'oxygen_saturation',
+        'respiratory_rate',
+        'pf_ratio',
+        'heart_rate',
+        'oxygen_therapy',
+        'peep',
+        'prone_positioning',
+        'outcome',
+    ]:
         graph.add_node(node)
 
     # Causal structure
@@ -400,10 +411,22 @@ def create_cardiac_causal_graph() -> CausalGraph:
     graph = CausalGraph()
 
     # Add nodes
-    for node in ['age', 'risk_factors', 'coronary_occlusion', 'ischemia',
-                 'troponin', 'st_elevation', 'chest_pain', 'heart_rate',
-                 'blood_pressure_sys', 'aspirin', 'nitrate', 'beta_blocker',
-                 'pci', 'outcome']:
+    for node in [
+        'age',
+        'risk_factors',
+        'coronary_occlusion',
+        'ischemia',
+        'troponin',
+        'st_elevation',
+        'chest_pain',
+        'heart_rate',
+        'blood_pressure_sys',
+        'aspirin',
+        'nitrate',
+        'beta_blocker',
+        'pci',
+        'outcome',
+    ]:
         graph.add_node(node)
 
     # Risk factors

@@ -9,16 +9,15 @@ that simulate realistic sources of uncertainty while preserving clinical plausib
 """
 
 from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
+
 import numpy as np
 import pandas as pd
 
-from .perturbations import (
-    PerturbationOperator,
-    PerturbationConfig,
-    create_default_perturbation,
-)
+from .perturbations import (PerturbationConfig, PerturbationOperator,
+                            create_default_perturbation)
 
 
 @dataclass(frozen=True)
@@ -33,6 +32,7 @@ class Scenario:
         uncertainty_profile: Quantitative uncertainty measures (missingness, ambiguity, conflict, etc.)
         perturbation_log: Record of perturbations applied (for audit trail)
     """
+
     archetype_id: str
     seed: int
     features: Dict[str, Any]
@@ -84,7 +84,11 @@ def instantiate_scenarios(
     scenarios: List[Scenario] = []
 
     # Identify ID column
-    id_col = "archetype_id" if "archetype_id" in archetypes.columns else archetypes.columns[0]
+    id_col = (
+        "archetype_id"
+        if "archetype_id" in archetypes.columns
+        else archetypes.columns[0]
+    )
 
     # Identify target columns to exclude from features
     target_cols = {"triage_tier", "action", "urgency", "diagnosis"}
@@ -104,7 +108,8 @@ def instantiate_scenarios(
 
         # Extract baseline features (exclude targets and metadata)
         baseline_features = {
-            k: v for k, v in row.to_dict().items()
+            k: v
+            for k, v in row.to_dict().items()
             if k not in target_cols and k != id_col
         }
 
@@ -119,7 +124,9 @@ def instantiate_scenarios(
                     config=perturbation_config,
                     seed=scenario_seed,
                 )
-                perturbed_features, uncertainty_profile = operator.apply(baseline_features)
+                perturbed_features, uncertainty_profile = operator.apply(
+                    baseline_features
+                )
 
                 perturbation_log = {
                     "perturbation_type": perturbation_type,

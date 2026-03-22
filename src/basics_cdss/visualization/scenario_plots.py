@@ -3,16 +3,17 @@ Scenario and perturbation visualization functions.
 """
 
 from typing import Dict, List, Optional, Tuple
-import numpy as np
+
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
+import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
 
 def plot_uncertainty_distribution(
     scenarios: List,
     figsize: Tuple[int, int] = (14, 5),
-    title: str = "Uncertainty Profile Distribution"
+    title: str = "Uncertainty Profile Distribution",
 ) -> Tuple[Figure, List[Axes]]:
     """Plot distribution of uncertainty profiles across scenarios.
 
@@ -75,7 +76,7 @@ def plot_perturbation_effects(
     perturbed_scenarios: Dict[str, List],
     metric_fn: callable,
     metric_name: str = "Metric",
-    figsize: Tuple[int, int] = (12, 7)
+    figsize: Tuple[int, int] = (12, 7),
 ) -> Tuple[Figure, Axes]:
     """Compare metric values across perturbation types.
 
@@ -111,24 +112,32 @@ def plot_perturbation_effects(
     # Bar plot
     colors = ['#2E86AB', '#E63946', '#F77F00', '#06A77D', '#A23B72']
     bars = ax.bar(
-        perturbation_types, metric_values,
-        color=colors[:len(perturbation_types)],
-        edgecolor='black', linewidth=2, alpha=0.8
+        perturbation_types,
+        metric_values,
+        color=colors[: len(perturbation_types)],
+        edgecolor='black',
+        linewidth=2,
+        alpha=0.8,
     )
 
     # Value labels
     for bar, value in zip(bars, metric_values):
         height = bar.get_height()
         ax.text(
-            bar.get_x() + bar.get_width() / 2, height,
+            bar.get_x() + bar.get_width() / 2,
+            height,
             f'{value:.3f}',
-            ha='center', va='bottom',
-            fontsize=11, fontweight='bold'
+            ha='center',
+            va='bottom',
+            fontsize=11,
+            fontweight='bold',
         )
 
     ax.set_xlabel("Perturbation Type", fontsize=13, fontweight='bold')
     ax.set_ylabel(metric_name, fontsize=13, fontweight='bold')
-    ax.set_title(f"Effect of Perturbations on {metric_name}", fontsize=15, fontweight='bold')
+    ax.set_title(
+        f"Effect of Perturbations on {metric_name}", fontsize=15, fontweight='bold'
+    )
     ax.grid(True, alpha=0.3, axis='y')
     ax.tick_params(axis='x', rotation=15)
 
@@ -137,8 +146,7 @@ def plot_perturbation_effects(
 
 
 def plot_scenario_summary(
-    scenarios: List,
-    figsize: Tuple[int, int] = (14, 10)
+    scenarios: List, figsize: Tuple[int, int] = (14, 10)
 ) -> Tuple[Figure, List[Axes]]:
     """Create comprehensive summary visualization of scenario set.
 
@@ -161,7 +169,9 @@ def plot_scenario_summary(
     # 1. Archetype distribution
     ax1 = fig.add_subplot(gs[0, :2])
     unique_archetypes, archetype_counts = np.unique(archetype_ids, return_counts=True)
-    ax1.barh(range(len(unique_archetypes)), archetype_counts, color='#2E86AB', alpha=0.8)
+    ax1.barh(
+        range(len(unique_archetypes)), archetype_counts, color='#2E86AB', alpha=0.8
+    )
     ax1.set_yticks(range(len(unique_archetypes)))
     ax1.set_yticklabels(unique_archetypes, fontsize=9)
     ax1.set_xlabel("Scenario Count", fontweight='bold')
@@ -173,16 +183,25 @@ def plot_scenario_summary(
     unique_tiers, tier_counts = np.unique(risk_tiers, return_counts=True)
     colors_tier = {'high': '#E63946', 'medium': '#F77F00', 'low': '#06A77D'}
     tier_colors = [colors_tier.get(t.lower(), '#2E86AB') for t in unique_tiers]
-    ax2.pie(tier_counts, labels=unique_tiers, colors=tier_colors,
-            autopct='%1.1f%%', startangle=90)
+    ax2.pie(
+        tier_counts,
+        labels=unique_tiers,
+        colors=tier_colors,
+        autopct='%1.1f%%',
+        startangle=90,
+    )
     ax2.set_title("Risk Tier Distribution", fontweight='bold')
 
     # 3. Uncertainty scatter
     ax3 = fig.add_subplot(gs[1, :])
     scatter = ax3.scatter(
-        missingness, ambiguity,
-        c=range(len(scenarios)), cmap='viridis',
-        s=50, alpha=0.6, edgecolors='black'
+        missingness,
+        ambiguity,
+        c=range(len(scenarios)),
+        cmap='viridis',
+        s=50,
+        alpha=0.6,
+        edgecolors='black',
     )
     ax3.set_xlabel("Missingness", fontweight='bold')
     ax3.set_ylabel("Ambiguity", fontweight='bold')
@@ -204,8 +223,14 @@ def plot_scenario_summary(
     - Missingness: μ={np.mean(missingness):.3f}, σ={np.std(missingness):.3f}
     - Ambiguity: μ={np.mean(ambiguity):.3f}, σ={np.std(ambiguity):.3f}
     """
-    ax4.text(0.1, 0.5, summary_text, fontsize=12, family='monospace',
-             verticalalignment='center')
+    ax4.text(
+        0.1,
+        0.5,
+        summary_text,
+        fontsize=12,
+        family='monospace',
+        verticalalignment='center',
+    )
 
     fig.suptitle("Scenario Set Comprehensive Summary", fontsize=16, fontweight='bold')
 

@@ -6,7 +6,8 @@ patient vital signs and lab values evolve over time.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 import numpy as np
 
 
@@ -23,7 +24,7 @@ class DiseaseModel(ABC):
         current_state: Dict[str, Any],
         dt: float,
         interventions: Optional[Dict[str, Any]] = None,
-        rng: Optional[np.random.RandomState] = None
+        rng: Optional[np.random.RandomState] = None,
     ) -> Dict[str, Any]:
         """Compute next patient state.
 
@@ -69,7 +70,7 @@ class SepsisModel(DiseaseModel):
         infection_decay_rate: float = 0.3,
         temperature_sensitivity: float = 0.5,
         hemodynamic_sensitivity: float = 0.4,
-        noise_std: float = 0.05
+        noise_std: float = 0.05,
     ):
         """Initialize sepsis model parameters.
 
@@ -91,7 +92,7 @@ class SepsisModel(DiseaseModel):
         current_state: Dict[str, Any],
         dt: float,
         interventions: Optional[Dict[str, Any]] = None,
-        rng: Optional[np.random.RandomState] = None
+        rng: Optional[np.random.RandomState] = None,
     ) -> Dict[str, Any]:
         """Evolve sepsis patient state."""
         if rng is None:
@@ -108,9 +109,9 @@ class SepsisModel(DiseaseModel):
         # Estimate infection severity from current state
         # Higher temp, HR, lactate → higher severity
         infection_severity = (
-            0.3 * max(0, (temp - 37.0) / 2.0) +
-            0.3 * max(0, (hr - 80) / 40.0) +
-            0.4 * max(0, (lactate - 1.0) / 3.0)
+            0.3 * max(0, (temp - 37.0) / 2.0)
+            + 0.3 * max(0, (hr - 80) / 40.0)
+            + 0.4 * max(0, (lactate - 1.0) / 3.0)
         )
         infection_severity = np.clip(infection_severity, 0, 1)
 
@@ -130,8 +131,8 @@ class SepsisModel(DiseaseModel):
 
         # Update infection severity
         d_infection = (
-            self.infection_growth_rate * infection_severity * (1 - infection_severity) -
-            antibiotic_effect * infection_severity
+            self.infection_growth_rate * infection_severity * (1 - infection_severity)
+            - antibiotic_effect * infection_severity
         ) * dt
         infection_severity = np.clip(infection_severity + d_infection, 0, 1)
 
@@ -164,7 +165,9 @@ class SepsisModel(DiseaseModel):
 
         # Blood pressure (systolic)
         # Hypotension with severe sepsis, improved by fluids/vasopressors
-        bp_target = 120 - 40 * infection_severity + 20 * fluid_effect + 30 * vasopressor_effect
+        bp_target = (
+            120 - 40 * infection_severity + 20 * fluid_effect + 30 * vasopressor_effect
+        )
         d_bp = (bp_target - bp_sys) * 0.5 * dt
         bp_new = bp_sys + d_bp + rng.normal(0, 3 * dt)
         bp_new = np.clip(bp_new, 60, 180)
@@ -178,16 +181,18 @@ class SepsisModel(DiseaseModel):
 
         # Build next state (preserve non-modeled features)
         next_state = current_state.copy()
-        next_state.update({
-            'temperature': float(temp_new),
-            'heart_rate': float(hr_new),
-            'respiratory_rate': float(rr_new),
-            'white_blood_cell_count': float(wbc_new),
-            'blood_pressure_sys': float(bp_new),
-            'lactate': float(lactate_new),
-            # Internal state (not observable)
-            '_infection_severity': float(infection_severity)
-        })
+        next_state.update(
+            {
+                'temperature': float(temp_new),
+                'heart_rate': float(hr_new),
+                'respiratory_rate': float(rr_new),
+                'white_blood_cell_count': float(wbc_new),
+                'blood_pressure_sys': float(bp_new),
+                'lactate': float(lactate_new),
+                # Internal state (not observable)
+                '_infection_severity': float(infection_severity),
+            }
+        )
 
         return next_state
 
@@ -216,7 +221,7 @@ class RespiratoryDistressModel(DiseaseModel):
         current_state: Dict[str, Any],
         dt: float,
         interventions: Optional[Dict[str, Any]] = None,
-        rng: Optional[np.random.RandomState] = None
+        rng: Optional[np.random.RandomState] = None,
     ) -> Dict[str, Any]:
         """Evolve respiratory distress patient state."""
         if rng is None:
@@ -247,7 +252,9 @@ class RespiratoryDistressModel(DiseaseModel):
                 prone_effect = 0.3
 
         # SpO2 dynamics
-        spo2_target = 98 - 12 * lung_injury + 8 * oxygen_effect + 5 * (peep_effect + prone_effect)
+        spo2_target = (
+            98 - 12 * lung_injury + 8 * oxygen_effect + 5 * (peep_effect + prone_effect)
+        )
         d_spo2 = (spo2_target - spo2) * 0.4 * dt
         spo2_new = spo2 + d_spo2 + rng.normal(0, self.noise_std * 100 * dt)
         spo2_new = np.clip(spo2_new, 70, 100)
@@ -259,7 +266,9 @@ class RespiratoryDistressModel(DiseaseModel):
         rr_new = np.clip(rr_new, 8, 45)
 
         # PF ratio
-        pf_target = 400 - 250 * lung_injury + 100 * (oxygen_effect + peep_effect + prone_effect)
+        pf_target = (
+            400 - 250 * lung_injury + 100 * (oxygen_effect + peep_effect + prone_effect)
+        )
         d_pf = (pf_target - pf_ratio) * 0.2 * dt
         pf_new = pf_ratio + d_pf + rng.normal(0, 10 * dt)
         pf_new = np.clip(pf_new, 100, 500)
@@ -272,13 +281,15 @@ class RespiratoryDistressModel(DiseaseModel):
 
         # Update state
         next_state = current_state.copy()
-        next_state.update({
-            'oxygen_saturation': float(spo2_new),
-            'respiratory_rate': float(rr_new),
-            'pf_ratio': float(pf_new),
-            'heart_rate': float(hr_new),
-            '_lung_injury': float(lung_injury)
-        })
+        next_state.update(
+            {
+                'oxygen_saturation': float(spo2_new),
+                'respiratory_rate': float(rr_new),
+                'pf_ratio': float(pf_new),
+                'heart_rate': float(hr_new),
+                '_lung_injury': float(lung_injury),
+            }
+        )
 
         return next_state
 
@@ -308,7 +319,7 @@ class CardiacEventModel(DiseaseModel):
         current_state: Dict[str, Any],
         dt: float,
         interventions: Optional[Dict[str, Any]] = None,
-        rng: Optional[np.random.RandomState] = None
+        rng: Optional[np.random.RandomState] = None,
     ) -> Dict[str, Any]:
         """Evolve cardiac patient state."""
         if rng is None:
@@ -366,26 +377,32 @@ class CardiacEventModel(DiseaseModel):
         hr_new = np.clip(hr_new, 45, 140)
 
         # Blood pressure (reduced by nitrate, beta blocker)
-        bp_sys_target = 130 + 20 * ischemia - 25 * nitrate_effect - 20 * beta_blocker_effect
+        bp_sys_target = (
+            130 + 20 * ischemia - 25 * nitrate_effect - 20 * beta_blocker_effect
+        )
         d_bp_sys = (bp_sys_target - bp_sys) * 0.3 * dt
         bp_sys_new = bp_sys + d_bp_sys + rng.normal(0, 5 * dt)
         bp_sys_new = np.clip(bp_sys_new, 80, 200)
 
-        bp_dia_target = 80 + 10 * ischemia - 15 * nitrate_effect - 10 * beta_blocker_effect
+        bp_dia_target = (
+            80 + 10 * ischemia - 15 * nitrate_effect - 10 * beta_blocker_effect
+        )
         d_bp_dia = (bp_dia_target - bp_dia) * 0.3 * dt
         bp_dia_new = bp_dia + d_bp_dia + rng.normal(0, 3 * dt)
         bp_dia_new = np.clip(bp_dia_new, 50, 120)
 
         # Update state
         next_state = current_state.copy()
-        next_state.update({
-            'heart_rate': float(hr_new),
-            'blood_pressure_sys': float(bp_sys_new),
-            'blood_pressure_dia': float(bp_dia_new),
-            'troponin': float(trop_new),
-            'st_elevation': float(st_new),
-            'chest_pain_score': float(pain_new),
-            '_ischemia_severity': float(ischemia)
-        })
+        next_state.update(
+            {
+                'heart_rate': float(hr_new),
+                'blood_pressure_sys': float(bp_sys_new),
+                'blood_pressure_dia': float(bp_dia_new),
+                'troponin': float(trop_new),
+                'st_elevation': float(st_new),
+                'chest_pain_score': float(pain_new),
+                '_ischemia_severity': float(ischemia),
+            }
+        )
 
         return next_state

@@ -5,15 +5,15 @@ of CDSS deployment, including alert fatigue, workflow disruption, and
 coordination efficiency.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
+
 import numpy as np
 import pandas as pd
 from scipy import stats
 
 
 def compute_alert_fatigue(
-    results: Dict[str, Any],
-    lookback_window_hours: float = 4.0
+    results: Dict[str, Any], lookback_window_hours: float = 4.0
 ) -> Dict[str, float]:
     """Compute alert fatigue metrics.
 
@@ -49,7 +49,7 @@ def compute_alert_fatigue(
             'override_rate': 0.0,
             'response_time_mean': 0.0,
             'response_time_trend': 0.0,
-            'fatigue_score': 0.0
+            'fatigue_score': 0.0,
         }
 
     # Total alerts
@@ -61,7 +61,8 @@ def compute_alert_fatigue(
 
     # Override rate (alerts acknowledged but not followed)
     overridden = sum(
-        1 for alert in alerts
+        1
+        for alert in alerts
         if alert.get('acknowledged', False) and not alert.get('followed', False)
     )
     override_rate = overridden / total_alerts if total_alerts > 0 else 0.0
@@ -76,7 +77,9 @@ def compute_alert_fatigue(
         response_time_mean = np.mean(response_times)
 
         # Compute trend (are response times increasing over time?)
-        timestamps = [alert.get('timestamp', 0) for alert in alerts if 'response_time' in alert]
+        timestamps = [
+            alert.get('timestamp', 0) for alert in alerts if 'response_time' in alert
+        ]
         if len(timestamps) > 1:
             # Linear regression: response_time ~ timestamp
             slope, _, _, _, _ = stats.linregress(timestamps, response_times)
@@ -115,13 +118,12 @@ def compute_alert_fatigue(
         'override_rate': override_rate,
         'response_time_mean': response_time_mean,
         'response_time_trend': response_time_trend,
-        'fatigue_score': fatigue_score
+        'fatigue_score': fatigue_score,
     }
 
 
 def compute_override_rate(
-    results: Dict[str, Any],
-    by_clinician: bool = False
+    results: Dict[str, Any], by_clinician: bool = False
 ) -> Dict[str, Any]:
     """Compute alert override rates.
 
@@ -142,16 +144,13 @@ def compute_override_rate(
     alerts = results.get('alerts', [])
 
     if not alerts:
-        return {
-            'overall': 0.0,
-            'by_clinician': {},
-            'by_alert_type': {}
-        }
+        return {'overall': 0.0, 'by_clinician': {}, 'by_alert_type': {}}
 
     # Overall override rate
     total_alerts = len(alerts)
     overridden = sum(
-        1 for alert in alerts
+        1
+        for alert in alerts
         if alert.get('acknowledged', False) and not alert.get('followed', False)
     )
     overall_override_rate = overridden / total_alerts
@@ -172,7 +171,9 @@ def compute_override_rate(
         for clinician_id in clinician_overrides:
             total = clinician_overrides[clinician_id]['total']
             overridden = clinician_overrides[clinician_id]['overridden']
-            clinician_overrides[clinician_id]['rate'] = overridden / total if total > 0 else 0.0
+            clinician_overrides[clinician_id]['rate'] = (
+                overridden / total if total > 0 else 0.0
+            )
 
     # By alert type
     alert_type_overrides = {}
@@ -189,20 +190,21 @@ def compute_override_rate(
     for alert_type in alert_type_overrides:
         total = alert_type_overrides[alert_type]['total']
         overridden = alert_type_overrides[alert_type]['overridden']
-        alert_type_overrides[alert_type]['rate'] = overridden / total if total > 0 else 0.0
+        alert_type_overrides[alert_type]['rate'] = (
+            overridden / total if total > 0 else 0.0
+        )
 
     return {
         'overall': overall_override_rate,
         'by_clinician': clinician_overrides,
         'by_alert_type': alert_type_overrides,
         'total_alerts': total_alerts,
-        'total_overridden': overridden
+        'total_overridden': overridden,
     }
 
 
 def compute_workflow_disruption(
-    results: Dict[str, Any],
-    baseline_task_times: Optional[Dict[str, float]] = None
+    results: Dict[str, Any], baseline_task_times: Optional[Dict[str, float]] = None
 ) -> Dict[str, float]:
     """Compute workflow disruption metrics.
 
@@ -233,7 +235,7 @@ def compute_workflow_disruption(
             'task_switching_rate': 0.0,
             'task_completion_delay': 0.0,
             'concurrent_alerts_rate': 0.0,
-            'disruption_score': 0.0
+            'disruption_score': 0.0,
         }
 
     # Task switching rate
@@ -258,10 +260,7 @@ def compute_workflow_disruption(
     time_window = 0.5  # 30-minute window
     for t in alert_times:
         # Count alerts within window
-        alerts_in_window = sum(
-            1 for t2 in alert_times
-            if abs(t2 - t) <= time_window
-        )
+        alerts_in_window = sum(1 for t2 in alert_times if abs(t2 - t) <= time_window)
         if alerts_in_window > 1:
             concurrent_alerts += 1
 
@@ -273,7 +272,10 @@ def compute_workflow_disruption(
     if baseline_task_times:
         actual_times = {}
         for event in event_log:
-            if event.get('type') == 'agent_action' and event.get('action_type') == 'monitor':
+            if (
+                event.get('type') == 'agent_action'
+                and event.get('action_type') == 'monitor'
+            ):
                 task_type = event.get('action_type')
                 if task_type not in actual_times:
                     actual_times[task_type] = []
@@ -295,7 +297,7 @@ def compute_workflow_disruption(
     disruption_components = [
         min(task_switching_rate / 10.0, 1.0),  # Normalize
         min(concurrent_alerts_rate / 2.0, 1.0),
-        min(task_completion_delay / 50.0, 1.0)  # 50% delay = max disruption
+        min(task_completion_delay / 50.0, 1.0),  # 50% delay = max disruption
     ]
 
     disruption_score = np.mean(disruption_components)
@@ -304,13 +306,12 @@ def compute_workflow_disruption(
         'task_switching_rate': task_switching_rate,
         'task_completion_delay': task_completion_delay,
         'concurrent_alerts_rate': concurrent_alerts_rate,
-        'disruption_score': disruption_score
+        'disruption_score': disruption_score,
     }
 
 
 def compute_time_to_action(
-    results: Dict[str, Any],
-    action_type: str = 'intervention'
+    results: Dict[str, Any], action_type: str = 'intervention'
 ) -> Dict[str, float]:
     """Compute time from alert to clinical action.
 
@@ -339,7 +340,7 @@ def compute_time_to_action(
             'median': 0.0,
             'std': 0.0,
             'p90': 0.0,
-            'compliance_rate': 0.0
+            'compliance_rate': 0.0,
         }
 
     # Match alerts to actions
@@ -351,10 +352,12 @@ def compute_time_to_action(
 
         # Find next action for this patient
         for event in event_log:
-            if (event.get('type') == 'agent_action' and
-                event.get('action_type') == action_type and
-                event.get('target') == patient_id and
-                event.get('timestamp', 0) > alert_time):
+            if (
+                event.get('type') == 'agent_action'
+                and event.get('action_type') == action_type
+                and event.get('target') == patient_id
+                and event.get('timestamp', 0) > alert_time
+            ):
 
                 time_to_action = event.get('timestamp', 0) - alert_time
                 times_to_action.append(time_to_action)
@@ -367,7 +370,7 @@ def compute_time_to_action(
             'std': 0.0,
             'p90': 0.0,
             'compliance_rate': 0.0,
-            'n_samples': 0
+            'n_samples': 0,
         }
 
     # Compute metrics
@@ -387,13 +390,11 @@ def compute_time_to_action(
         'std': std_time,
         'p90': p90_time,
         'compliance_rate': compliance_rate,
-        'n_samples': len(times_to_action)
+        'n_samples': len(times_to_action),
     }
 
 
-def compute_coordination_efficiency(
-    results: Dict[str, Any]
-) -> Dict[str, float]:
+def compute_coordination_efficiency(results: Dict[str, Any]) -> Dict[str, float]:
     """Compute efficiency of coordination between agents.
 
     Measures how well agents coordinate actions, avoiding duplication
@@ -421,7 +422,7 @@ def compute_coordination_efficiency(
             'handoff_completeness': 0.0,
             'task_duplication_rate': 0.0,
             'communication_overhead': 0.0,
-            'coordination_score': 0.0
+            'coordination_score': 0.0,
         }
 
     # Count actions by type
@@ -437,7 +438,7 @@ def compute_coordination_efficiency(
         signature = (
             action.get('action_type'),
             action.get('target'),
-            int(action.get('timestamp', 0))  # Round to hour
+            int(action.get('timestamp', 0)),  # Round to hour
         )
 
         if signature in task_signatures:
@@ -461,7 +462,7 @@ def compute_coordination_efficiency(
     coordination_components = [
         1.0 - min(task_duplication_rate, 1.0),  # Low duplication = good
         min(communication_overhead / 2.0, 1.0),  # Some communication needed
-        handoff_completeness
+        handoff_completeness,
     ]
 
     coordination_score = np.mean(coordination_components)
@@ -472,13 +473,12 @@ def compute_coordination_efficiency(
         'communication_overhead': communication_overhead,
         'coordination_score': coordination_score,
         'n_actions': n_actions,
-        'n_messages': n_messages
+        'n_messages': n_messages,
     }
 
 
 def compute_system_resilience(
-    results: Dict[str, Any],
-    perturbations: Optional[List[Dict[str, Any]]] = None
+    results: Dict[str, Any], perturbations: Optional[List[Dict[str, Any]]] = None
 ) -> Dict[str, float]:
     """Compute system resilience to perturbations.
 
@@ -517,13 +517,11 @@ def compute_system_resilience(
     return {
         'performance_degradation': performance_degradation,
         'recovery_time': 0.0,  # Would need temporal analysis
-        'robustness_score': robustness_score
+        'robustness_score': robustness_score,
     }
 
 
-def generate_systemic_report(
-    results: Dict[str, Any]
-) -> Dict[str, Any]:
+def generate_systemic_report(results: Dict[str, Any]) -> Dict[str, Any]:
     """Generate comprehensive systemic evaluation report.
 
     Args:
@@ -544,5 +542,5 @@ def generate_systemic_report(
         'disruption': compute_workflow_disruption(results),
         'time_to_action': compute_time_to_action(results),
         'coordination': compute_coordination_efficiency(results),
-        'resilience': compute_system_resilience(results)
+        'resilience': compute_system_resilience(results),
     }

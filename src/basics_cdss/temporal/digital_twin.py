@@ -4,10 +4,11 @@ This module provides the core PatientDigitalTwin class that extends
 static SynDX archetypes into time-evolving patient models.
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional, Callable
-import numpy as np
 import copy
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, List, Optional
+
+import numpy as np
 
 
 @dataclass
@@ -19,6 +20,7 @@ class PatientState:
         features: Dictionary of clinical features (vitals, labs, symptoms)
         metadata: Additional information (uncertainty, data quality)
     """
+
     timestamp: float
     features: Dict[str, Any]
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -36,7 +38,7 @@ class PatientState:
         return PatientState(
             timestamp=self.timestamp,
             features=copy.deepcopy(self.features),
-            metadata=copy.deepcopy(self.metadata)
+            metadata=copy.deepcopy(self.metadata),
         )
 
 
@@ -96,7 +98,7 @@ class PatientDigitalTwin:
         initial_state: Dict[str, Any],
         disease_model: 'DiseaseModel',
         seed: Optional[int] = None,
-        protected_features: Optional[List[str]] = None
+        protected_features: Optional[List[str]] = None,
     ):
         """Initialize digital twin.
 
@@ -120,7 +122,7 @@ class PatientDigitalTwin:
         self.initial_state = PatientState(
             timestamp=0.0,
             features=copy.deepcopy(initial_state),
-            metadata={'archetype_id': archetype_id}
+            metadata={'archetype_id': archetype_id},
         )
         self.current_state = self.initial_state.copy()
         self.history: List[PatientState] = [self.initial_state.copy()]
@@ -132,7 +134,7 @@ class PatientDigitalTwin:
         self,
         dt: float = 1.0,
         interventions: Optional[Dict[str, Any]] = None,
-        stochastic: bool = True
+        stochastic: bool = True,
     ) -> PatientState:
         """Advance patient state by dt hours.
 
@@ -147,17 +149,19 @@ class PatientDigitalTwin:
         """
         # Record intervention
         if interventions:
-            self.interventions.append({
-                'timestamp': self.current_state.timestamp,
-                'interventions': interventions
-            })
+            self.interventions.append(
+                {
+                    'timestamp': self.current_state.timestamp,
+                    'interventions': interventions,
+                }
+            )
 
         # Evolve state using disease model
         next_features = self.disease_model.evolve(
             current_state=self.current_state.features,
             dt=dt,
             interventions=interventions,
-            rng=self.rng if stochastic else None
+            rng=self.rng if stochastic else None,
         )
 
         # Create new state
@@ -167,8 +171,8 @@ class PatientDigitalTwin:
             metadata={
                 'archetype_id': self.archetype_id,
                 'interventions': interventions or {},
-                'stochastic': stochastic
-            }
+                'stochastic': stochastic,
+            },
         )
 
         # Update current state and history
@@ -182,7 +186,7 @@ class PatientDigitalTwin:
         horizon_hours: float,
         dt: float = 1.0,
         intervention_schedule: Optional[Dict[float, Dict[str, Any]]] = None,
-        stochastic: bool = True
+        stochastic: bool = True,
     ) -> List[PatientState]:
         """Simulate patient trajectory over time horizon.
 
@@ -237,7 +241,7 @@ class PatientDigitalTwin:
             initial_state=copy.deepcopy(self.initial_state.features),
             disease_model=self.disease_model,
             seed=self.seed,
-            protected_features=self.protected_features.copy()
+            protected_features=self.protected_features.copy(),
         )
 
         # Copy current state and history
@@ -264,9 +268,11 @@ class PatientDigitalTwin:
         return pd.DataFrame(records)
 
     def __repr__(self) -> str:
-        return (f"PatientDigitalTwin(archetype_id='{self.archetype_id}', "
-                f"current_time={self.current_state.timestamp:.1f}h, "
-                f"n_states={len(self.history)})")
+        return (
+            f"PatientDigitalTwin(archetype_id='{self.archetype_id}', "
+            f"current_time={self.current_state.timestamp:.1f}h, "
+            f"n_states={len(self.history)})"
+        )
 
 
 class DigitalTwinFactory:
@@ -296,7 +302,7 @@ class DigitalTwinFactory:
         self,
         disease_model: 'DiseaseModel',
         seed: Optional[int] = None,
-        protected_features: Optional[List[str]] = None
+        protected_features: Optional[List[str]] = None,
     ):
         """Initialize factory.
 
@@ -311,10 +317,7 @@ class DigitalTwinFactory:
         self.rng = np.random.RandomState(seed)
 
     def create_from_archetype(
-        self,
-        archetype_id: str,
-        features: Dict[str, Any],
-        n_twins: int = 1
+        self, archetype_id: str, features: Dict[str, Any], n_twins: int = 1
     ) -> List[PatientDigitalTwin]:
         """Create digital twins from single archetype.
 
@@ -335,7 +338,7 @@ class DigitalTwinFactory:
                 initial_state=copy.deepcopy(features),
                 disease_model=self.disease_model,
                 seed=twin_seed,
-                protected_features=self.protected_features
+                protected_features=self.protected_features,
             )
             twins.append(twin)
 
@@ -345,7 +348,7 @@ class DigitalTwinFactory:
         self,
         archetypes_df: 'pd.DataFrame',
         n_per_archetype: int = 1,
-        archetype_id_col: str = 'archetype_id'
+        archetype_id_col: str = 'archetype_id',
     ) -> List[PatientDigitalTwin]:
         """Create digital twins from DataFrame of archetypes.
 
@@ -366,9 +369,7 @@ class DigitalTwinFactory:
             features = row.to_dict()
 
             twins = self.create_from_archetype(
-                archetype_id=archetype_id,
-                features=features,
-                n_twins=n_per_archetype
+                archetype_id=archetype_id, features=features, n_twins=n_per_archetype
             )
             all_twins.extend(twins)
 

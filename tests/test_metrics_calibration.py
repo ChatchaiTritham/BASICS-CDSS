@@ -2,16 +2,13 @@
 Tests for calibration metrics module.
 """
 
-import pytest
 import numpy as np
-from basics_cdss.metrics.calibration import (
-    expected_calibration_error,
-    brier_score,
-    reliability_curve,
-    stratified_calibration_metrics,
-    calibration_summary,
-    CalibrationMetrics,
-)
+import pytest
+from basics_cdss.metrics.calibration import (CalibrationMetrics, brier_score,
+                                             calibration_summary,
+                                             expected_calibration_error,
+                                             reliability_curve,
+                                             stratified_calibration_metrics)
 
 
 class TestExpectedCalibrationError:
@@ -29,7 +26,9 @@ class TestExpectedCalibrationError:
     def test_overconfident_predictions(self):
         """Overconfident predictions should have positive ECE."""
         y_true = np.array([1, 0, 1, 0, 1])
-        y_prob = np.array([0.9, 0.8, 0.9, 0.8, 0.9])  # High confidence but 40% error rate
+        y_prob = np.array(
+            [0.9, 0.8, 0.9, 0.8, 0.9]
+        )  # High confidence but 40% error rate
 
         ece = expected_calibration_error(y_true, y_prob, n_bins=5)
         assert ece > 0.1  # Should detect miscalibration
@@ -97,7 +96,9 @@ class TestReliabilityCurve:
         y_true = np.array([1, 1, 0, 1, 0, 1, 0, 0, 1, 1])
         y_prob = np.array([0.9, 0.8, 0.3, 0.7, 0.2, 0.85, 0.15, 0.4, 0.75, 0.95])
 
-        confs, accs, counts = reliability_curve(y_true, y_prob, n_bins=5, strategy="uniform")
+        confs, accs, counts = reliability_curve(
+            y_true, y_prob, n_bins=5, strategy="uniform"
+        )
 
         # Should return non-empty arrays
         assert len(confs) > 0
@@ -112,7 +113,9 @@ class TestReliabilityCurve:
         y_true = np.array([1, 1, 0, 1, 0, 1, 0, 0, 1, 1])
         y_prob = np.array([0.9, 0.8, 0.3, 0.7, 0.2, 0.85, 0.15, 0.4, 0.75, 0.95])
 
-        confs, accs, counts = reliability_curve(y_true, y_prob, n_bins=5, strategy="quantile")
+        confs, accs, counts = reliability_curve(
+            y_true, y_prob, n_bins=5, strategy="quantile"
+        )
 
         assert len(confs) > 0
 

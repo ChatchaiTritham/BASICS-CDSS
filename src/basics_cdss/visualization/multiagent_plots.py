@@ -10,16 +10,18 @@ Compliant with:
 - IEEE EMBC guidelines
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
+from typing import Dict, List, Optional, Tuple, Union
+
 import matplotlib.gridspec as gridspec
-from matplotlib.patches import Rectangle, FancyBboxPatch, Circle, FancyArrowPatch, Wedge
-from matplotlib.lines import Line2D
-from matplotlib.collections import LineCollection
-from typing import Dict, List, Tuple, Optional, Union
-import pandas as pd
-from scipy import stats
+import matplotlib.pyplot as plt
 import networkx as nx
+import numpy as np
+import pandas as pd
+from matplotlib.collections import LineCollection
+from matplotlib.lines import Line2D
+from matplotlib.patches import (Circle, FancyArrowPatch, FancyBboxPatch,
+                                Rectangle, Wedge)
+from scipy import stats
 
 # Publication-quality styling
 STYLE_CONFIG = {
@@ -36,12 +38,12 @@ STYLE_CONFIG = {
 
 # Colorblind-friendly palette
 COLORS = {
-    'patient': '#CC3311',       # Red
-    'clinician': '#0077BB',     # Blue
-    'cdss': '#33BB55',          # Green
-    'nurse': '#EE7733',         # Orange
-    'alert': '#9933CC',         # Purple
-    'override': '#BBBBBB',      # Gray
+    'patient': '#CC3311',  # Red
+    'clinician': '#0077BB',  # Blue
+    'cdss': '#33BB55',  # Green
+    'nurse': '#EE7733',  # Orange
+    'alert': '#9933CC',  # Purple
+    'override': '#BBBBBB',  # Gray
 }
 
 
@@ -50,7 +52,7 @@ def plot_agent_interaction_network(
     agent_types: Dict[str, str],
     title: str = "Agent Interaction Network",
     save_path: Optional[str] = None,
-    figsize: Tuple[float, float] = (7.0, 7.0)
+    figsize: Tuple[float, float] = (7.0, 7.0),
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plot agent interaction network with weighted edges.
@@ -88,52 +90,97 @@ def plot_agent_interaction_network(
     pos = nx.spring_layout(G, k=2, iterations=50, seed=42)
 
     # Node colors based on agent type
-    node_colors = [COLORS.get(agent_types.get(node, 'patient'), '#BBBBBB')
-                   for node in G.nodes()]
+    node_colors = [
+        COLORS.get(agent_types.get(node, 'patient'), '#BBBBBB') for node in G.nodes()
+    ]
 
     # Draw nodes
-    nx.draw_networkx_nodes(G, pos, ax=ax,
-                          node_color=node_colors,
-                          node_size=1500,
-                          edgecolors='black',
-                          linewidths=2.0,
-                          alpha=0.9)
+    nx.draw_networkx_nodes(
+        G,
+        pos,
+        ax=ax,
+        node_color=node_colors,
+        node_size=1500,
+        edgecolors='black',
+        linewidths=2.0,
+        alpha=0.9,
+    )
 
     # Draw edges with varying widths based on weight
     weights = [G[u][v]['weight'] for u, v in G.edges()]
     max_weight = max(weights) if weights else 1
     edge_widths = [5 * (w / max_weight) for w in weights]
 
-    nx.draw_networkx_edges(G, pos, ax=ax,
-                          width=edge_widths,
-                          edge_color='black',
-                          alpha=0.6,
-                          arrowsize=20,
-                          arrowstyle='->')
+    nx.draw_networkx_edges(
+        G,
+        pos,
+        ax=ax,
+        width=edge_widths,
+        edge_color='black',
+        alpha=0.6,
+        arrowsize=20,
+        arrowstyle='->',
+    )
 
     # Draw labels
-    nx.draw_networkx_labels(G, pos, ax=ax,
-                           font_size=10,
-                           font_weight='bold',
-                           font_family='serif')
+    nx.draw_networkx_labels(
+        G, pos, ax=ax, font_size=10, font_weight='bold', font_family='serif'
+    )
 
     # Legend
     legend_elements = [
-        Line2D([0], [0], marker='o', color='w', label='Patient',
-               markerfacecolor=COLORS['patient'], markersize=12,
-               markeredgecolor='black', markeredgewidth=2),
-        Line2D([0], [0], marker='o', color='w', label='Clinician',
-               markerfacecolor=COLORS['clinician'], markersize=12,
-               markeredgecolor='black', markeredgewidth=2),
-        Line2D([0], [0], marker='o', color='w', label='CDSS',
-               markerfacecolor=COLORS['cdss'], markersize=12,
-               markeredgecolor='black', markeredgewidth=2),
-        Line2D([0], [0], marker='o', color='w', label='Nurse',
-               markerfacecolor=COLORS['nurse'], markersize=12,
-               markeredgecolor='black', markeredgewidth=2),
+        Line2D(
+            [0],
+            [0],
+            marker='o',
+            color='w',
+            label='Patient',
+            markerfacecolor=COLORS['patient'],
+            markersize=12,
+            markeredgecolor='black',
+            markeredgewidth=2,
+        ),
+        Line2D(
+            [0],
+            [0],
+            marker='o',
+            color='w',
+            label='Clinician',
+            markerfacecolor=COLORS['clinician'],
+            markersize=12,
+            markeredgecolor='black',
+            markeredgewidth=2,
+        ),
+        Line2D(
+            [0],
+            [0],
+            marker='o',
+            color='w',
+            label='CDSS',
+            markerfacecolor=COLORS['cdss'],
+            markersize=12,
+            markeredgecolor='black',
+            markeredgewidth=2,
+        ),
+        Line2D(
+            [0],
+            [0],
+            marker='o',
+            color='w',
+            label='Nurse',
+            markerfacecolor=COLORS['nurse'],
+            markersize=12,
+            markeredgecolor='black',
+            markeredgewidth=2,
+        ),
     ]
-    ax.legend(handles=legend_elements, loc='upper right',
-             framealpha=0.95, fontsize=10, edgecolor='black')
+    ax.legend(
+        handles=legend_elements,
+        loc='upper right',
+        framealpha=0.95,
+        fontsize=10,
+        edgecolor='black',
+    )
 
     ax.set_title(title, fontweight='bold', pad=15)
     ax.axis('off')
@@ -141,8 +188,9 @@ def plot_agent_interaction_network(
 
     if save_path:
         for ext in ['pdf', 'eps', 'png']:
-            fig.savefig(save_path.replace('.png', f'.{ext}'),
-                       dpi=300, bbox_inches='tight')
+            fig.savefig(
+                save_path.replace('.png', f'.{ext}'), dpi=300, bbox_inches='tight'
+            )
 
     return fig, ax
 
@@ -151,7 +199,7 @@ def plot_workflow_timeline(
     tasks: List[Dict[str, Union[str, float]]],
     title: str = "Clinical Workflow Timeline",
     save_path: Optional[str] = None,
-    figsize: Tuple[float, float] = (7.0, 8.0)
+    figsize: Tuple[float, float] = (7.0, 8.0),
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plot clinical workflow as Gantt chart.
@@ -197,7 +245,7 @@ def plot_workflow_timeline(
         'completed': '',
         'in_progress': '///',
         'pending': '...',
-        'failed': 'xxx'
+        'failed': 'xxx',
     }
 
     y_pos = np.arange(len(tasks_sorted))
@@ -212,14 +260,29 @@ def plot_workflow_timeline(
         hatch = status_hatches.get(status, '')
 
         # Draw bar
-        ax.barh(i, duration, left=start, height=0.6,
-               color=color, edgecolor='black', linewidth=1.5,
-               hatch=hatch, alpha=0.8)
+        ax.barh(
+            i,
+            duration,
+            left=start,
+            height=0.6,
+            color=color,
+            edgecolor='black',
+            linewidth=1.5,
+            hatch=hatch,
+            alpha=0.8,
+        )
 
         # Add task name
-        ax.text(start + duration/2, i, task['name'],
-               ha='center', va='center', fontsize=9,
-               fontweight='bold', color='white' if status == 'completed' else 'black')
+        ax.text(
+            start + duration / 2,
+            i,
+            task['name'],
+            ha='center',
+            va='center',
+            fontsize=9,
+            fontweight='bold',
+            color='white' if status == 'completed' else 'black',
+        )
 
     # Formatting
     ax.set_yticks(y_pos)
@@ -236,15 +299,22 @@ def plot_workflow_timeline(
         Rectangle((0, 0), 1, 1, fc=COLORS['cdss'], ec='black', label='CDSS'),
         Rectangle((0, 0), 1, 1, fc=COLORS['nurse'], ec='black', label='Nurse'),
     ]
-    ax.legend(handles=legend_elements, loc='lower right',
-             framealpha=0.95, fontsize=10, edgecolor='black', ncol=2)
+    ax.legend(
+        handles=legend_elements,
+        loc='lower right',
+        framealpha=0.95,
+        fontsize=10,
+        edgecolor='black',
+        ncol=2,
+    )
 
     plt.tight_layout()
 
     if save_path:
         for ext in ['pdf', 'eps', 'png']:
-            fig.savefig(save_path.replace('.png', f'.{ext}'),
-                       dpi=300, bbox_inches='tight')
+            fig.savefig(
+                save_path.replace('.png', f'.{ext}'), dpi=300, bbox_inches='tight'
+            )
 
     return fig, ax
 
@@ -256,7 +326,7 @@ def plot_alert_fatigue_dynamics(
     response_times: np.ndarray,
     title: str = "Alert Fatigue Dynamics Over Time",
     save_path: Optional[str] = None,
-    figsize: Tuple[float, float] = (7.0, 9.0)
+    figsize: Tuple[float, float] = (7.0, 9.0),
 ) -> Tuple[plt.Figure, np.ndarray]:
     """
     Plot alert fatigue dynamics with multiple metrics over time.
@@ -286,8 +356,16 @@ def plot_alert_fatigue_dynamics(
 
     # Plot 1: Alert counts
     ax1 = axes[0]
-    ax1.bar(time_points, alert_counts, width=0.8, color=COLORS['alert'],
-           edgecolor='black', linewidth=1.0, alpha=0.8, label='Alert Count')
+    ax1.bar(
+        time_points,
+        alert_counts,
+        width=0.8,
+        color=COLORS['alert'],
+        edgecolor='black',
+        linewidth=1.0,
+        alpha=0.8,
+        label='Alert Count',
+    )
     ax1.set_ylabel('Alerts per Hour', fontweight='bold')
     ax1.set_title('(a) Alert Frequency', fontweight='bold', pad=10, loc='left')
     ax1.grid(axis='y', alpha=0.3, linestyle='--', linewidth=0.5)
@@ -296,13 +374,32 @@ def plot_alert_fatigue_dynamics(
 
     # Plot 2: Override rates
     ax2 = axes[1]
-    ax2.plot(time_points, override_rates * 100, color=COLORS['override'],
-            linewidth=2.5, marker='o', markersize=5, label='Override Rate')
-    ax2.axhline(y=50, color='red', linestyle='--', linewidth=2.0,
-               alpha=0.7, label='Critical Threshold (50%)')
-    ax2.fill_between(time_points, 0, override_rates * 100,
-                     where=(override_rates * 100 > 50), alpha=0.3,
-                     color='red', label='Fatigue Zone')
+    ax2.plot(
+        time_points,
+        override_rates * 100,
+        color=COLORS['override'],
+        linewidth=2.5,
+        marker='o',
+        markersize=5,
+        label='Override Rate',
+    )
+    ax2.axhline(
+        y=50,
+        color='red',
+        linestyle='--',
+        linewidth=2.0,
+        alpha=0.7,
+        label='Critical Threshold (50%)',
+    )
+    ax2.fill_between(
+        time_points,
+        0,
+        override_rates * 100,
+        where=(override_rates * 100 > 50),
+        alpha=0.3,
+        color='red',
+        label='Fatigue Zone',
+    )
     ax2.set_ylabel('Override Rate (%)', fontweight='bold')
     ax2.set_title('(b) Alert Override Pattern', fontweight='bold', pad=10, loc='left')
     ax2.set_ylim(0, 100)
@@ -312,16 +409,37 @@ def plot_alert_fatigue_dynamics(
 
     # Plot 3: Response times
     ax3 = axes[2]
-    ax3.plot(time_points, response_times, color=COLORS['clinician'],
-            linewidth=2.5, marker='s', markersize=5, label='Response Time')
-    ax3.axhline(y=15, color='orange', linestyle='--', linewidth=2.0,
-               alpha=0.7, label='Target (15 min)')
-    ax3.fill_between(time_points, 15, response_times,
-                     where=(response_times > 15), alpha=0.3,
-                     color='orange', label='Delayed Response')
+    ax3.plot(
+        time_points,
+        response_times,
+        color=COLORS['clinician'],
+        linewidth=2.5,
+        marker='s',
+        markersize=5,
+        label='Response Time',
+    )
+    ax3.axhline(
+        y=15,
+        color='orange',
+        linestyle='--',
+        linewidth=2.0,
+        alpha=0.7,
+        label='Target (15 min)',
+    )
+    ax3.fill_between(
+        time_points,
+        15,
+        response_times,
+        where=(response_times > 15),
+        alpha=0.3,
+        color='orange',
+        label='Delayed Response',
+    )
     ax3.set_xlabel('Time (hours)', fontweight='bold')
     ax3.set_ylabel('Response Time (min)', fontweight='bold')
-    ax3.set_title('(c) Response Time Degradation', fontweight='bold', pad=10, loc='left')
+    ax3.set_title(
+        '(c) Response Time Degradation', fontweight='bold', pad=10, loc='left'
+    )
     ax3.grid(axis='both', alpha=0.3, linestyle='--', linewidth=0.5)
     ax3.set_axisbelow(True)
     ax3.legend(loc='upper left', framealpha=0.9, fontsize=9)
@@ -331,8 +449,9 @@ def plot_alert_fatigue_dynamics(
 
     if save_path:
         for ext in ['pdf', 'eps', 'png']:
-            fig.savefig(save_path.replace('.png', f'.{ext}'),
-                       dpi=300, bbox_inches='tight')
+            fig.savefig(
+                save_path.replace('.png', f'.{ext}'), dpi=300, bbox_inches='tight'
+            )
 
     return fig, axes
 
@@ -344,7 +463,7 @@ def plot_override_rates_comparison(
     experience_levels: List[str],
     title: str = "Clinician-Specific Override Patterns",
     save_path: Optional[str] = None,
-    figsize: Tuple[float, float] = (7.0, 6.0)
+    figsize: Tuple[float, float] = (7.0, 6.0),
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plot override rates comparison across clinicians.
@@ -374,11 +493,7 @@ def plot_override_rates_comparison(
     fig, ax = plt.subplots(1, 1, figsize=figsize)
 
     # Color by experience level
-    exp_colors = {
-        'junior': '#CC3311',
-        'senior': '#EE7733',
-        'attending': '#0077BB'
-    }
+    exp_colors = {'junior': '#CC3311', 'senior': '#EE7733', 'attending': '#0077BB'}
     colors = [exp_colors.get(exp, '#BBBBBB') for exp in experience_levels]
 
     # Bubble size based on alert count
@@ -387,19 +502,47 @@ def plot_override_rates_comparison(
     y_pos = np.arange(len(clinician_names))
 
     # Scatter plot
-    for i, (y, rate, size, color) in enumerate(zip(y_pos, override_rates, sizes, colors)):
-        ax.scatter(rate * 100, y, s=size, color=color, alpha=0.7,
-                  edgecolors='black', linewidth=2.0, zorder=3)
+    for i, (y, rate, size, color) in enumerate(
+        zip(y_pos, override_rates, sizes, colors)
+    ):
+        ax.scatter(
+            rate * 100,
+            y,
+            s=size,
+            color=color,
+            alpha=0.7,
+            edgecolors='black',
+            linewidth=2.0,
+            zorder=3,
+        )
 
         # Add alert count label
-        ax.text(rate * 100 + 2, y, f'n={alert_counts[i]}',
-               va='center', fontsize=9, color='black')
+        ax.text(
+            rate * 100 + 2,
+            y,
+            f'n={alert_counts[i]}',
+            va='center',
+            fontsize=9,
+            color='black',
+        )
 
     # Add threshold lines
-    ax.axvline(x=40, color='orange', linestyle='--', linewidth=2.0,
-              alpha=0.7, label='Warning (40%)')
-    ax.axvline(x=60, color='red', linestyle='--', linewidth=2.0,
-              alpha=0.7, label='Critical (60%)')
+    ax.axvline(
+        x=40,
+        color='orange',
+        linestyle='--',
+        linewidth=2.0,
+        alpha=0.7,
+        label='Warning (40%)',
+    )
+    ax.axvline(
+        x=60,
+        color='red',
+        linestyle='--',
+        linewidth=2.0,
+        alpha=0.7,
+        label='Critical (60%)',
+    )
     ax.axvspan(60, 100, alpha=0.1, color='red', label='Fatigue Zone')
 
     # Formatting
@@ -413,25 +556,56 @@ def plot_override_rates_comparison(
 
     # Legend
     legend_elements = [
-        Line2D([0], [0], marker='o', color='w', label='Junior',
-               markerfacecolor=exp_colors['junior'], markersize=10,
-               markeredgecolor='black', markeredgewidth=2),
-        Line2D([0], [0], marker='o', color='w', label='Senior',
-               markerfacecolor=exp_colors['senior'], markersize=10,
-               markeredgecolor='black', markeredgewidth=2),
-        Line2D([0], [0], marker='o', color='w', label='Attending',
-               markerfacecolor=exp_colors['attending'], markersize=10,
-               markeredgecolor='black', markeredgewidth=2),
+        Line2D(
+            [0],
+            [0],
+            marker='o',
+            color='w',
+            label='Junior',
+            markerfacecolor=exp_colors['junior'],
+            markersize=10,
+            markeredgecolor='black',
+            markeredgewidth=2,
+        ),
+        Line2D(
+            [0],
+            [0],
+            marker='o',
+            color='w',
+            label='Senior',
+            markerfacecolor=exp_colors['senior'],
+            markersize=10,
+            markeredgecolor='black',
+            markeredgewidth=2,
+        ),
+        Line2D(
+            [0],
+            [0],
+            marker='o',
+            color='w',
+            label='Attending',
+            markerfacecolor=exp_colors['attending'],
+            markersize=10,
+            markeredgecolor='black',
+            markeredgewidth=2,
+        ),
     ]
-    ax.legend(handles=legend_elements, loc='lower right',
-             framealpha=0.95, fontsize=10, edgecolor='black', title='Experience')
+    ax.legend(
+        handles=legend_elements,
+        loc='lower right',
+        framealpha=0.95,
+        fontsize=10,
+        edgecolor='black',
+        title='Experience',
+    )
 
     plt.tight_layout()
 
     if save_path:
         for ext in ['pdf', 'eps', 'png']:
-            fig.savefig(save_path.replace('.png', f'.{ext}'),
-                       dpi=300, bbox_inches='tight')
+            fig.savefig(
+                save_path.replace('.png', f'.{ext}'), dpi=300, bbox_inches='tight'
+            )
 
     return fig, ax
 
@@ -443,7 +617,7 @@ def plot_system_resilience(
     stress_events: Optional[List[Tuple[float, str]]] = None,
     title: str = "System Resilience Under Varying Workload",
     save_path: Optional[str] = None,
-    figsize: Tuple[float, float] = (7.0, 6.0)
+    figsize: Tuple[float, float] = (7.0, 6.0),
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plot system performance resilience under varying workload.
@@ -475,26 +649,53 @@ def plot_system_resilience(
     ax2 = ax.twinx()
 
     # Plot workload
-    line1 = ax.plot(time_points, workload, color=COLORS['alert'],
-                   linewidth=2.5, label='Workload', alpha=0.8)
+    line1 = ax.plot(
+        time_points,
+        workload,
+        color=COLORS['alert'],
+        linewidth=2.5,
+        label='Workload',
+        alpha=0.8,
+    )
     ax.fill_between(time_points, 0, workload, alpha=0.2, color=COLORS['alert'])
 
     # Plot performance
-    line2 = ax2.plot(time_points, performance, color=COLORS['cdss'],
-                    linewidth=2.5, label='Performance', alpha=0.8)
+    line2 = ax2.plot(
+        time_points,
+        performance,
+        color=COLORS['cdss'],
+        linewidth=2.5,
+        label='Performance',
+        alpha=0.8,
+    )
 
     # Mark stress events
     if stress_events:
         for event_time, event_name in stress_events:
-            ax.axvline(event_time, color='red', linestyle='--',
-                      linewidth=2.0, alpha=0.7)
-            ax.text(event_time, ax.get_ylim()[1] * 0.95, event_name,
-                   rotation=90, va='top', ha='right', fontsize=9,
-                   color='red', fontweight='bold')
+            ax.axvline(
+                event_time, color='red', linestyle='--', linewidth=2.0, alpha=0.7
+            )
+            ax.text(
+                event_time,
+                ax.get_ylim()[1] * 0.95,
+                event_name,
+                rotation=90,
+                va='top',
+                ha='right',
+                fontsize=9,
+                color='red',
+                fontweight='bold',
+            )
 
     # Add performance threshold
-    ax2.axhline(y=80, color='orange', linestyle='--', linewidth=2.0,
-               alpha=0.7, label='Target Performance (80%)')
+    ax2.axhline(
+        y=80,
+        color='orange',
+        linestyle='--',
+        linewidth=2.0,
+        alpha=0.7,
+        label='Target Performance (80%)',
+    )
 
     # Formatting
     ax.set_xlabel('Time (hours)', fontweight='bold')
@@ -509,14 +710,17 @@ def plot_system_resilience(
     # Combined legend
     lines = line1 + line2
     labels = [l.get_label() for l in lines]
-    ax.legend(lines, labels, loc='lower left', framealpha=0.95, fontsize=11, edgecolor='black')
+    ax.legend(
+        lines, labels, loc='lower left', framealpha=0.95, fontsize=11, edgecolor='black'
+    )
 
     plt.tight_layout()
 
     if save_path:
         for ext in ['pdf', 'eps', 'png']:
-            fig.savefig(save_path.replace('.png', f'.{ext}'),
-                       dpi=300, bbox_inches='tight')
+            fig.savefig(
+                save_path.replace('.png', f'.{ext}'), dpi=300, bbox_inches='tight'
+            )
 
     return fig, ax
 

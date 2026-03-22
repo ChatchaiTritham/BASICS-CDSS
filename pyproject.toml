@@ -4,14 +4,29 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "basics-cdss"
-version = "0.1.0"
-description = "BASICS-CDSS: Simulation-based evaluation for safety-critical clinical decision support systems"
+version = "2.1.0"
+description = "BASICS-CDSS: Simulation-based evaluation for safety-critical clinical decision support systems with XAI and Clinical Metrics"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 license = {text = "MIT"}
 authors = [
-  {name = "Chatchai Tritham"},
-  {name = "Chakkrit Snae Namahoot"}
+  {name = "Chatchai Tritham", email = "chatchait66@nu.ac.th"},
+  {name = "Chakkrit Snae Namahoot", email = "chakkrits@nu.ac.th"}
+]
+keywords = ["clinical decision support", "beyond accuracy", "calibration", "fairness", "conformal prediction", "medical AI", "XAI"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Healthcare Industry",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Medical Science Apps.",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
   "numpy",
@@ -22,10 +37,19 @@ dependencies = [
   "pyyaml",
   "tqdm",
   "pydantic>=2",
+  "shap>=0.42.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/ChatchaiTritham/BASICS-CDSS"
+Repository = "https://github.com/ChatchaiTritham/BASICS-CDSS"
+Documentation = "https://github.com/ChatchaiTritham/BASICS-CDSS/blob/main/README.md"
+"Bug Tracker" = "https://github.com/ChatchaiTritham/BASICS-CDSS/issues"
+
 [project.optional-dependencies]
-dev = ["pytest", "rich"]
+dev = ["pytest", "pytest-cov", "rich"]
+notebooks = ["jupyter", "jupyterlab", "ipywidgets"]
+all = ["pytest", "pytest-cov", "rich", "jupyter", "jupyterlab", "ipywidgets"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
