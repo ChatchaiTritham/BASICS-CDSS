@@ -11,9 +11,17 @@ trading coverage for reduced conditional risk.
 """
 
 from __future__ import annotations
-from typing import Tuple, Optional
-import numpy as np
+
 from dataclasses import dataclass
+from typing import Optional, Tuple
+
+import numpy as np
+
+DEFAULT_CONFIDENCE_ACCEPTANCE_THRESHOLD = 0.5
+DEFAULT_SELECTIVE_THRESHOLD_COUNT = 100
+MIN_THRESHOLD_VALUE = 0.0
+MAX_THRESHOLD_VALUE = 1.0
+EMPTY_METRIC_VALUE = 0.0
 
 
 @dataclass
@@ -28,6 +36,7 @@ class SelectivePredictionMetrics:
         risk_curve: Conditional risk values at different thresholds
         thresholds: Confidence thresholds used
     """
+
     aurc: float
     coverage_at_risk_threshold: Optional[float] = None
     risk_at_coverage_threshold: Optional[float] = None
@@ -40,7 +49,7 @@ def coverage_risk_curve(
     y_true: np.ndarray,
     y_prob: np.ndarray,
     risk_proxy: Optional[np.ndarray] = None,
-    n_thresholds: int = 100
+    n_thresholds: int = DEFAULT_SELECTIVE_THRESHOLD_COUNT,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Compute coverage-risk curve for selective prediction.
 
@@ -70,17 +79,18 @@ def coverage_risk_curve(
 
     # Default risk proxy: error rate (1 if wrong, 0 if correct)
     if risk_proxy is None:
-        # For binary classification, assume y_prob is probability of class 1
-        y_pred = (y_prob >= 0.5).astype(float)
-        risk_proxy = (y_pred != y_true).astype(float)
+        predicted_labels = (y_prob >= DEFAULT_CONFIDENCE_ACCEPTANCE_THRESHOLD).astype(
+            float
+        )
+        risk_proxy_array = (predicted_labels != y_true).astype(float)
     else:
-        risk_proxy = np.asarray(risk_proxy).astype(float)
+        risk_proxy_array = np.asarray(risk_proxy).astype(float)
 
     # Generate thresholds from min to max confidence
-    thresholds = np.linspace(0, 1, n_thresholds)
+    thresholds = np.linspace(MIN_THRESHOLD_VALUE, MAX_THRESHOLD_VALUE, n_thresholds)
 
-    coverages = []
-    risks = []
+    coverage_values = []
+    risk_values = []
 
     n_total = len(y_true)
 
@@ -91,26 +101,19 @@ def coverage_risk_curve(
 
         if n_accepted == 0:
             # No predictions accepted: coverage = 0, risk undefined (use NaN)
-            coverages.append(0.0)
-            risks.append(np.nan)
+            coverage_values.append(EMPTY_METRIC_VALUE)
+            risk_values.append(np.nan)
         else:
-            coverage = n_accepted / n_total
-            conditional_risk = risk_proxy[accepted_mask].mean()
+            coverage_value = n_accepted / n_total
+            conditional_risk = risk_proxy_array[accepted_mask].mean()
 
-            coverages.append(coverage)
-            risks.append(conditional_risk)
+            coverage_values.append(coverage_value)
+            risk_values.append(conditional_risk)
 
-    return (
-        np.array(coverages),
-        np.array(risks),
-        thresholds
-    )
+    return (np.array(coverage_values), np.array(risk_values), thresholds)
 
 
-def area_under_risk_coverage_curve(
-    coverages: np.ndarray,
-    risks: np.ndarray
-) -> float:
+def area_under_risk_coverage_curve(coverages: np.ndarray, risks: np.ndarray) -> float:
     """Compute Area Under Risk-Coverage Curve (AURC).
 
     From manuscript:
@@ -140,7 +143,7 @@ def area_under_risk_coverage_curve(
     risks = risks[valid_mask]
 
     if len(coverages) == 0:
-        return 0.0
+        return EMPTY_METRIC_VALUE
 
     # Sort by coverage (should already be sorted, but ensure)
     sort_idx = np.argsort(coverages)
@@ -164,7 +167,7 @@ def selective_prediction_metrics(
     risk_proxy: Optional[np.ndarray] = None,
     target_coverage: float = 0.8,
     target_risk: float = 0.1,
-    n_thresholds: int = 100
+    n_thresholds: int = DEFAULT_SELECTIVE_THRESHOLD_COUNT,
 ) -> SelectivePredictionMetrics:
     """Compute comprehensive selective prediction metrics.
 
@@ -227,7 +230,10 @@ def selective_prediction_metrics(
     )
 
 
-def abstention_rate(y_prob: np.ndarray, threshold: float = 0.5) -> float:
+def abstention_rate(
+    y_prob: np.ndarray,
+    threshold: float = DEFAULT_CONFIDENCE_ACCEPTANCE_THRESHOLD,
+) -> float:
     """Compute abstention rate at given confidence threshold.
 
     Args:
@@ -259,7 +265,7 @@ def stratified_selective_metrics(
     y_prob: np.ndarray,
     risk_tiers: np.ndarray,
     risk_proxy: Optional[np.ndarray] = None,
-    n_thresholds: int = 100
+    n_thresholds: int = 100,
 ) -> dict:
     """Compute selective prediction metrics stratified by risk tier.
 
@@ -301,10 +307,7 @@ def stratified_selective_metrics(
         tier_risk_proxy = risk_proxy[mask] if risk_proxy is not None else None
 
         metrics = selective_prediction_metrics(
-            tier_true,
-            tier_prob,
-            risk_proxy=tier_risk_proxy,
-            n_thresholds=n_thresholds
+            tier_true, tier_prob, risk_proxy=tier_risk_proxy, n_thresholds=n_thresholds
         )
 
         stratified_metrics[str(tier)] = metrics

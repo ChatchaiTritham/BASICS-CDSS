@@ -1,0 +1,38 @@
+================================================================================
+Game-Theoretic Explanation (Sample 0)
+================================================================================
+
+MAJOR PLAYERS (Critical Symptoms - High Shapley Values):
+--------------------------------------------------------------------------------
+  troponin            : -0.1511  (DECREASES risk)
+  sbp                 : -0.0866  (DECREASES risk)
+  spo2                : +0.0659  (INCREASES risk)
+  age                 : -0.0571  (DECREASES risk)
+
+================================================================================
+MINOR PLAYERS (Uncertain/Non-Critical - Low Shapley Values):
+--------------------------------------------------------------------------------
+  temperature         : -0.0380  (decreases risk slightly)
+  heart_rate          : -0.0220  (decreases risk slightly)
+  creatinine          : -0.0166  (decreases risk slightly)
+  resp_rate           : -0.0129  (decreases risk slightly)
+  pain_score          : -0.0115  (decreases risk slightly)
+  arrival_hour        : -0.0075  (decreases risk slightly)
+  gender              : +0.0063  (increases risk slightly)
+  wbc                 : -0.0021  (decreases risk slightly)
+  lactate             : -0.0012  (decreases risk slightly)
+
+================================================================================
+INTERPRETATION:
+--------------------------------------------------------------------------------
+In cooperative game theory, features are 'players' in a game where the
+'payoff' is the prediction accuracy. Shapley values provide a fair
+attribution of this payoff to each player.
+
+- MAJOR PLAYERS have high Shapley values → strong influence on decision
+- MINOR PLAYERS have low Shapley values → weak influence on decision
+
+This aligns with clinical intuition:
+  • Critical symptoms (e.g., troponin, BP) → major players
+  • Uncertain/ambiguous signs → minor players
+================================================================================

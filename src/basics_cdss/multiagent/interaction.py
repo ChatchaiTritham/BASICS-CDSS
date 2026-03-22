@@ -4,14 +4,15 @@ This module defines communication protocols between agents in the
 multi-agent clinical system.
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional, Protocol
-from enum import Enum
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Dict, List, Optional, Protocol
 
 
 class MessageType(Enum):
     """Types of messages between agents."""
+
     ALERT = "alert"
     REQUEST = "request"
     RESPONSE = "response"
@@ -21,6 +22,7 @@ class MessageType(Enum):
 
 class MessagePriority(Enum):
     """Message priority levels."""
+
     LOW = 1
     NORMAL = 2
     HIGH = 3
@@ -51,6 +53,7 @@ class Message:
         ...     priority=MessagePriority.HIGH
         ... )
     """
+
     message_id: str
     message_type: MessageType
     sender: str
@@ -89,6 +92,7 @@ class AlertMessage(Message):
         ...     confidence=0.90
         ... )
     """
+
     patient_id: str = ""
     alert_type: str = ""
     risk_score: float = 0.0
@@ -121,6 +125,7 @@ class DecisionRequest(Message):
         ...     deadline=2.0  # 2 hours
         ... )
     """
+
     patient_id: str = ""
     decision_type: str = ""
     context: Dict[str, Any] = field(default_factory=dict)
@@ -154,6 +159,7 @@ class HandoffMessage(Message):
         ...     concerns=['Persistent hypotension despite fluids']
         ... )
     """
+
     patient_id: str = ""
     handoff_type: str = ""
     summary: str = ""
@@ -186,10 +192,7 @@ class InteractionProtocol(ABC):
 
     @abstractmethod
     def can_send(
-        self,
-        sender: 'Agent',
-        recipient: 'Agent',
-        message_type: MessageType
+        self, sender: 'Agent', recipient: 'Agent', message_type: MessageType
     ) -> bool:
         """Check if sender can send message to recipient.
 
@@ -204,10 +207,7 @@ class InteractionProtocol(ABC):
         pass
 
     @abstractmethod
-    def prioritize_messages(
-        self,
-        messages: List[Message]
-    ) -> List[Message]:
+    def prioritize_messages(self, messages: List[Message]) -> List[Message]:
         """Prioritize messages for processing.
 
         Args:
@@ -219,11 +219,7 @@ class InteractionProtocol(ABC):
         pass
 
     @abstractmethod
-    def handle_message(
-        self,
-        message: Message,
-        environment: 'HospitalEnvironment'
-    ):
+    def handle_message(self, message: Message, environment: 'HospitalEnvironment'):
         """Handle message processing.
 
         Args:
@@ -254,20 +250,17 @@ class StandardClinicalProtocol(InteractionProtocol):
             'cdss': {'clinician': [MessageType.ALERT]},
             'nurse': {
                 'clinician': [MessageType.REQUEST, MessageType.NOTIFICATION],
-                'patient': [MessageType.NOTIFICATION]
+                'patient': [MessageType.NOTIFICATION],
             },
             'clinician': {
                 'nurse': [MessageType.RESPONSE, MessageType.REQUEST],
                 'clinician': [MessageType.HANDOFF],
-                'patient': [MessageType.NOTIFICATION]
-            }
+                'patient': [MessageType.NOTIFICATION],
+            },
         }
 
     def can_send(
-        self,
-        sender: 'Agent',
-        recipient: 'Agent',
-        message_type: MessageType
+        self, sender: 'Agent', recipient: 'Agent', message_type: MessageType
     ) -> bool:
         """Check if communication is allowed."""
         sender_type = sender.agent_type.value
@@ -282,22 +275,13 @@ class StandardClinicalProtocol(InteractionProtocol):
         allowed_types = self.allowed_communications[sender_type][recipient_type]
         return message_type in allowed_types
 
-    def prioritize_messages(
-        self,
-        messages: List[Message]
-    ) -> List[Message]:
+    def prioritize_messages(self, messages: List[Message]) -> List[Message]:
         """Prioritize by message priority."""
         return sorted(
-            messages,
-            key=lambda m: (m.priority.value, m.timestamp),
-            reverse=True
+            messages, key=lambda m: (m.priority.value, m.timestamp), reverse=True
         )
 
-    def handle_message(
-        self,
-        message: Message,
-        environment: 'HospitalEnvironment'
-    ):
+    def handle_message(self, message: Message, environment: 'HospitalEnvironment'):
         """Handle message based on type."""
         if message.message_type == MessageType.ALERT:
             self._handle_alert(message, environment)
@@ -315,16 +299,20 @@ class StandardClinicalProtocol(InteractionProtocol):
         environment.send_alert(
             from_agent=message.sender,
             to_agent=message.recipient,
-            alert_data=message.content
+            alert_data=message.content,
         )
 
-    def _handle_request(self, message: DecisionRequest, environment: 'HospitalEnvironment'):
+    def _handle_request(
+        self, message: DecisionRequest, environment: 'HospitalEnvironment'
+    ):
         """Handle decision request."""
         # Add to recipient's task queue
         # Implementation depends on environment
         pass
 
-    def _handle_handoff(self, message: HandoffMessage, environment: 'HospitalEnvironment'):
+    def _handle_handoff(
+        self, message: HandoffMessage, environment: 'HospitalEnvironment'
+    ):
         """Handle patient handoff."""
         # Transfer patient assignment
         # Implementation depends on environment
@@ -336,7 +324,7 @@ def perform_interaction(
     recipient: 'Agent',
     message: Message,
     protocol: InteractionProtocol,
-    environment: 'HospitalEnvironment'
+    environment: 'HospitalEnvironment',
 ) -> bool:
     """Perform interaction between agents.
 
@@ -390,7 +378,7 @@ def create_alert_from_cdss(
     alert_type: str,
     recommendation: Dict[str, Any],
     confidence: float,
-    timestamp: float
+    timestamp: float,
 ) -> AlertMessage:
     """Helper function to create CDSS alert.
 
@@ -446,14 +434,13 @@ def create_alert_from_cdss(
             'patient_id': patient_id,
             'risk_score': risk_score,
             'alert_type': alert_type,
-            'recommendation': recommendation
-        }
+            'recommendation': recommendation,
+        },
     )
 
 
 def compute_communication_overhead(
-    messages: List[Message],
-    agents: List['Agent']
+    messages: List[Message], agents: List['Agent']
 ) -> Dict[str, Any]:
     """Compute communication overhead metrics.
 
@@ -479,12 +466,13 @@ def compute_communication_overhead(
             'total_messages': 0,
             'messages_per_agent': 0.0,
             'high_priority_rate': 0.0,
-            'response_times': []
+            'response_times': [],
         }
 
     # Count high priority messages
     high_priority = sum(
-        1 for msg in messages
+        1
+        for msg in messages
         if msg.priority in [MessagePriority.HIGH, MessagePriority.CRITICAL]
     )
 
@@ -497,5 +485,5 @@ def compute_communication_overhead(
         'total_messages': len(messages),
         'messages_per_agent': messages_per_agent,
         'high_priority_rate': high_priority_rate,
-        'acknowledged_rate': sum(1 for m in messages if m.acknowledged) / len(messages)
+        'acknowledged_rate': sum(1 for m in messages if m.acknowledged) / len(messages),
     }
