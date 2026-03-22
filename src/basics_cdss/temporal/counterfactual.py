@@ -11,7 +11,8 @@ Key capabilities:
 """
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional, Callable
+from typing import Any, Callable, Dict, List, Optional
+
 import numpy as np
 import pandas as pd
 from basics_cdss.temporal.digital_twin import PatientDigitalTwin, PatientState
@@ -31,6 +32,7 @@ class CounterfactualResult:
         regret: Harm difference (best_alternative - factual)
         regret_percent: Regret as percentage of factual harm
     """
+
     twin_id: str
     factual_action: Dict[str, Any]
     factual_outcome: PatientState
@@ -50,7 +52,7 @@ class CounterfactualResult:
             ),
             'regret': self.regret,
             'regret_percent': self.regret_percent,
-            'n_alternatives': len(self.counterfactuals)
+            'n_alternatives': len(self.counterfactuals),
         }
 
 
@@ -88,7 +90,7 @@ class CounterfactualEvaluator:
         dt: float = 1.0,
         harm_function: Optional[Callable[[PatientState], float]] = None,
         alternative_generator: Optional[Callable] = None,
-        intervention_time: float = 0.0
+        intervention_time: float = 0.0,
     ):
         """Initialize counterfactual evaluator.
 
@@ -118,16 +120,11 @@ class CounterfactualEvaluator:
         temp_deviation = abs(state.features.get('temperature', 37.0) - 37.0)
         bp_deficit = max(0, 90 - state.features.get('blood_pressure_sys', 120))
 
-        harm = (
-            10.0 * infection +
-            2.0 * temp_deviation +
-            0.5 * bp_deficit
-        )
+        harm = 10.0 * infection + 2.0 * temp_deviation + 0.5 * bp_deficit
         return harm
 
     def _default_alternatives(
-        self,
-        current_action: Dict[str, Any]
+        self, current_action: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """Generate default alternative actions.
 
@@ -139,7 +136,7 @@ class CounterfactualEvaluator:
         base_options = {
             'antibiotic': [False, True],
             'fluid_bolus': [0, 500, 1000],
-            'vasopressor': [False, True]
+            'vasopressor': [False, True],
         }
 
         # Generate combinations (limited to avoid combinatorial explosion)
@@ -153,11 +150,9 @@ class CounterfactualEvaluator:
         alternatives.append({'antibiotic': True, 'vasopressor': True})
         alternatives.append({'fluid_bolus': 1000, 'vasopressor': True})
 
-        alternatives.append({
-            'antibiotic': True,
-            'fluid_bolus': 1000,
-            'vasopressor': True
-        })
+        alternatives.append(
+            {'antibiotic': True, 'fluid_bolus': 1000, 'vasopressor': True}
+        )
 
         return alternatives
 
@@ -165,7 +160,7 @@ class CounterfactualEvaluator:
         self,
         cdss_model: Any,
         twin: PatientDigitalTwin,
-        factual_action: Optional[Dict[str, Any]] = None
+        factual_action: Optional[Dict[str, Any]] = None,
     ) -> CounterfactualResult:
         """Evaluate counterfactuals for single digital twin.
 
@@ -191,7 +186,7 @@ class CounterfactualEvaluator:
             horizon_hours=self.horizon_hours,
             dt=self.dt,
             intervention_schedule=intervention_schedule,
-            stochastic=False  # Deterministic for fair comparison
+            stochastic=False,  # Deterministic for fair comparison
         )
 
         # Compute factual outcome harm
@@ -212,18 +207,20 @@ class CounterfactualEvaluator:
                 horizon_hours=self.horizon_hours,
                 dt=self.dt,
                 intervention_schedule=alt_schedule,
-                stochastic=False
+                stochastic=False,
             )
 
             cf_outcome = cf_trajectory[-1]
             cf_harm = self.harm_function(cf_outcome)
 
-            counterfactuals.append({
-                'action': alt_action,
-                'outcome': cf_outcome,
-                'harm': cf_harm,
-                'trajectory': cf_trajectory
-            })
+            counterfactuals.append(
+                {
+                    'action': alt_action,
+                    'outcome': cf_outcome,
+                    'harm': cf_harm,
+                    'trajectory': cf_trajectory,
+                }
+            )
 
         # Find best alternative
         best_cf = min(counterfactuals, key=lambda x: x['harm'])
@@ -240,14 +237,14 @@ class CounterfactualEvaluator:
             counterfactuals=counterfactuals,
             best_alternative=best_cf,
             regret=regret,
-            regret_percent=regret_percent
+            regret_percent=regret_percent,
         )
 
     def evaluate(
         self,
         cdss_model: Any,
         digital_twins: List[PatientDigitalTwin],
-        factual_actions: Optional[List[Dict[str, Any]]] = None
+        factual_actions: Optional[List[Dict[str, Any]]] = None,
     ) -> List[CounterfactualResult]:
         """Evaluate CDSS across multiple digital twins.
 
@@ -271,10 +268,7 @@ class CounterfactualEvaluator:
 
         return results
 
-    def summarize_results(
-        self,
-        results: List[CounterfactualResult]
-    ) -> Dict[str, Any]:
+    def summarize_results(self, results: List[CounterfactualResult]) -> Dict[str, Any]:
         """Compute summary statistics from counterfactual results.
 
         Args:
@@ -303,15 +297,12 @@ class CounterfactualEvaluator:
             'mean_factual_harm': np.mean(factual_harms),
             'high_regret_count': len(high_regret_cases),
             'high_regret_threshold': high_regret_threshold,
-            'fraction_suboptimal': np.mean([r.regret < 0 for r in results])
+            'fraction_suboptimal': np.mean([r.regret < 0 for r in results]),
         }
 
         return summary
 
-    def to_dataframe(
-        self,
-        results: List[CounterfactualResult]
-    ) -> pd.DataFrame:
+    def to_dataframe(self, results: List[CounterfactualResult]) -> pd.DataFrame:
         """Convert results to pandas DataFrame.
 
         Args:
@@ -324,9 +315,7 @@ class CounterfactualEvaluator:
         return pd.DataFrame(records)
 
     def identify_critical_cases(
-        self,
-        results: List[CounterfactualResult],
-        regret_threshold: float = -1.0
+        self, results: List[CounterfactualResult], regret_threshold: float = -1.0
     ) -> List[CounterfactualResult]:
         """Identify cases where CDSS decisions led to high regret.
 
@@ -337,10 +326,7 @@ class CounterfactualEvaluator:
         Returns:
             List of critical cases requiring review
         """
-        critical_cases = [
-            r for r in results
-            if r.regret < regret_threshold
-        ]
+        critical_cases = [r for r in results if r.regret < regret_threshold]
 
         # Sort by regret (most critical first)
         critical_cases.sort(key=lambda r: r.regret)

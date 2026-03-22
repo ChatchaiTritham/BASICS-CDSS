@@ -11,15 +11,16 @@ All artifacts are designed for regulatory review and independent replication.
 """
 
 from __future__ import annotations
-from dataclasses import dataclass, asdict
-from typing import Dict, List, Optional, Any
-from pathlib import Path
+
 import csv
 import json
+from dataclasses import asdict, dataclass
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 @dataclass
@@ -33,6 +34,7 @@ class EvaluationReport:
         tables: Dictionary of table file paths
         manifest: Reproducibility manifest
     """
+
     overall_metrics: Dict[str, float]
     stratified_metrics: Dict[str, Dict[str, float]]
     plots: Dict[str, Path] = None
@@ -41,9 +43,7 @@ class EvaluationReport:
 
 
 def export_metrics_table(
-    metrics: Dict[str, Any],
-    output_path: str | Path,
-    include_stratified: bool = True
+    metrics: Dict[str, Any], output_path: str | Path, include_stratified: bool = True
 ) -> Path:
     """Export metrics to CSV table for regulatory review.
 
@@ -72,11 +72,7 @@ def export_metrics_table(
         for metric_name, value in metrics["overall"].items():
             if metric_name == "reliability_curve":
                 continue  # Skip complex objects
-            rows.append({
-                "tier": "overall",
-                "metric": metric_name,
-                "value": value
-            })
+            rows.append({"tier": "overall", "metric": metric_name, "value": value})
 
     # Stratified metrics
     if include_stratified and "by_risk_tier" in metrics:
@@ -88,11 +84,7 @@ def export_metrics_table(
             for metric_name, value in tier_metrics.items():
                 if metric_name == "reliability_curve":
                     continue
-                rows.append({
-                    "tier": tier,
-                    "metric": metric_name,
-                    "value": value
-                })
+                rows.append({"tier": tier, "metric": metric_name, "value": value})
 
     # Write CSV
     if rows:
@@ -110,7 +102,7 @@ def export_calibration_plot(
     bin_accuracies: np.ndarray,
     output_path: str | Path,
     title: str = "Reliability Diagram",
-    stratified: Optional[Dict[str, tuple]] = None
+    stratified: Optional[Dict[str, tuple]] = None,
 ) -> Path:
     """Export calibration reliability curve plot.
 
@@ -167,7 +159,7 @@ def export_coverage_risk_plot(
     risks: np.ndarray,
     output_path: str | Path,
     title: str = "Coverage-Risk Curve",
-    stratified: Optional[Dict[str, tuple]] = None
+    stratified: Optional[Dict[str, tuple]] = None,
 ) -> Path:
     """Export coverage-risk curve plot.
 
@@ -226,7 +218,7 @@ def create_reproducibility_manifest(
     config_path: str | Path,
     data_info: Dict[str, Any],
     results_files: Dict[str, Path],
-    output_path: str | Path
+    output_path: str | Path,
 ) -> Path:
     """Create reproducibility manifest for independent verification.
 
@@ -258,15 +250,13 @@ def create_reproducibility_manifest(
         "framework": "BASICS-CDSS",
         "configuration": str(config_path),
         "data_sources": data_info,
-        "result_files": {
-            key: str(path) for key, path in results_files.items()
-        },
+        "result_files": {key: str(path) for key, path in results_files.items()},
         "reproduction_instructions": {
             "step_1": "Install environment: conda env create -f environment.yml",
             "step_2": "Load configuration: config = load_config('config.yaml')",
             "step_3": "Run evaluation pipeline as specified in config",
             "step_4": "Compare outputs against provided result files",
-        }
+        },
     }
 
     if output_path.suffix == ".json":
@@ -286,7 +276,7 @@ def generate_evaluation_report(
     output_dir: str | Path,
     config_path: Optional[str | Path] = None,
     data_info: Optional[Dict] = None,
-    generate_plots: bool = True
+    generate_plots: bool = True,
 ) -> EvaluationReport:
     """Generate comprehensive evaluation report with all artifacts.
 
@@ -343,8 +333,10 @@ def generate_evaluation_report(
             if len(rel_curve[0]) > 0:
                 cal_plot = output_dir / "calibration_curve.png"
                 export_calibration_plot(
-                    rel_curve[0], rel_curve[1], cal_plot,
-                    title="Calibration Reliability Diagram"
+                    rel_curve[0],
+                    rel_curve[1],
+                    cal_plot,
+                    title="Calibration Reliability Diagram",
                 )
                 plots["calibration"] = cal_plot
 
@@ -355,7 +347,7 @@ def generate_evaluation_report(
                     coverage_risk_metrics.coverage_curve,
                     coverage_risk_metrics.risk_curve,
                     cr_plot,
-                    title="Selective Prediction: Coverage vs Risk"
+                    title="Selective Prediction: Coverage vs Risk",
                 )
                 plots["coverage_risk"] = cr_plot
 
@@ -363,10 +355,7 @@ def generate_evaluation_report(
     if config_path and data_info:
         manifest_path = output_dir / "REPRODUCIBILITY.yaml"
         create_reproducibility_manifest(
-            config_path,
-            data_info,
-            {**tables, **plots},
-            manifest_path
+            config_path, data_info, {**tables, **plots}, manifest_path
         )
         manifest = manifest_path
     else:
@@ -377,5 +366,5 @@ def generate_evaluation_report(
         stratified_metrics={},
         plots=plots,
         tables=tables,
-        manifest=manifest
+        manifest=manifest,
     )

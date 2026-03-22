@@ -8,18 +8,16 @@ Theoretical Foundation:
     Shpitser, I., & Pearl, J. (2006). Identification of Joint Interventional Distributions.
 """
 
-from typing import Set, List, Dict, Any, Optional, Tuple
+from itertools import combinations
+from typing import Any, Dict, List, Optional, Set, Tuple
+
 import numpy as np
 import pandas as pd
-from itertools import combinations
-
 from basics_cdss.causal.causal_graph import CausalGraph
 
 
 def identify_confounders(
-    graph: CausalGraph,
-    treatment: str,
-    outcome: str
+    graph: CausalGraph, treatment: str, outcome: str
 ) -> Dict[str, Any]:
     """Identify confounders using backdoor criterion.
 
@@ -74,7 +72,7 @@ def identify_confounders(
             'confounders': [],
             'all_confounders': [[]],
             'backdoor_paths': [],
-            'needs_adjustment': False
+            'needs_adjustment': False,
         }
 
     # Find all valid adjustment sets
@@ -112,14 +110,12 @@ def identify_confounders(
         'confounders': sorted(list(confounders)),
         'all_confounders': [sorted(list(s)) for s in minimal_sets],
         'backdoor_paths': backdoor_paths,
-        'needs_adjustment': len(backdoor_paths) > 0
+        'needs_adjustment': len(backdoor_paths) > 0,
     }
 
 
 def _find_backdoor_paths(
-    graph: CausalGraph,
-    treatment: str,
-    outcome: str
+    graph: CausalGraph, treatment: str, outcome: str
 ) -> List[List[str]]:
     """Find all backdoor paths from treatment to outcome.
 
@@ -145,10 +141,7 @@ def _find_backdoor_paths(
 
     try:
         all_paths = nx.all_simple_paths(
-            undirected,
-            source=treatment,
-            target=outcome,
-            cutoff=10  # Limit path length
+            undirected, source=treatment, target=outcome, cutoff=10  # Limit path length
         )
 
         for path in all_paths:
@@ -173,7 +166,7 @@ def _satisfies_backdoor_criterion(
     treatment: str,
     outcome: str,
     adjustment_set: Set[str],
-    backdoor_paths: List[List[str]]
+    backdoor_paths: List[List[str]],
 ) -> bool:
     """Check if adjustment set satisfies backdoor criterion.
 
@@ -197,9 +190,7 @@ def _satisfies_backdoor_criterion(
 
 
 def _is_path_blocked(
-    graph: CausalGraph,
-    path: List[str],
-    conditioning_set: Set[str]
+    graph: CausalGraph, path: List[str], conditioning_set: Set[str]
 ) -> bool:
     """Check if path is blocked by conditioning set (d-separation).
 
@@ -218,7 +209,7 @@ def _is_path_blocked(
         True if path is blocked
     """
     for i in range(len(path) - 2):
-        a, b, c = path[i], path[i+1], path[i+2]
+        a, b, c = path[i], path[i + 1], path[i + 2]
 
         # Check structure at b
         a_to_b = graph.graph.has_edge(a, b)
@@ -252,7 +243,7 @@ def backdoor_adjustment(
     treatment: str,
     outcome: str,
     confounders: List[str],
-    treatment_values: Optional[List[Any]] = None
+    treatment_values: Optional[List[Any]] = None,
 ) -> Dict[str, float]:
     """Estimate causal effect using backdoor adjustment formula.
 
@@ -313,7 +304,7 @@ def backdoor_adjustment(
         'control_mean': y_control.mean(),
         'treatment_mean': y_treatment.mean(),
         'confounders': confounders,
-        'method': 'backdoor_adjustment'
+        'method': 'backdoor_adjustment',
     }
 
 
@@ -322,7 +313,7 @@ def frontdoor_adjustment(
     treatment: str,
     outcome: str,
     mediator: str,
-    treatment_values: Optional[List[Any]] = None
+    treatment_values: Optional[List[Any]] = None,
 ) -> Dict[str, float]:
     """Estimate causal effect using frontdoor adjustment.
 
@@ -382,8 +373,12 @@ def frontdoor_adjustment(
         y_in_bin = data.loc[mask, outcome].mean()
 
         # Weight by P(M in bin | X=x)
-        p_control = (mediator_bins[data[treatment] == control_value] == bin_label).mean()
-        p_treatment = (mediator_bins[data[treatment] == treatment_value] == bin_label).mean()
+        p_control = (
+            mediator_bins[data[treatment] == control_value] == bin_label
+        ).mean()
+        p_treatment = (
+            mediator_bins[data[treatment] == treatment_value] == bin_label
+        ).mean()
 
         outcomes_control.append(y_in_bin * p_control)
         outcomes_treatment.append(y_in_bin * p_treatment)
@@ -395,15 +390,12 @@ def frontdoor_adjustment(
         'control_mean': sum(outcomes_control),
         'treatment_mean': sum(outcomes_treatment),
         'mediator': mediator,
-        'method': 'frontdoor_adjustment'
+        'method': 'frontdoor_adjustment',
     }
 
 
 def check_instrumental_variable(
-    graph: CausalGraph,
-    instrument: str,
-    treatment: str,
-    outcome: str
+    graph: CausalGraph, instrument: str, treatment: str, outcome: str
 ) -> Dict[str, Any]:
     """Check if variable is a valid instrumental variable.
 
@@ -431,9 +423,7 @@ def check_instrumental_variable(
         >>> print(f"Valid IV: {result['is_valid']}")
     """
     # Check relevance: instrument causes treatment
-    has_path_to_treatment = (
-        treatment in graph.get_descendants(instrument)
-    )
+    has_path_to_treatment = treatment in graph.get_descendants(instrument)
 
     # Check exclusion: no direct path to outcome except through treatment
     # Get all paths from instrument to outcome
@@ -441,12 +431,11 @@ def check_instrumental_variable(
 
     has_direct_path = False
     try:
-        paths = list(nx.all_simple_paths(
-            graph.graph,
-            source=instrument,
-            target=outcome,
-            cutoff=10
-        ))
+        paths = list(
+            nx.all_simple_paths(
+                graph.graph, source=instrument, target=outcome, cutoff=10
+            )
+        )
 
         # Check if any path doesn't go through treatment
         for path in paths:
@@ -465,9 +454,7 @@ def check_instrumental_variable(
     common_ancestors = instrument_ancestors & outcome_ancestors
 
     is_valid = (
-        has_path_to_treatment and
-        not has_direct_path and
-        len(common_ancestors) == 0
+        has_path_to_treatment and not has_direct_path and len(common_ancestors) == 0
     )
 
     return {
@@ -476,13 +463,12 @@ def check_instrumental_variable(
         'exclusion': not has_direct_path,
         'exogeneity': len(common_ancestors) == 0,
         'common_ancestors': sorted(list(common_ancestors)),
-        'violations': []
+        'violations': [],
     }
 
 
 def sensitivity_analysis_evalue(
-    observed_estimate: float,
-    confidence_limit: Optional[float] = None
+    observed_estimate: float, confidence_limit: Optional[float] = None
 ) -> Dict[str, float]:
     """Compute E-value for sensitivity to unmeasured confounding.
 
@@ -509,9 +495,7 @@ def sensitivity_analysis_evalue(
         >>> print(f"E-value: {result['e_value']:.2f}")
     """
     # E-value formula
-    e_value = observed_estimate + np.sqrt(
-        observed_estimate * (observed_estimate - 1)
-    )
+    e_value = observed_estimate + np.sqrt(observed_estimate * (observed_estimate - 1))
 
     result = {
         'e_value': e_value,

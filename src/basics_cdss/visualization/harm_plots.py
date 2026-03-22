@@ -3,10 +3,11 @@ Harm-aware visualization functions for safety-critical analysis.
 """
 
 from typing import Dict, List, Optional, Tuple
-import numpy as np
+
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
+import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
 
 def plot_harm_by_tier(
@@ -14,7 +15,7 @@ def plot_harm_by_tier(
     ax: Optional[Axes] = None,
     title: str = "Harm Distribution by Risk Tier",
     figsize: Tuple[int, int] = (10, 6),
-    colors: Optional[Dict[str, str]] = None
+    colors: Optional[Dict[str, str]] = None,
 ) -> Tuple[Figure, Axes]:
     """Plot harm distribution across risk tiers.
 
@@ -53,21 +54,20 @@ def plot_harm_by_tier(
 
     # Bar plot
     bars = ax.bar(
-        tiers, harm_values,
-        color=tier_colors,
-        edgecolor='black',
-        linewidth=2,
-        alpha=0.8
+        tiers, harm_values, color=tier_colors, edgecolor='black', linewidth=2, alpha=0.8
     )
 
     # Add value labels on bars
     for bar, value in zip(bars, harm_values):
         height = bar.get_height()
         ax.text(
-            bar.get_x() + bar.get_width() / 2, height,
+            bar.get_x() + bar.get_width() / 2,
+            height,
             f'{value:.3f}',
-            ha='center', va='bottom',
-            fontsize=12, fontweight='bold'
+            ha='center',
+            va='bottom',
+            fontsize=12,
+            fontweight='bold',
         )
 
     # Styling
@@ -79,11 +79,15 @@ def plot_harm_by_tier(
     # Total harm annotation
     total_harm = sum(harm_values)
     ax.text(
-        0.95, 0.95, f"Total Harm: {total_harm:.3f}",
+        0.95,
+        0.95,
+        f"Total Harm: {total_harm:.3f}",
         transform=ax.transAxes,
-        fontsize=12, fontweight='bold',
+        fontsize=12,
+        fontweight='bold',
         bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8),
-        verticalalignment='top', horizontalalignment='right'
+        verticalalignment='top',
+        horizontalalignment='right',
     )
 
     plt.tight_layout()
@@ -95,7 +99,7 @@ def plot_escalation_analysis(
     false_escalations: int,
     high_risk_samples: int,
     low_risk_samples: int,
-    figsize: Tuple[int, int] = (12, 5)
+    figsize: Tuple[int, int] = (12, 5),
 ) -> Tuple[Figure, List[Axes]]:
     """Visualize escalation failure analysis.
 
@@ -122,8 +126,12 @@ def plot_escalation_analysis(
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
 
     # Calculate rates
-    escalation_failure_rate = escalation_failures / high_risk_samples if high_risk_samples > 0 else 0
-    false_escalation_rate = false_escalations / low_risk_samples if low_risk_samples > 0 else 0
+    escalation_failure_rate = (
+        escalation_failures / high_risk_samples if high_risk_samples > 0 else 0
+    )
+    false_escalation_rate = (
+        false_escalations / low_risk_samples if low_risk_samples > 0 else 0
+    )
 
     # Plot 1: Escalation failures (high-risk missed)
     categories = ['Correctly\nEscalated', 'Missed\n(FAILURE)']
@@ -131,21 +139,33 @@ def plot_escalation_analysis(
     values = [correct_escalations, escalation_failures]
     colors_fail = ['#06A77D', '#E63946']
 
-    bars1 = ax1.bar(categories, values, color=colors_fail, edgecolor='black', linewidth=2)
+    bars1 = ax1.bar(
+        categories, values, color=colors_fail, edgecolor='black', linewidth=2
+    )
 
     # Add value labels
     for bar, value in zip(bars1, values):
         height = bar.get_height()
         ax1.text(
-            bar.get_x() + bar.get_width() / 2, height,
-            f'{value}\n({value/high_risk_samples*100:.1f}%)' if high_risk_samples > 0 else f'{value}',
-            ha='center', va='bottom',
-            fontsize=11, fontweight='bold'
+            bar.get_x() + bar.get_width() / 2,
+            height,
+            (
+                f'{value}\n({value/high_risk_samples*100:.1f}%)'
+                if high_risk_samples > 0
+                else f'{value}'
+            ),
+            ha='center',
+            va='bottom',
+            fontsize=11,
+            fontweight='bold',
         )
 
     ax1.set_ylabel("Count (High-Risk Cases)", fontsize=12, fontweight='bold')
-    ax1.set_title(f"Escalation Failures\n(Failure Rate: {escalation_failure_rate:.1%})",
-                  fontsize=14, fontweight='bold')
+    ax1.set_title(
+        f"Escalation Failures\n(Failure Rate: {escalation_failure_rate:.1%})",
+        fontsize=14,
+        fontweight='bold',
+    )
     ax1.grid(True, alpha=0.3, axis='y')
 
     # Plot 2: False escalations (low-risk over-escalated)
@@ -154,21 +174,33 @@ def plot_escalation_analysis(
     values2 = [correct_deferrals, false_escalations]
     colors_false = ['#06A77D', '#F77F00']
 
-    bars2 = ax2.bar(categories2, values2, color=colors_false, edgecolor='black', linewidth=2)
+    bars2 = ax2.bar(
+        categories2, values2, color=colors_false, edgecolor='black', linewidth=2
+    )
 
     # Add value labels
     for bar, value in zip(bars2, values2):
         height = bar.get_height()
         ax2.text(
-            bar.get_x() + bar.get_width() / 2, height,
-            f'{value}\n({value/low_risk_samples*100:.1f}%)' if low_risk_samples > 0 else f'{value}',
-            ha='center', va='bottom',
-            fontsize=11, fontweight='bold'
+            bar.get_x() + bar.get_width() / 2,
+            height,
+            (
+                f'{value}\n({value/low_risk_samples*100:.1f}%)'
+                if low_risk_samples > 0
+                else f'{value}'
+            ),
+            ha='center',
+            va='bottom',
+            fontsize=11,
+            fontweight='bold',
         )
 
     ax2.set_ylabel("Count (Low-Risk Cases)", fontsize=12, fontweight='bold')
-    ax2.set_title(f"False Escalations\n(False Alarm Rate: {false_escalation_rate:.1%})",
-                  fontsize=14, fontweight='bold')
+    ax2.set_title(
+        f"False Escalations\n(False Alarm Rate: {false_escalation_rate:.1%})",
+        fontsize=14,
+        fontweight='bold',
+    )
     ax2.grid(True, alpha=0.3, axis='y')
 
     plt.tight_layout()
@@ -179,7 +211,7 @@ def plot_harm_concentration(
     harm_by_tier: Dict[str, float],
     concentration_index: float,
     figsize: Tuple[int, int] = (10, 7),
-    high_risk_tiers: Optional[List[str]] = None
+    high_risk_tiers: Optional[List[str]] = None,
 ) -> Tuple[Figure, Axes]:
     """Visualize harm concentration in high-risk tier.
 
@@ -205,25 +237,32 @@ def plot_harm_concentration(
 
     # Separate high-risk and other tiers
     high_risk_harm = sum(
-        harm for tier, harm in harm_by_tier.items()
-        if tier.lower() in high_risk_tiers
+        harm for tier, harm in harm_by_tier.items() if tier.lower() in high_risk_tiers
     )
     other_harm = sum(
-        harm for tier, harm in harm_by_tier.items()
+        harm
+        for tier, harm in harm_by_tier.items()
         if tier.lower() not in high_risk_tiers
     )
 
     # Pie chart
     sizes = [high_risk_harm, other_harm]
-    labels = [f'High-Risk Tiers\n({high_risk_harm:.3f})', f'Other Tiers\n({other_harm:.3f})']
+    labels = [
+        f'High-Risk Tiers\n({high_risk_harm:.3f})',
+        f'Other Tiers\n({other_harm:.3f})',
+    ]
     colors_pie = ['#E63946', '#2E86AB']
     explode = (0.1, 0)  # Explode high-risk slice
 
     wedges, texts, autotexts = ax.pie(
-        sizes, labels=labels, colors=colors_pie,
-        autopct='%1.1f%%', startangle=90,
-        explode=explode, shadow=True,
-        textprops={'fontsize': 12, 'fontweight': 'bold'}
+        sizes,
+        labels=labels,
+        colors=colors_pie,
+        autopct='%1.1f%%',
+        startangle=90,
+        explode=explode,
+        shadow=True,
+        textprops={'fontsize': 12, 'fontweight': 'bold'},
     )
 
     # Make percentage text bold and white
@@ -235,7 +274,9 @@ def plot_harm_concentration(
     # Title with concentration index
     ax.set_title(
         f"Harm Concentration\n(Index: {concentration_index:.2%} in High-Risk)",
-        fontsize=16, fontweight='bold', pad=20
+        fontsize=16,
+        fontweight='bold',
+        pad=20,
     )
 
     # Add interpretation
@@ -251,11 +292,17 @@ def plot_harm_concentration(
         interp_color = '#06A77D'
 
     ax.text(
-        0.5, -0.15, interpretation,
+        0.5,
+        -0.15,
+        interpretation,
         transform=ax.transAxes,
-        ha='center', fontsize=14, fontweight='bold',
+        ha='center',
+        fontsize=14,
+        fontweight='bold',
         color=interp_color,
-        bbox=dict(boxstyle='round', facecolor='white', edgecolor=interp_color, linewidth=2)
+        bbox=dict(
+            boxstyle='round', facecolor='white', edgecolor=interp_color, linewidth=2
+        ),
     )
 
     plt.tight_layout()

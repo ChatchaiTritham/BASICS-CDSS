@@ -8,13 +8,13 @@ Theoretical Foundation:
     Peters, J., Janzing, D., & Schölkopf, B. (2017). Elements of Causal Inference.
 """
 
+import copy
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Dict, Any, List, Optional, Callable, Union
+from typing import Any, Callable, Dict, List, Optional, Union
+
 import numpy as np
 import pandas as pd
-from abc import ABC, abstractmethod
-import copy
-
 from basics_cdss.causal.causal_graph import CausalGraph
 
 
@@ -49,6 +49,7 @@ class CausalMechanism:
         ...     noise_distribution=lambda rng: rng.normal(0, 5)
         ... )
     """
+
     variable: str
     parents: List[str]
     function: Callable[[Dict[str, Any], float], float]
@@ -56,9 +57,7 @@ class CausalMechanism:
     is_deterministic: bool = False
 
     def sample(
-        self,
-        parent_values: Dict[str, Any],
-        rng: np.random.RandomState
+        self, parent_values: Dict[str, Any], rng: np.random.RandomState
     ) -> float:
         """Sample variable value given parent values.
 
@@ -79,9 +78,7 @@ class CausalMechanism:
         return self.function(parent_values, noise)
 
     def __call__(
-        self,
-        parent_values: Dict[str, Any],
-        rng: np.random.RandomState
+        self, parent_values: Dict[str, Any], rng: np.random.RandomState
     ) -> float:
         """Allow mechanism to be called directly."""
         return self.sample(parent_values, rng)
@@ -137,7 +134,7 @@ class StructuralCausalModel:
         self,
         causal_graph: CausalGraph,
         seed: Optional[int] = None,
-        default_mechanisms: bool = True
+        default_mechanisms: bool = True,
     ):
         """Initialize SCM.
 
@@ -171,7 +168,7 @@ class StructuralCausalModel:
                     variable=variable,
                     parents=[],
                     function=lambda p, n: n,
-                    noise_distribution=lambda rng: rng.normal(0, 1)
+                    noise_distribution=lambda rng: rng.normal(0, 1),
                 )
             else:
                 # Non-root: linear combination of parents + noise
@@ -183,7 +180,7 @@ class StructuralCausalModel:
                     variable=variable,
                     parents=parents,
                     function=linear_function,
-                    noise_distribution=lambda rng: rng.normal(0, 0.5)
+                    noise_distribution=lambda rng: rng.normal(0, 0.5),
                 )
 
     def add_mechanism(
@@ -192,7 +189,7 @@ class StructuralCausalModel:
         parents: List[str],
         function: Callable[[Dict[str, Any], float], float],
         noise_distribution: Optional[Callable[[np.random.RandomState], float]] = None,
-        is_deterministic: bool = False
+        is_deterministic: bool = False,
     ):
         """Add structural equation for a variable.
 
@@ -216,15 +213,13 @@ class StructuralCausalModel:
             parents=parents,
             function=function,
             noise_distribution=noise_distribution,
-            is_deterministic=is_deterministic
+            is_deterministic=is_deterministic,
         )
 
         self.mechanisms[variable] = mechanism
 
     def sample(
-        self,
-        n: int = 1,
-        return_dataframe: bool = True
+        self, n: int = 1, return_dataframe: bool = True
     ) -> Union[pd.DataFrame, List[Dict[str, Any]]]:
         """Sample observational data from SCM.
 
@@ -255,10 +250,7 @@ class StructuralCausalModel:
                 mechanism = self.mechanisms[variable]
 
                 # Get parent values
-                parent_values = {
-                    parent: sample[parent]
-                    for parent in mechanism.parents
-                }
+                parent_values = {parent: sample[parent] for parent in mechanism.parents}
 
                 # Sample variable
                 sample[variable] = mechanism.sample(parent_values, self.rng)
@@ -270,10 +262,7 @@ class StructuralCausalModel:
         return samples
 
     def do_intervention(
-        self,
-        interventions: Dict[str, Any],
-        n: int = 1,
-        return_dataframe: bool = True
+        self, interventions: Dict[str, Any], n: int = 1, return_dataframe: bool = True
     ) -> Union[pd.DataFrame, List[Dict[str, Any]]]:
         """Sample interventional data: P(X | do(Y=y)).
 
@@ -309,8 +298,7 @@ class StructuralCausalModel:
                     # Sample according to mechanism
                     mechanism = self.mechanisms[variable]
                     parent_values = {
-                        parent: sample[parent]
-                        for parent in mechanism.parents
+                        parent: sample[parent] for parent in mechanism.parents
                     }
                     sample[variable] = mechanism.sample(parent_values, self.rng)
 
@@ -325,7 +313,7 @@ class StructuralCausalModel:
         observation: Dict[str, Any],
         intervention: Dict[str, Any],
         query_variables: List[str],
-        n_samples: int = 100
+        n_samples: int = 100,
     ) -> Dict[str, float]:
         """Perform counterfactual reasoning: P(Y_x | X=x').
 
@@ -374,8 +362,7 @@ class StructuralCausalModel:
                 else:
                     mechanism = self.mechanisms[variable]
                     parent_values = {
-                        parent: sample[parent]
-                        for parent in mechanism.parents
+                        parent: sample[parent] for parent in mechanism.parents
                     }
                     sample[variable] = mechanism.sample(parent_values, self.rng)
 
@@ -394,10 +381,10 @@ class StructuralCausalModel:
                 var: {
                     'variable': mech.variable,
                     'parents': mech.parents,
-                    'is_deterministic': mech.is_deterministic
+                    'is_deterministic': mech.is_deterministic,
                 }
                 for var, mech in self.mechanisms.items()
-            }
+            },
         }
 
 
@@ -406,7 +393,7 @@ def create_linear_mechanism(
     parents: List[str],
     coefficients: Optional[Dict[str, float]] = None,
     intercept: float = 0.0,
-    noise_std: float = 1.0
+    noise_std: float = 1.0,
 ) -> CausalMechanism:
     """Create linear causal mechanism: X = intercept + sum(coef * parent) + noise.
 
@@ -435,9 +422,9 @@ def create_linear_mechanism(
 
     def linear_function(parent_values, noise):
         return (
-            intercept +
-            sum(coefficients.get(p, 1.0) * parent_values.get(p, 0.0) for p in parents) +
-            noise
+            intercept
+            + sum(coefficients.get(p, 1.0) * parent_values.get(p, 0.0) for p in parents)
+            + noise
         )
 
     return CausalMechanism(
@@ -445,7 +432,7 @@ def create_linear_mechanism(
         parents=parents,
         function=linear_function,
         noise_distribution=lambda rng: rng.normal(0, noise_std),
-        is_deterministic=False
+        is_deterministic=False,
     )
 
 
@@ -453,7 +440,7 @@ def create_nonlinear_mechanism(
     variable: str,
     parents: List[str],
     function_expr: Callable[[Dict[str, Any]], float],
-    noise_std: float = 1.0
+    noise_std: float = 1.0,
 ) -> CausalMechanism:
     """Create nonlinear causal mechanism.
 
@@ -475,6 +462,7 @@ def create_nonlinear_mechanism(
         ...     noise_std=0.1
         ... )
     """
+
     def nonlinear_function(parent_values, noise):
         return function_expr(parent_values) + noise
 
@@ -483,5 +471,5 @@ def create_nonlinear_mechanism(
         parents=parents,
         function=nonlinear_function,
         noise_distribution=lambda rng: rng.normal(0, noise_std),
-        is_deterministic=False
+        is_deterministic=False,
     )

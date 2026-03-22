@@ -3,17 +3,18 @@ Model comparison and dashboard visualization functions.
 """
 
 from typing import Dict, List, Optional, Tuple
-import numpy as np
+
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
+import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
 
 def plot_metric_comparison(
     models: Dict[str, Dict[str, float]],
     metrics_to_plot: Optional[List[str]] = None,
     figsize: Tuple[int, int] = (14, 6),
-    title: str = "Model Performance Comparison"
+    title: str = "Model Performance Comparison",
 ) -> Tuple[Figure, Axes]:
     """Compare multiple metrics across models using grouped bar chart.
 
@@ -54,22 +55,30 @@ def plot_metric_comparison(
     # Plot bars for each model
     for idx, model_name in enumerate(model_names):
         values = [models[model_name].get(metric, 0) for metric in metrics_to_plot]
-        offset = (idx - n_models/2 + 0.5) * width
+        offset = (idx - n_models / 2 + 0.5) * width
 
         ax.bar(
-            x + offset, values,
-            width, label=model_name,
+            x + offset,
+            values,
+            width,
+            label=model_name,
             color=colors[idx % len(colors)],
-            edgecolor='black', linewidth=1.5, alpha=0.8
+            edgecolor='black',
+            linewidth=1.5,
+            alpha=0.8,
         )
 
         # Add value labels
         for i, v in enumerate(values):
             ax.text(
-                x[i] + offset, v,
+                x[i] + offset,
+                v,
                 f'{v:.3f}',
-                ha='center', va='bottom',
-                fontsize=9, fontweight='bold', rotation=0
+                ha='center',
+                va='bottom',
+                fontsize=9,
+                fontweight='bold',
+                rotation=0,
             )
 
     # Styling
@@ -90,7 +99,7 @@ def plot_model_comparison_radar(
     metrics: List[str],
     figsize: Tuple[int, int] = (10, 10),
     title: str = "Model Performance Radar",
-    normalize: bool = True
+    normalize: bool = True,
 ) -> Tuple[Figure, Axes]:
     """Create radar chart comparing models across multiple metrics.
 
@@ -129,8 +138,7 @@ def plot_model_comparison_radar(
         if normalize:
             # Normalize to [0, 1] for each metric
             max_vals = [
-                max(m.get(metric, 0) for m in models.values())
-                for metric in metrics
+                max(m.get(metric, 0) for m in models.values()) for metric in metrics
             ]
             values = [
                 v / max_val if max_val > 0 else 0
@@ -140,10 +148,13 @@ def plot_model_comparison_radar(
         values += values[:1]  # Complete the circle
 
         ax.plot(
-            angles, values,
-            'o-', linewidth=2.5, markersize=8,
+            angles,
+            values,
+            'o-',
+            linewidth=2.5,
+            markersize=8,
             label=model_name,
-            color=colors[idx % len(colors)]
+            color=colors[idx % len(colors)],
         )
         ax.fill(angles, values, alpha=0.15, color=colors[idx % len(colors)])
 
@@ -164,7 +175,7 @@ def create_evaluation_dashboard(
     coverage_risk_data: Dict,
     harm_data: Dict,
     model_name: str = "Model",
-    figsize: Tuple[int, int] = (18, 12)
+    figsize: Tuple[int, int] = (18, 12),
 ) -> Figure:
     """Create comprehensive evaluation dashboard with all key plots.
 
@@ -192,7 +203,9 @@ def create_evaluation_dashboard(
     # Title
     fig.suptitle(
         f"BASICS-CDSS Evaluation Dashboard: {model_name}",
-        fontsize=20, fontweight='bold', y=0.98
+        fontsize=20,
+        fontweight='bold',
+        y=0.98,
     )
 
     # 1. Reliability Diagram (top-left)
@@ -204,8 +217,14 @@ def create_evaluation_dashboard(
         ax1.plot([0, 1], [0, 1], 'k--', linewidth=2, alpha=0.7)
         ax1.plot(confs, accs, 'o-', color='#2E86AB', markersize=7, linewidth=2.5)
         ece = np.mean(np.abs(confs - accs)) if len(confs) > 0 else 0
-        ax1.text(0.05, 0.95, f"ECE: {ece:.4f}", transform=ax1.transAxes,
-                fontsize=11, bbox=dict(boxstyle='round', facecolor='wheat'))
+        ax1.text(
+            0.05,
+            0.95,
+            f"ECE: {ece:.4f}",
+            transform=ax1.transAxes,
+            fontsize=11,
+            bbox=dict(boxstyle='round', facecolor='wheat'),
+        )
 
     ax1.set_xlabel("Confidence", fontweight='bold')
     ax1.set_ylabel("Accuracy", fontweight='bold')
@@ -232,9 +251,16 @@ def create_evaluation_dashboard(
         except AttributeError:
             aurc = np.trapz(risk_clean, cov_clean)
 
-        ax2.text(0.95, 0.95, f"AURC: {aurc:.4f}", transform=ax2.transAxes,
-                fontsize=11, bbox=dict(boxstyle='round', facecolor='lightblue'),
-                ha='right', va='top')
+        ax2.text(
+            0.95,
+            0.95,
+            f"AURC: {aurc:.4f}",
+            transform=ax2.transAxes,
+            fontsize=11,
+            bbox=dict(boxstyle='round', facecolor='lightblue'),
+            ha='right',
+            va='top',
+        )
 
     ax2.set_xlabel("Coverage", fontweight='bold')
     ax2.set_ylabel("Risk", fontweight='bold')
@@ -263,8 +289,12 @@ def create_evaluation_dashboard(
     concentration = harm_data.get('concentration_index', 0)
 
     if harm_by_tier:
-        high_harm = sum(h for t, h in harm_by_tier.items() if t.lower() in ['high', 'urgent'])
-        other_harm = sum(h for t, h in harm_by_tier.items() if t.lower() not in ['high', 'urgent'])
+        high_harm = sum(
+            h for t, h in harm_by_tier.items() if t.lower() in ['high', 'urgent']
+        )
+        other_harm = sum(
+            h for t, h in harm_by_tier.items() if t.lower() not in ['high', 'urgent']
+        )
 
         ax4.pie(
             [high_harm, other_harm],
@@ -272,11 +302,14 @@ def create_evaluation_dashboard(
             colors=['#E63946', '#2E86AB'],
             autopct='%1.1f%%',
             startangle=90,
-            explode=(0.1, 0)
+            explode=(0.1, 0),
         )
 
-    ax4.set_title(f"Harm Concentration\n({concentration:.1%} in High-Risk)",
-                 fontweight='bold', fontsize=14)
+    ax4.set_title(
+        f"Harm Concentration\n({concentration:.1%} in High-Risk)",
+        fontweight='bold',
+        fontsize=14,
+    )
 
     # 5-7. Summary Statistics (middle-middle to bottom)
     ax5 = fig.add_subplot(gs[1:, 1:])
@@ -288,9 +321,15 @@ def create_evaluation_dashboard(
     total_harm_str = f"{sum(harm_by_tier.values()):.3f}" if harm_by_tier else "N/A"
 
     # Interpretation messages
-    interp_high = "⚠️ High harm concentration in high-risk tier" if concentration > 0.7 else ""
+    interp_high = (
+        "⚠️ High harm concentration in high-risk tier" if concentration > 0.7 else ""
+    )
     interp_low = "✓ Balanced harm distribution" if concentration < 0.4 else ""
-    interp_mod = "⚡ Moderate concentration - review high-risk handling" if 0.4 <= concentration <= 0.7 else ""
+    interp_mod = (
+        "⚡ Moderate concentration - review high-risk handling"
+        if 0.4 <= concentration <= 0.7
+        else ""
+    )
 
     summary = f"""
     {'='*60}
@@ -315,7 +354,8 @@ def create_evaluation_dashboard(
       {interp_mod}
     """
 
-    ax5.text(0.1, 0.5, summary, fontsize=12, family='monospace',
-            verticalalignment='center')
+    ax5.text(
+        0.1, 0.5, summary, fontsize=12, family='monospace', verticalalignment='center'
+    )
 
     return fig

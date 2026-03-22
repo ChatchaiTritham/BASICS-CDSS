@@ -11,9 +11,16 @@ essential for safe clinical decision making.
 """
 
 from __future__ import annotations
-from typing import Dict, Tuple, Optional
-import numpy as np
+
 from dataclasses import dataclass
+from typing import Dict, Optional, Tuple
+
+import numpy as np
+
+DEFAULT_CALIBRATION_BIN_COUNT = 10
+MIN_CONFIDENCE_VALUE = 0.0
+MAX_CONFIDENCE_VALUE = 1.0
+EMPTY_METRIC_VALUE = 0.0
 
 
 @dataclass
@@ -25,6 +32,7 @@ class CalibrationMetrics:
         brier_score: Brier score (lower is better)
         reliability_curve: Tuple of (bin_confidences, bin_accuracies, bin_counts)
     """
+
     ece: float
     brier_score: float
     reliability_curve: Tuple[np.ndarray, np.ndarray, np.ndarray]
@@ -33,7 +41,7 @@ class CalibrationMetrics:
 def expected_calibration_error(
     y_true: np.ndarray,
     y_prob: np.ndarray,
-    n_bins: int = 10
+    n_bins: int = DEFAULT_CALIBRATION_BIN_COUNT,
 ) -> float:
     """Expected Calibration Error (ECE).
 
@@ -59,27 +67,33 @@ def expected_calibration_error(
     y_prob = np.asarray(y_prob).astype(float)
 
     if len(y_true) == 0:
-        return 0.0
+        return EMPTY_METRIC_VALUE
 
-    bins = np.linspace(0.0, 1.0, n_bins + 1)
-    ece = 0.0
+    bins = np.linspace(MIN_CONFIDENCE_VALUE, MAX_CONFIDENCE_VALUE, n_bins + 1)
+    expected_calibration_error_value = 0.0
     n_total = len(y_true)
 
     for i in range(n_bins):
         lo, hi = bins[i], bins[i + 1]
         # Include right boundary for last bin
-        mask = (y_prob >= lo) & (y_prob < hi) if i < n_bins - 1 else (y_prob >= lo) & (y_prob <= hi)
+        mask = (
+            (y_prob >= lo) & (y_prob < hi)
+            if i < n_bins - 1
+            else (y_prob >= lo) & (y_prob <= hi)
+        )
 
         if mask.sum() == 0:
             continue
 
-        acc = y_true[mask].mean()  # Empirical accuracy in bin
-        conf = y_prob[mask].mean()  # Average confidence in bin
-        bin_weight = mask.sum() / n_total  # Fraction of samples in bin
+        bin_accuracy = y_true[mask].mean()
+        bin_confidence = y_prob[mask].mean()
+        bin_weight = mask.sum() / n_total
 
-        ece += bin_weight * abs(acc - conf)
+        expected_calibration_error_value += bin_weight * abs(
+            bin_accuracy - bin_confidence
+        )
 
-    return float(ece)
+    return float(expected_calibration_error_value)
 
 
 def brier_score(y_true: np.ndarray, y_prob: np.ndarray) -> float:
@@ -106,7 +120,7 @@ def brier_score(y_true: np.ndarray, y_prob: np.ndarray) -> float:
     y_prob = np.asarray(y_prob).astype(float)
 
     if len(y_true) == 0:
-        return 0.0
+        return EMPTY_METRIC_VALUE
 
     return float(np.mean((y_prob - y_true) ** 2))
 
@@ -114,8 +128,8 @@ def brier_score(y_true: np.ndarray, y_prob: np.ndarray) -> float:
 def reliability_curve(
     y_true: np.ndarray,
     y_prob: np.ndarray,
-    n_bins: int = 10,
-    strategy: str = "uniform"
+    n_bins: int = DEFAULT_CALIBRATION_BIN_COUNT,
+    strategy: str = "uniform",
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Compute reliability curve (calibration curve).
 
@@ -143,11 +157,13 @@ def reliability_curve(
         return np.array([]), np.array([]), np.array([])
 
     if strategy == "uniform":
-        bins = np.linspace(0.0, 1.0, n_bins + 1)
+        bins = np.linspace(MIN_CONFIDENCE_VALUE, MAX_CONFIDENCE_VALUE, n_bins + 1)
     elif strategy == "quantile":
-        bins = np.quantile(y_prob, np.linspace(0, 1, n_bins + 1))
-        bins[0] = 0.0
-        bins[-1] = 1.0
+        bins = np.quantile(
+            y_prob, np.linspace(MIN_CONFIDENCE_VALUE, MAX_CONFIDENCE_VALUE, n_bins + 1)
+        )
+        bins[0] = MIN_CONFIDENCE_VALUE
+        bins[-1] = MAX_CONFIDENCE_VALUE
     else:
         raise ValueError(f"Unknown strategy '{strategy}'. Use 'uniform' or 'quantile'.")
 
@@ -157,7 +173,11 @@ def reliability_curve(
 
     for i in range(n_bins):
         lo, hi = bins[i], bins[i + 1]
-        mask = (y_prob >= lo) & (y_prob < hi) if i < n_bins - 1 else (y_prob >= lo) & (y_prob <= hi)
+        mask = (
+            (y_prob >= lo) & (y_prob < hi)
+            if i < n_bins - 1
+            else (y_prob >= lo) & (y_prob <= hi)
+        )
 
         if mask.sum() == 0:
             continue
@@ -166,18 +186,14 @@ def reliability_curve(
         bin_accuracies.append(y_true[mask].mean())
         bin_counts.append(mask.sum())
 
-    return (
-        np.array(bin_confidences),
-        np.array(bin_accuracies),
-        np.array(bin_counts)
-    )
+    return (np.array(bin_confidences), np.array(bin_accuracies), np.array(bin_counts))
 
 
 def stratified_calibration_metrics(
     y_true: np.ndarray,
     y_prob: np.ndarray,
     risk_tiers: np.ndarray,
-    n_bins: int = 10
+    n_bins: int = DEFAULT_CALIBRATION_BIN_COUNT,
 ) -> Dict[str, CalibrationMetrics]:
     """Compute calibration metrics stratified by risk tier.
 
@@ -220,9 +236,7 @@ def stratified_calibration_metrics(
         rel_curve = reliability_curve(tier_true, tier_prob, n_bins)
 
         stratified_metrics[str(tier)] = CalibrationMetrics(
-            ece=ece,
-            brier_score=bs,
-            reliability_curve=rel_curve
+            ece=ece, brier_score=bs, reliability_curve=rel_curve
         )
 
     return stratified_metrics
@@ -232,7 +246,7 @@ def calibration_summary(
     y_true: np.ndarray,
     y_prob: np.ndarray,
     risk_tiers: Optional[np.ndarray] = None,
-    n_bins: int = 10
+    n_bins: int = 10,
 ) -> Dict:
     """Compute comprehensive calibration summary.
 

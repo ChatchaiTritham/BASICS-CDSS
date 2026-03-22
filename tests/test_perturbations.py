@@ -8,17 +8,14 @@ These tests verify that perturbation operators:
 4. Handle edge cases correctly
 """
 
-import pytest
 import numpy as np
-from basics_cdss.scenario.perturbations import (
-    MaskOperator,
-    NoiseOperator,
-    ConflictOperator,
-    DegradeOperator,
-    CompositePerturbation,
-    PerturbationConfig,
-    create_default_perturbation,
-)
+import pytest
+from basics_cdss.scenario.perturbations import (CompositePerturbation,
+                                                ConflictOperator,
+                                                DegradeOperator, MaskOperator,
+                                                NoiseOperator,
+                                                PerturbationConfig,
+                                                create_default_perturbation)
 
 
 class TestMaskOperator:
@@ -101,8 +98,8 @@ class TestNoiseOperator:
         """Verify only numeric features receive noise."""
         features = {
             "symptom": "headache",  # categorical - should not change
-            "age": 45,              # numeric - should receive noise
-            "temperature": 37.5,    # numeric - should receive noise
+            "age": 45,  # numeric - should receive noise
+            "temperature": 37.5,  # numeric - should receive noise
         }
         config = PerturbationConfig(noise_sigma=0.1)
 
@@ -114,7 +111,10 @@ class TestNoiseOperator:
 
         # Numeric should have changed (with high probability)
         # Use small tolerance for edge case where noise is exactly zero
-        assert perturbed["age"] != features["age"] or abs(perturbed["age"] - features["age"]) < 0.01
+        assert (
+            perturbed["age"] != features["age"]
+            or abs(perturbed["age"] - features["age"]) < 0.01
+        )
 
     def test_ambiguity_profile(self):
         """Verify uncertainty profile reports mean noise magnitude."""

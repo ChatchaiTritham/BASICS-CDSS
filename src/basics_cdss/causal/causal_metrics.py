@@ -4,7 +4,8 @@ This module provides metrics for evaluating causal models, interventions,
 and confounding adjustment quality.
 """
 
-from typing import Dict, Any, List, Optional, Callable
+from typing import Any, Callable, Dict, List, Optional
+
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -15,7 +16,7 @@ def causal_consistency_score(
     data: pd.DataFrame,
     graph: 'CausalGraph',
     test: str = 'regression',
-    alpha: float = 0.05
+    alpha: float = 0.05,
 ) -> Dict[str, Any]:
     """Evaluate if data is consistent with causal graph structure.
 
@@ -53,7 +54,7 @@ def causal_consistency_score(
 
     # Test pairwise conditional independencies
     for i, var1 in enumerate(variables):
-        for var2 in variables[i+1:]:
+        for var2 in variables[i + 1 :]:
             # Find minimal conditioning set
             # For simplicity, use Markov blanket
             markov_blanket_1 = graph.get_markov_blanket(var1)
@@ -80,12 +81,14 @@ def causal_consistency_score(
                     passed_tests += 1
                 else:
                     # Independence violated
-                    violations.append({
-                        'var1': var1,
-                        'var2': var2,
-                        'conditioning': conditioning_vars,
-                        'p_value': p_value
-                    })
+                    violations.append(
+                        {
+                            'var1': var1,
+                            'var2': var2,
+                            'conditioning': conditioning_vars,
+                            'p_value': p_value,
+                        }
+                    )
 
     consistency_score = passed_tests / total_tests if total_tests > 0 else 1.0
 
@@ -94,7 +97,7 @@ def causal_consistency_score(
         'n_tests': total_tests,
         'passed_tests': passed_tests,
         'violations': violations,
-        'n_violations': len(violations)
+        'n_violations': len(violations),
     }
 
 
@@ -103,7 +106,7 @@ def _test_conditional_independence(
     var1: str,
     var2: str,
     conditioning_vars: List[str],
-    test: str = 'regression'
+    test: str = 'regression',
 ) -> float:
     """Test conditional independence: X ⊥⊥ Y | Z.
 
@@ -153,7 +156,7 @@ def intervention_effect_size(
     intervention: Dict[str, Any],
     outcome: str,
     baseline_data: Optional[pd.DataFrame] = None,
-    n_samples: int = 1000
+    n_samples: int = 1000,
 ) -> Dict[str, float]:
     """Measure effect size of intervention on outcome.
 
@@ -188,9 +191,7 @@ def intervention_effect_size(
 
     # Sample with intervention
     intervention_data = scm.do_intervention(
-        interventions=intervention,
-        n=n_samples,
-        return_dataframe=True
+        interventions=intervention, n=n_samples, return_dataframe=True
     )
 
     # Compute effect sizes
@@ -203,8 +204,7 @@ def intervention_effect_size(
     # Pooled standard deviation
     n1, n2 = len(baseline_data), len(intervention_data)
     pooled_std = np.sqrt(
-        ((n1 - 1) * baseline_std**2 + (n2 - 1) * intervention_std**2) /
-        (n1 + n2 - 2)
+        ((n1 - 1) * baseline_std**2 + (n2 - 1) * intervention_std**2) / (n1 + n2 - 2)
     )
 
     # Cohen's d
@@ -218,7 +218,9 @@ def intervention_effect_size(
     mean_diff = intervention_mean - baseline_mean
 
     # Relative change
-    relative_change = (mean_diff / baseline_mean * 100) if baseline_mean != 0 else np.nan
+    relative_change = (
+        (mean_diff / baseline_mean * 100) if baseline_mean != 0 else np.nan
+    )
 
     return {
         'cohens_d': cohens_d,
@@ -227,7 +229,7 @@ def intervention_effect_size(
         'relative_change': relative_change,
         'baseline_mean': baseline_mean,
         'intervention_mean': intervention_mean,
-        'pooled_std': pooled_std
+        'pooled_std': pooled_std,
     }
 
 
@@ -235,7 +237,7 @@ def confounding_bias_estimate(
     data_observational: pd.DataFrame,
     data_interventional: pd.DataFrame,
     treatment: str,
-    outcome: str
+    outcome: str,
 ) -> Dict[str, float]:
     """Estimate confounding bias by comparing observational and interventional effects.
 
@@ -285,13 +287,12 @@ def confounding_bias_estimate(
         'bias': bias,
         'relative_bias': relative_bias,
         'observational_effect': observational_effect,
-        'causal_effect': causal_effect
+        'causal_effect': causal_effect,
     }
 
 
 def causal_discovery_score(
-    true_graph: 'CausalGraph',
-    learned_graph: 'CausalGraph'
+    true_graph: 'CausalGraph', learned_graph: 'CausalGraph'
 ) -> Dict[str, float]:
     """Evaluate quality of learned causal graph against ground truth.
 
@@ -326,7 +327,11 @@ def causal_discovery_score(
     # Precision, Recall, F1
     precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
     recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+    f1 = (
+        2 * precision * recall / (precision + recall)
+        if (precision + recall) > 0
+        else 0.0
+    )
 
     # Structural Hamming Distance
     shd = fp + fn
@@ -340,14 +345,12 @@ def causal_discovery_score(
         'fp': fp,
         'fn': fn,
         'n_true_edges': len(true_edges),
-        'n_learned_edges': len(learned_edges)
+        'n_learned_edges': len(learned_edges),
     }
 
 
 def calibration_error_interventional(
-    predicted_outcomes: np.ndarray,
-    observed_outcomes: np.ndarray,
-    n_bins: int = 10
+    predicted_outcomes: np.ndarray, observed_outcomes: np.ndarray, n_bins: int = 10
 ) -> Dict[str, float]:
     """Compute calibration error for interventional predictions.
 
@@ -372,9 +375,7 @@ def calibration_error_interventional(
     """
     # Bin predictions
     bin_edges = np.linspace(
-        predicted_outcomes.min(),
-        predicted_outcomes.max(),
-        n_bins + 1
+        predicted_outcomes.min(), predicted_outcomes.max(), n_bins + 1
     )
 
     ece = 0.0
@@ -382,9 +383,8 @@ def calibration_error_interventional(
 
     for i in range(n_bins):
         # Get samples in this bin
-        mask = (
-            (predicted_outcomes >= bin_edges[i]) &
-            (predicted_outcomes < bin_edges[i+1])
+        mask = (predicted_outcomes >= bin_edges[i]) & (
+            predicted_outcomes < bin_edges[i + 1]
         )
 
         if mask.sum() == 0:
@@ -404,11 +404,7 @@ def calibration_error_interventional(
     # RMSE
     rmse = np.sqrt(mean_squared_error(observed_outcomes, predicted_outcomes))
 
-    return {
-        'ece': ece,
-        'mce': mce,
-        'rmse': rmse
-    }
+    return {'ece': ece, 'mce': mce, 'rmse': rmse}
 
 
 def counterfactual_consistency(
@@ -416,7 +412,7 @@ def counterfactual_consistency(
     observations: List[Dict[str, Any]],
     interventions: List[Dict[str, Any]],
     query_variables: List[str],
-    n_samples: int = 100
+    n_samples: int = 100,
 ) -> Dict[str, float]:
     """Evaluate consistency of counterfactual predictions.
 
@@ -449,7 +445,7 @@ def counterfactual_consistency(
                 observation=obs,
                 intervention=intervention,
                 query_variables=query_variables,
-                n_samples=n_samples
+                n_samples=n_samples,
             )
             results.append(cf_result)
 
@@ -461,16 +457,14 @@ def counterfactual_consistency(
         consistency_scores[var] = {
             'mean': np.mean(values),
             'std': np.std(values),
-            'cv': np.std(values) / np.mean(values) if np.mean(values) != 0 else np.nan
+            'cv': np.std(values) / np.mean(values) if np.mean(values) != 0 else np.nan,
         }
 
     return consistency_scores
 
 
 def markov_compatibility_test(
-    data: pd.DataFrame,
-    graph: 'CausalGraph',
-    alpha: float = 0.05
+    data: pd.DataFrame, graph: 'CausalGraph', alpha: float = 0.05
 ) -> Dict[str, Any]:
     """Test if data satisfies Markov condition for causal graph.
 
@@ -516,12 +510,14 @@ def markov_compatibility_test(
             )
 
             if p_value < alpha:
-                violations.append({
-                    'variable': variable,
-                    'non_descendant': non_desc,
-                    'parents': parents,
-                    'p_value': p_value
-                })
+                violations.append(
+                    {
+                        'variable': variable,
+                        'non_descendant': non_desc,
+                        'parents': parents,
+                        'p_value': p_value,
+                    }
+                )
 
     is_compatible = len(violations) == 0
 
@@ -530,5 +526,5 @@ def markov_compatibility_test(
         'n_tests': n_tests,
         'n_violations': len(violations),
         'violations': violations,
-        'compatibility_score': 1 - (len(violations) / n_tests) if n_tests > 0 else 1.0
+        'compatibility_score': 1 - (len(violations) / n_tests) if n_tests > 0 else 1.0,
     }
