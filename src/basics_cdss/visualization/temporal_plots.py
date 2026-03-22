@@ -10,13 +10,14 @@ Compliant with:
 - Journal of Biomedical Informatics guidelines
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
+from typing import Dict, List, Optional, Tuple, Union
+
 import matplotlib.gridspec as gridspec
-from matplotlib.patches import Rectangle, FancyBboxPatch
-from matplotlib.lines import Line2D
-from typing import Dict, List, Tuple, Optional, Union
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+from matplotlib.lines import Line2D
+from matplotlib.patches import FancyBboxPatch, Rectangle
 from scipy import stats
 
 # Publication-quality styling
@@ -37,13 +38,13 @@ STYLE_CONFIG = {
 
 # Colorblind-friendly palette
 COLORS = {
-    'critical': '#CC3311',      # Red
-    'high_risk': '#EE7733',     # Orange
-    'moderate': '#EE9955',      # Light orange
-    'low_risk': '#0077BB',      # Blue
-    'safe': '#33BB55',          # Green
-    'intervention': '#9933CC',   # Purple
-    'baseline': '#666666',       # Gray
+    'critical': '#CC3311',  # Red
+    'high_risk': '#EE7733',  # Orange
+    'moderate': '#EE9955',  # Light orange
+    'low_risk': '#0077BB',  # Blue
+    'safe': '#33BB55',  # Green
+    'intervention': '#9933CC',  # Purple
+    'baseline': '#666666',  # Gray
 }
 
 
@@ -54,7 +55,7 @@ def plot_temporal_trajectory(
     risk_tiers: Optional[np.ndarray] = None,
     title: str = "Patient Temporal Trajectory",
     save_path: Optional[str] = None,
-    figsize: Tuple[float, float] = (7.0, 11.0)
+    figsize: Tuple[float, float] = (7.0, 11.0),
 ) -> Tuple[plt.Figure, np.ndarray]:
     """
     Plot temporal trajectory of vital signs with interventions and risk tiers.
@@ -93,8 +94,13 @@ def plot_temporal_trajectory(
         ax = axes[idx]
 
         # Plot trajectory
-        ax.plot(time_points, values, color=COLORS['high_risk'],
-                linewidth=2.0, label=vital_name.replace('_', ' ').title())
+        ax.plot(
+            time_points,
+            values,
+            color=COLORS['high_risk'],
+            linewidth=2.0,
+            label=vital_name.replace('_', ' ').title(),
+        )
 
         # Add reference lines for normal ranges
         if 'heart_rate' in vital_name.lower():
@@ -107,10 +113,22 @@ def plot_temporal_trajectory(
         # Mark interventions
         if interventions:
             for interv_time, interv_name in interventions:
-                ax.axvline(interv_time, color=COLORS['intervention'],
-                          linestyle='--', linewidth=1.5, alpha=0.7)
-                ax.text(interv_time, ax.get_ylim()[1] * 0.95, interv_name,
-                       rotation=90, va='top', fontsize=9, color=COLORS['intervention'])
+                ax.axvline(
+                    interv_time,
+                    color=COLORS['intervention'],
+                    linestyle='--',
+                    linewidth=1.5,
+                    alpha=0.7,
+                )
+                ax.text(
+                    interv_time,
+                    ax.get_ylim()[1] * 0.95,
+                    interv_name,
+                    rotation=90,
+                    va='top',
+                    fontsize=9,
+                    color=COLORS['intervention'],
+                )
 
         ax.set_ylabel(vital_name.replace('_', ' ').title(), fontweight='bold')
         ax.grid(axis='y', alpha=0.3, linestyle='--', linewidth=0.5)
@@ -125,13 +143,23 @@ def plot_temporal_trajectory(
         ax_risk = axes[-1]
 
         # Convert risk tiers to color map
-        colors_risk = [COLORS['critical'], COLORS['high_risk'], COLORS['moderate'],
-                      COLORS['low_risk'], COLORS['safe']]
+        colors_risk = [
+            COLORS['critical'],
+            COLORS['high_risk'],
+            COLORS['moderate'],
+            COLORS['low_risk'],
+            COLORS['safe'],
+        ]
 
         for i in range(len(time_points) - 1):
             tier = int(risk_tiers[i]) - 1
-            ax_risk.fill_between([time_points[i], time_points[i+1]], 0, 1,
-                                color=colors_risk[tier], alpha=0.7)
+            ax_risk.fill_between(
+                [time_points[i], time_points[i + 1]],
+                0,
+                1,
+                color=colors_risk[tier],
+                alpha=0.7,
+            )
 
         ax_risk.set_ylabel('Risk Tier', fontweight='bold')
         ax_risk.set_ylim(0, 1)
@@ -148,8 +176,9 @@ def plot_temporal_trajectory(
 
     if save_path:
         for ext in ['pdf', 'eps', 'png']:
-            fig.savefig(save_path.replace('.png', f'.{ext}'),
-                       dpi=300, bbox_inches='tight')
+            fig.savefig(
+                save_path.replace('.png', f'.{ext}'), dpi=300, bbox_inches='tight'
+            )
 
     return fig, axes
 
@@ -160,7 +189,7 @@ def plot_disease_progression(
     disease_stages: Optional[List[Tuple[float, float, str]]] = None,
     title: str = "Disease Progression Model",
     save_path: Optional[str] = None,
-    figsize: Tuple[float, float] = (7.0, 9.0)
+    figsize: Tuple[float, float] = (7.0, 9.0),
 ) -> Tuple[plt.Figure, np.ndarray]:
     """
     Plot disease progression with biomarker evolution and disease stages.
@@ -202,21 +231,41 @@ def plot_disease_progression(
         ax = axes[idx]
 
         # Plot biomarker trajectory
-        ax.plot(time_points, values, color=biomarker_colors[idx],
-               linewidth=2.5, label=biomarker_name)
+        ax.plot(
+            time_points,
+            values,
+            color=biomarker_colors[idx],
+            linewidth=2.5,
+            label=biomarker_name,
+        )
 
         # Shade disease stages
         if disease_stages and idx == 0:
             stage_colors = ['#FFCCCC', '#FFAAAA', '#FF8888']
             for stage_idx, (start, end, stage_name) in enumerate(disease_stages):
-                ax.axvspan(start, end, alpha=0.2,
-                          color=stage_colors[stage_idx % len(stage_colors)])
+                ax.axvspan(
+                    start,
+                    end,
+                    alpha=0.2,
+                    color=stage_colors[stage_idx % len(stage_colors)],
+                )
                 # Add stage label
                 mid_time = (start + end) / 2
-                ax.text(mid_time, ax.get_ylim()[1] * 0.95, stage_name,
-                       ha='center', va='top', fontsize=10, fontweight='bold',
-                       bbox=dict(boxstyle='round,pad=0.5', facecolor='white',
-                                edgecolor='black', alpha=0.8))
+                ax.text(
+                    mid_time,
+                    ax.get_ylim()[1] * 0.95,
+                    stage_name,
+                    ha='center',
+                    va='top',
+                    fontsize=10,
+                    fontweight='bold',
+                    bbox=dict(
+                        boxstyle='round,pad=0.5',
+                        facecolor='white',
+                        edgecolor='black',
+                        alpha=0.8,
+                    ),
+                )
 
         ax.set_ylabel(biomarker_name, fontweight='bold')
         ax.grid(axis='both', alpha=0.3, linestyle='--', linewidth=0.5)
@@ -232,8 +281,9 @@ def plot_disease_progression(
 
     if save_path:
         for ext in ['pdf', 'eps', 'png']:
-            fig.savefig(save_path.replace('.png', f'.{ext}'),
-                       dpi=300, bbox_inches='tight')
+            fig.savefig(
+                save_path.replace('.png', f'.{ext}'), dpi=300, bbox_inches='tight'
+            )
 
     return fig, axes
 
@@ -246,7 +296,7 @@ def plot_counterfactual_analysis(
     outcome_metric: str = "Survival Probability",
     title: str = "Counterfactual Analysis",
     save_path: Optional[str] = None,
-    figsize: Tuple[float, float] = (7.0, 6.0)
+    figsize: Tuple[float, float] = (7.0, 6.0),
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plot counterfactual analysis comparing factual vs counterfactual outcomes.
@@ -280,32 +330,67 @@ def plot_counterfactual_analysis(
     fig, ax = plt.subplots(1, 1, figsize=figsize)
 
     # Plot factual trajectory
-    ax.plot(time_points, factual_trajectory, color=COLORS['critical'],
-           linewidth=3.0, label='Factual (Observed)', linestyle='-', marker='o',
-           markersize=3, markevery=10)
+    ax.plot(
+        time_points,
+        factual_trajectory,
+        color=COLORS['critical'],
+        linewidth=3.0,
+        label='Factual (Observed)',
+        linestyle='-',
+        marker='o',
+        markersize=3,
+        markevery=10,
+    )
 
     # Plot counterfactual trajectories
     cf_styles = ['-', '--', '-.', ':']
-    cf_colors = [COLORS['high_risk'], COLORS['moderate'], COLORS['low_risk'], COLORS['safe']]
+    cf_colors = [
+        COLORS['high_risk'],
+        COLORS['moderate'],
+        COLORS['low_risk'],
+        COLORS['safe'],
+    ]
 
     for idx, (cf_name, cf_trajectory) in enumerate(counterfactual_trajectories.items()):
-        ax.plot(time_points, cf_trajectory,
-               color=cf_colors[idx % len(cf_colors)],
-               linestyle=cf_styles[idx % len(cf_styles)],
-               linewidth=2.5, label=f'CF: {cf_name}',
-               marker='s', markersize=2, markevery=10)
+        ax.plot(
+            time_points,
+            cf_trajectory,
+            color=cf_colors[idx % len(cf_colors)],
+            linestyle=cf_styles[idx % len(cf_styles)],
+            linewidth=2.5,
+            label=f'CF: {cf_name}',
+            marker='s',
+            markersize=2,
+            markevery=10,
+        )
 
     # Mark intervention time
-    ax.axvline(intervention_time, color=COLORS['intervention'],
-              linestyle='--', linewidth=2.0, alpha=0.7,
-              label='Intervention Time')
-    ax.axvspan(intervention_time - 0.5, intervention_time + 0.5,
-              alpha=0.1, color=COLORS['intervention'])
+    ax.axvline(
+        intervention_time,
+        color=COLORS['intervention'],
+        linestyle='--',
+        linewidth=2.0,
+        alpha=0.7,
+        label='Intervention Time',
+    )
+    ax.axvspan(
+        intervention_time - 0.5,
+        intervention_time + 0.5,
+        alpha=0.1,
+        color=COLORS['intervention'],
+    )
 
     # Add intervention label
-    ax.text(intervention_time, ax.get_ylim()[1] * 0.95, 'Intervention',
-           ha='center', va='top', fontsize=11, fontweight='bold',
-           color=COLORS['intervention'])
+    ax.text(
+        intervention_time,
+        ax.get_ylim()[1] * 0.95,
+        'Intervention',
+        ha='center',
+        va='top',
+        fontsize=11,
+        fontweight='bold',
+        color=COLORS['intervention'],
+    )
 
     ax.set_xlabel('Time (hours)', fontweight='bold')
     ax.set_ylabel(outcome_metric, fontweight='bold')
@@ -321,15 +406,24 @@ def plot_counterfactual_analysis(
 
     textstr = f'Causal Effect\n(Best CF vs Factual):\n{causal_effect:+.3f}'
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.8, edgecolor='black')
-    ax.text(0.02, 0.02, textstr, transform=ax.transAxes, fontsize=10,
-           verticalalignment='bottom', bbox=props, fontweight='bold')
+    ax.text(
+        0.02,
+        0.02,
+        textstr,
+        transform=ax.transAxes,
+        fontsize=10,
+        verticalalignment='bottom',
+        bbox=props,
+        fontweight='bold',
+    )
 
     plt.tight_layout()
 
     if save_path:
         for ext in ['pdf', 'eps', 'png']:
-            fig.savefig(save_path.replace('.png', f'.{ext}'),
-                       dpi=300, bbox_inches='tight')
+            fig.savefig(
+                save_path.replace('.png', f'.{ext}'), dpi=300, bbox_inches='tight'
+            )
 
     return fig, ax
 
@@ -340,7 +434,7 @@ def plot_intervention_timing_analysis(
     optimal_window: Tuple[float, float],
     title: str = "Intervention Timing Analysis",
     save_path: Optional[str] = None,
-    figsize: Tuple[float, float] = (7.0, 6.0)
+    figsize: Tuple[float, float] = (7.0, 6.0),
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plot relationship between intervention timing and outcomes.
@@ -366,29 +460,58 @@ def plot_intervention_timing_analysis(
     fig, ax = plt.subplots(1, 1, figsize=figsize)
 
     # Scatter plot
-    ax.scatter(intervention_times, outcomes, alpha=0.6, s=50,
-              color=COLORS['high_risk'], edgecolors='black', linewidth=0.5,
-              label='Observed Cases')
+    ax.scatter(
+        intervention_times,
+        outcomes,
+        alpha=0.6,
+        s=50,
+        color=COLORS['high_risk'],
+        edgecolors='black',
+        linewidth=0.5,
+        label='Observed Cases',
+    )
 
     # Fit smoothing curve
     from scipy.interpolate import UnivariateSpline
+
     sorted_idx = np.argsort(intervention_times)
     spl = UnivariateSpline(intervention_times[sorted_idx], outcomes[sorted_idx], s=0.5)
     time_smooth = np.linspace(intervention_times.min(), intervention_times.max(), 200)
     outcome_smooth = spl(time_smooth)
 
-    ax.plot(time_smooth, outcome_smooth, color=COLORS['critical'],
-           linewidth=3.0, label='Smoothed Trend', linestyle='-')
+    ax.plot(
+        time_smooth,
+        outcome_smooth,
+        color=COLORS['critical'],
+        linewidth=3.0,
+        label='Smoothed Trend',
+        linestyle='-',
+    )
 
     # Highlight optimal window
-    ax.axvspan(optimal_window[0], optimal_window[1], alpha=0.3,
-              color=COLORS['safe'], label='Optimal Window')
+    ax.axvspan(
+        optimal_window[0],
+        optimal_window[1],
+        alpha=0.3,
+        color=COLORS['safe'],
+        label='Optimal Window',
+    )
 
     # Add vertical lines for window boundaries
-    ax.axvline(optimal_window[0], color=COLORS['safe'], linestyle='--',
-              linewidth=2.0, alpha=0.7)
-    ax.axvline(optimal_window[1], color=COLORS['safe'], linestyle='--',
-              linewidth=2.0, alpha=0.7)
+    ax.axvline(
+        optimal_window[0],
+        color=COLORS['safe'],
+        linestyle='--',
+        linewidth=2.0,
+        alpha=0.7,
+    )
+    ax.axvline(
+        optimal_window[1],
+        color=COLORS['safe'],
+        linestyle='--',
+        linewidth=2.0,
+        alpha=0.7,
+    )
 
     ax.set_xlabel('Intervention Time (hours)', fontweight='bold')
     ax.set_ylabel('Outcome (Survival Probability)', fontweight='bold')
@@ -398,8 +521,9 @@ def plot_intervention_timing_analysis(
     ax.legend(loc='best', framealpha=0.9, fontsize=11)
 
     # Add statistics text
-    window_mask = (intervention_times >= optimal_window[0]) & \
-                  (intervention_times <= optimal_window[1])
+    window_mask = (intervention_times >= optimal_window[0]) & (
+        intervention_times <= optimal_window[1]
+    )
     window_outcomes = outcomes[window_mask]
     non_window_outcomes = outcomes[~window_mask]
 
@@ -408,16 +532,25 @@ def plot_intervention_timing_analysis(
 
     textstr = f'Mean Outcome:\nIn window: {mean_in:.3f}\nOut window: {mean_out:.3f}\nDifference: {mean_in - mean_out:+.3f}'
     props = dict(boxstyle='round', facecolor='lightblue', alpha=0.8, edgecolor='black')
-    ax.text(0.98, 0.02, textstr, transform=ax.transAxes, fontsize=10,
-           verticalalignment='bottom', horizontalalignment='right',
-           bbox=props, fontweight='bold')
+    ax.text(
+        0.98,
+        0.02,
+        textstr,
+        transform=ax.transAxes,
+        fontsize=10,
+        verticalalignment='bottom',
+        horizontalalignment='right',
+        bbox=props,
+        fontweight='bold',
+    )
 
     plt.tight_layout()
 
     if save_path:
         for ext in ['pdf', 'eps', 'png']:
-            fig.savefig(save_path.replace('.png', f'.{ext}'),
-                       dpi=300, bbox_inches='tight')
+            fig.savefig(
+                save_path.replace('.png', f'.{ext}'), dpi=300, bbox_inches='tight'
+            )
 
     return fig, ax
 

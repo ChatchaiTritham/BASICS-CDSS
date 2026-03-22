@@ -3,10 +3,11 @@ Coverage-risk visualization functions for selective prediction analysis.
 """
 
 from typing import Dict, List, Optional, Tuple
-import numpy as np
+
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
+import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
 
 def plot_coverage_risk_curve(
@@ -17,7 +18,7 @@ def plot_coverage_risk_curve(
     color: str = "#2E86AB",
     fill_alpha: float = 0.2,
     highlight_points: Optional[List[Tuple[float, str]]] = None,
-    **kwargs
+    **kwargs,
 ) -> Tuple[Figure, Axes]:
     """Plot coverage-risk curve for selective prediction.
 
@@ -58,17 +59,24 @@ def plot_coverage_risk_curve(
 
     # Plot curve
     ax.plot(
-        coverages_clean, risks_clean,
-        'o-', color=color, linewidth=2.5,
-        markersize=6, label="Coverage-Risk curve",
-        **kwargs
+        coverages_clean,
+        risks_clean,
+        'o-',
+        color=color,
+        linewidth=2.5,
+        markersize=6,
+        label="Coverage-Risk curve",
+        **kwargs,
     )
 
     # Fill area under curve
     ax.fill_between(
-        coverages_clean, 0, risks_clean,
-        alpha=fill_alpha, color=color,
-        label=f"AURC (area under curve)"
+        coverages_clean,
+        0,
+        risks_clean,
+        alpha=fill_alpha,
+        color=color,
+        label=f"AURC (area under curve)",
     )
 
     # Highlight specific coverage points
@@ -79,19 +87,15 @@ def plot_coverage_risk_curve(
             cov_point = coverages_clean[idx]
             risk_point = risks_clean[idx]
 
-            ax.plot(
-                cov_point, risk_point,
-                'r*', markersize=15, zorder=10
-            )
-            ax.axvline(
-                cov_point, color='red', linestyle='--',
-                alpha=0.5, linewidth=1.5
-            )
+            ax.plot(cov_point, risk_point, 'r*', markersize=15, zorder=10)
+            ax.axvline(cov_point, color='red', linestyle='--', alpha=0.5, linewidth=1.5)
             ax.text(
-                cov_point, ax.get_ylim()[1] * 0.95,
+                cov_point,
+                ax.get_ylim()[1] * 0.95,
                 f"{label}\n({cov_point:.2f}, {risk_point:.3f})",
-                ha='center', fontsize=10,
-                bbox=dict(boxstyle='round', facecolor='yellow', alpha=0.7)
+                ha='center',
+                fontsize=10,
+                bbox=dict(boxstyle='round', facecolor='yellow', alpha=0.7),
             )
 
     # Calculate AURC
@@ -101,7 +105,9 @@ def plot_coverage_risk_curve(
         aurc = np.trapz(risks_clean, coverages_clean)
 
     # Styling
-    ax.set_xlabel("Coverage (fraction of predictions retained)", fontsize=13, fontweight='bold')
+    ax.set_xlabel(
+        "Coverage (fraction of predictions retained)", fontsize=13, fontweight='bold'
+    )
     ax.set_ylabel("Conditional Risk", fontsize=13, fontweight='bold')
     ax.set_title(title, fontsize=15, fontweight='bold', pad=15)
     ax.grid(True, alpha=0.3, linestyle='--')
@@ -110,11 +116,15 @@ def plot_coverage_risk_curve(
 
     # AURC annotation
     ax.text(
-        0.95, 0.95, f"AURC = {aurc:.4f}",
+        0.95,
+        0.95,
+        f"AURC = {aurc:.4f}",
         transform=ax.transAxes,
-        fontsize=12, fontweight='bold',
+        fontsize=12,
+        fontweight='bold',
         bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.8),
-        verticalalignment='top', horizontalalignment='right'
+        verticalalignment='top',
+        horizontalalignment='right',
     )
 
     ax.legend(loc="upper right", fontsize=11, frameon=True, shadow=True)
@@ -127,7 +137,7 @@ def plot_selective_prediction_comparison(
     models: Dict[str, Tuple[np.ndarray, np.ndarray]],
     figsize: Tuple[int, int] = (12, 7),
     title: str = "Selective Prediction Comparison",
-    colors: Optional[List[str]] = None
+    colors: Optional[List[str]] = None,
 ) -> Tuple[Figure, Axes]:
     """Compare coverage-risk curves across multiple models.
 
@@ -170,11 +180,14 @@ def plot_selective_prediction_comparison(
             aurc = np.trapz(risk_clean, cov_clean)
 
         ax.plot(
-            cov_clean, risk_clean,
-            'o-', color=color,
-            linewidth=2.5, markersize=5,
+            cov_clean,
+            risk_clean,
+            'o-',
+            color=color,
+            linewidth=2.5,
+            markersize=5,
             label=f"{model_name} (AURC={aurc:.3f})",
-            alpha=0.8
+            alpha=0.8,
         )
 
     ax.set_xlabel("Coverage", fontsize=13, fontweight='bold')
@@ -192,7 +205,7 @@ def plot_abstention_analysis(
     confidence_scores: np.ndarray,
     y_true: np.ndarray,
     thresholds: Optional[np.ndarray] = None,
-    figsize: Tuple[int, int] = (14, 5)
+    figsize: Tuple[int, int] = (14, 5),
 ) -> Tuple[Figure, List[Axes]]:
     """Analyze abstention behavior across confidence thresholds.
 

@@ -8,10 +8,33 @@ Publication-ready plots for calibration analysis including:
 """
 
 from typing import Dict, List, Optional, Tuple
-import numpy as np
+
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
+import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
+
+from basics_cdss.constants import DEFAULT_FIGURE_SIZE
+
+DEFAULT_RELIABILITY_COLOR = "#2E86AB"
+DEFAULT_TIER_COLORS = {
+    "high": "#E63946",
+    "medium": "#F77F00",
+    "low": "#06A77D",
+    "urgent": "#E63946",
+    "non-urgent": "#06A77D",
+}
+DEFAULT_MODEL_COMPARISON_COLORS = [
+    "#E63946",
+    "#2E86AB",
+    "#06A77D",
+    "#F77F00",
+    "#A23B72",
+]
+DEFAULT_AXIS_LIMITS = [0, 1]
+DEFAULT_RELIABILITY_FIGSIZE = (8, 6)
+DEFAULT_HISTOGRAM_RELIABILITY_FIGSIZE = (8, 8)
+DEFAULT_STRATIFIED_FIGSIZE = (14, 5)
 
 
 def plot_reliability_diagram(
@@ -21,8 +44,8 @@ def plot_reliability_diagram(
     ax: Optional[Axes] = None,
     title: str = "Calibration Reliability Diagram",
     show_histogram: bool = True,
-    color: str = "#2E86AB",
-    **kwargs
+    color: str = DEFAULT_RELIABILITY_COLOR,
+    **kwargs,
 ) -> Tuple[Figure, Axes]:
     """Plot calibration reliability diagram.
 
@@ -48,25 +71,34 @@ def plot_reliability_diagram(
     if ax is None:
         if show_histogram and bin_counts is not None:
             fig, (ax, ax_hist) = plt.subplots(
-                2, 1, figsize=(8, 8),
+                2,
+                1,
+                figsize=DEFAULT_HISTOGRAM_RELIABILITY_FIGSIZE,
                 gridspec_kw={'height_ratios': [3, 1]},
-                sharex=True
+                sharex=True,
             )
         else:
-            fig, ax = plt.subplots(figsize=(8, 6))
+            fig, ax = plt.subplots(figsize=DEFAULT_RELIABILITY_FIGSIZE)
             ax_hist = None
     else:
         fig = ax.figure
         ax_hist = None
+
+    assert ax is not None
 
     # Perfect calibration line
     ax.plot([0, 1], [0, 1], 'k--', label="Perfect calibration", linewidth=2, alpha=0.7)
 
     # Actual calibration
     ax.plot(
-        bin_confidences, bin_accuracies,
-        'o-', color=color, label="Model calibration",
-        markersize=8, linewidth=2.5, **kwargs
+        bin_confidences,
+        bin_accuracies,
+        'o-',
+        color=color,
+        label="Model calibration",
+        markersize=8,
+        linewidth=2.5,
+        **kwargs,
     )
 
     # Styling
@@ -74,26 +106,33 @@ def plot_reliability_diagram(
     ax.set_title(title, fontsize=16, fontweight='bold', pad=15)
     ax.legend(loc="upper left", fontsize=12, frameon=True, shadow=True)
     ax.grid(True, alpha=0.3, linestyle='--')
-    ax.set_xlim([0, 1])
-    ax.set_ylim([0, 1])
+    ax.set_xlim(DEFAULT_AXIS_LIMITS)
+    ax.set_ylim(DEFAULT_AXIS_LIMITS)
     ax.set_aspect('equal')
 
     # Add ECE annotation
     if len(bin_confidences) > 0:
         ece = np.mean(np.abs(bin_confidences - bin_accuracies))
         ax.text(
-            0.05, 0.95, f"ECE = {ece:.4f}",
+            0.05,
+            0.95,
+            f"ECE = {ece:.4f}",
             transform=ax.transAxes,
-            fontsize=12, fontweight='bold',
+            fontsize=12,
+            fontweight='bold',
             bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8),
-            verticalalignment='top'
+            verticalalignment='top',
         )
 
     # Histogram
     if show_histogram and bin_counts is not None and ax_hist is not None:
         ax_hist.bar(
-            bin_confidences, bin_counts,
-            width=0.08, color=color, alpha=0.6, edgecolor='black'
+            bin_confidences,
+            bin_counts,
+            width=0.08,
+            color=color,
+            alpha=0.6,
+            edgecolor='black',
         )
         ax_hist.set_xlabel("Confidence", fontsize=14, fontweight='bold')
         ax_hist.set_ylabel("Count", fontsize=12, fontweight='bold')
@@ -105,9 +144,9 @@ def plot_reliability_diagram(
 
 def plot_stratified_calibration(
     calibration_by_tier: Dict[str, Tuple[np.ndarray, np.ndarray, np.ndarray]],
-    figsize: Tuple[int, int] = (14, 5),
+    figsize: Tuple[float, float] = DEFAULT_STRATIFIED_FIGSIZE,
     title: str = "Calibration by Risk Tier",
-    colors: Optional[Dict[str, str]] = None
+    colors: Optional[Dict[str, str]] = None,
 ) -> Tuple[Figure, List[Axes]]:
     """Plot calibration reliability diagrams stratified by risk tier.
 
@@ -130,13 +169,7 @@ def plot_stratified_calibration(
         >>> fig, axes = plot_stratified_calibration(tier_curves)
     """
     if colors is None:
-        colors = {
-            "high": "#E63946",      # Red
-            "medium": "#F77F00",    # Orange
-            "low": "#06A77D",       # Green
-            "urgent": "#E63946",
-            "non-urgent": "#06A77D",
-        }
+        colors = DEFAULT_TIER_COLORS
 
     n_tiers = len(calibration_by_tier)
     fig, axes = plt.subplots(1, n_tiers, figsize=figsize, sharey=True)
@@ -153,21 +186,27 @@ def plot_stratified_calibration(
         # Tier calibration
         tier_color = colors.get(tier.lower(), "#2E86AB")
         ax.plot(
-            confs, accs, 'o-',
+            confs,
+            accs,
+            'o-',
             color=tier_color,
-            markersize=8, linewidth=2.5,
-            label=f"{tier.capitalize()} tier"
+            markersize=8,
+            linewidth=2.5,
+            label=f"{tier.capitalize()} tier",
         )
 
         # ECE annotation
         if len(confs) > 0:
             ece = np.mean(np.abs(confs - accs))
             ax.text(
-                0.05, 0.95, f"ECE = {ece:.4f}",
+                0.05,
+                0.95,
+                f"ECE = {ece:.4f}",
                 transform=ax.transAxes,
-                fontsize=11, fontweight='bold',
+                fontsize=11,
+                fontweight='bold',
                 bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8),
-                verticalalignment='top'
+                verticalalignment='top',
             )
 
         # Styling
@@ -176,8 +215,8 @@ def plot_stratified_calibration(
             ax.set_ylabel("Accuracy", fontsize=12, fontweight='bold')
         ax.set_title(f"{tier.capitalize()} Risk", fontsize=14, fontweight='bold')
         ax.grid(True, alpha=0.3, linestyle='--')
-        ax.set_xlim([0, 1])
-        ax.set_ylim([0, 1])
+        ax.set_xlim(DEFAULT_AXIS_LIMITS)
+        ax.set_ylim(DEFAULT_AXIS_LIMITS)
         ax.set_aspect('equal')
 
     fig.suptitle(title, fontsize=16, fontweight='bold', y=1.02)
@@ -190,8 +229,8 @@ def plot_calibration_comparison(
     models: Dict[str, Tuple[np.ndarray, np.ndarray]],
     ax: Optional[Axes] = None,
     title: str = "Calibration Comparison",
-    figsize: Tuple[int, int] = (10, 8),
-    colors: Optional[List[str]] = None
+    figsize: Tuple[float, float] = DEFAULT_FIGURE_SIZE,
+    colors: Optional[List[str]] = None,
 ) -> Tuple[Figure, Axes]:
     """Compare calibration curves across multiple models.
 
@@ -218,20 +257,29 @@ def plot_calibration_comparison(
     else:
         fig = ax.figure
 
+    assert ax is not None
+
     if colors is None:
-        colors = ["#E63946", "#2E86AB", "#06A77D", "#F77F00", "#A23B72"]
+        colors = DEFAULT_MODEL_COMPARISON_COLORS
 
     # Perfect calibration
-    ax.plot([0, 1], [0, 1], 'k--', label="Perfect calibration", linewidth=2.5, alpha=0.7)
+    ax.plot(
+        [0, 1], [0, 1], 'k--', label="Perfect calibration", linewidth=2.5, alpha=0.7
+    )
 
     # Plot each model
     for idx, (model_name, (confs, accs)) in enumerate(models.items()):
         color = colors[idx % len(colors)]
 
         ax.plot(
-            confs, accs, 'o-',
-            color=color, label=model_name,
-            markersize=7, linewidth=2.5, alpha=0.8
+            confs,
+            accs,
+            'o-',
+            color=color,
+            label=model_name,
+            markersize=7,
+            linewidth=2.5,
+            alpha=0.8,
         )
 
         # Calculate ECE for legend
@@ -247,8 +295,8 @@ def plot_calibration_comparison(
     ax.set_title(title, fontsize=16, fontweight='bold', pad=15)
     ax.legend(loc="upper left", fontsize=11, frameon=True, shadow=True)
     ax.grid(True, alpha=0.3, linestyle='--')
-    ax.set_xlim([0, 1])
-    ax.set_ylim([0, 1])
+    ax.set_xlim(DEFAULT_AXIS_LIMITS)
+    ax.set_ylim(DEFAULT_AXIS_LIMITS)
     ax.set_aspect('equal')
 
     plt.tight_layout()

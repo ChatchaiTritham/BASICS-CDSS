@@ -9,7 +9,8 @@ Theoretical Foundation:
 """
 
 from dataclasses import dataclass
-from typing import Dict, Any, List, Optional, Union, Callable
+from typing import Any, Callable, Dict, List, Optional, Union
+
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -39,6 +40,7 @@ class DoIntervention:
         ...     is_soft=True
         ... )
     """
+
     target: str
     value: Optional[Any] = None
     values: Optional[Dict[str, Any]] = None
@@ -56,7 +58,7 @@ def perform_do_intervention(
     scm: 'StructuralCausalModel',
     intervention: Union[Dict[str, Any], DoIntervention],
     n_samples: int = 1000,
-    return_dataframe: bool = True
+    return_dataframe: bool = True,
 ) -> Union[pd.DataFrame, List[Dict[str, Any]]]:
     """Perform do-intervention on SCM and sample interventional distribution.
 
@@ -96,7 +98,7 @@ def perform_do_intervention(
     return scm.do_intervention(
         interventions={intervention_obj.target: intervention_obj.value},
         n=n_samples,
-        return_dataframe=return_dataframe
+        return_dataframe=return_dataframe,
     )
 
 
@@ -105,7 +107,7 @@ def compute_ate(
     treatment: str,
     outcome: str,
     treatment_values: Optional[List[Any]] = None,
-    n_samples: int = 1000
+    n_samples: int = 1000,
 ) -> Dict[str, float]:
     """Compute Average Treatment Effect (ATE).
 
@@ -147,17 +149,13 @@ def compute_ate(
 
     # Sample under control
     control_data = scm.do_intervention(
-        interventions={treatment: control_value},
-        n=n_samples,
-        return_dataframe=True
+        interventions={treatment: control_value}, n=n_samples, return_dataframe=True
     )
     control_mean = control_data[outcome].mean()
 
     # Sample under treatment
     treatment_data = scm.do_intervention(
-        interventions={treatment: treatment_value},
-        n=n_samples,
-        return_dataframe=True
+        interventions={treatment: treatment_value}, n=n_samples, return_dataframe=True
     )
     treatment_mean = treatment_data[outcome].mean()
 
@@ -175,7 +173,7 @@ def compute_ate(
         'control_mean': control_mean,
         'treatment_mean': treatment_mean,
         'relative_effect': relative_effect,
-        'treatment_values': treatment_values
+        'treatment_values': treatment_values,
     }
 
 
@@ -186,7 +184,7 @@ def compute_cate(
     conditioning_vars: List[str],
     conditioning_values: Dict[str, Any],
     treatment_values: Optional[List[Any]] = None,
-    n_samples: int = 1000
+    n_samples: int = 1000,
 ) -> Dict[str, float]:
     """Compute Conditional Average Treatment Effect (CATE).
 
@@ -228,17 +226,13 @@ def compute_cate(
 
     # Sample under control
     control_data = scm.do_intervention(
-        interventions=control_intervention,
-        n=n_samples,
-        return_dataframe=True
+        interventions=control_intervention, n=n_samples, return_dataframe=True
     )
     control_mean = control_data[outcome].mean()
 
     # Sample under treatment
     treatment_data = scm.do_intervention(
-        interventions=treatment_intervention,
-        n=n_samples,
-        return_dataframe=True
+        interventions=treatment_intervention, n=n_samples, return_dataframe=True
     )
     treatment_mean = treatment_data[outcome].mean()
 
@@ -251,7 +245,7 @@ def compute_cate(
         'treatment_mean': treatment_mean,
         'conditioning_vars': conditioning_vars,
         'conditioning_values': conditioning_values,
-        'treatment_values': treatment_values
+        'treatment_values': treatment_values,
     }
 
 
@@ -260,7 +254,7 @@ def estimate_ate_from_data(
     treatment: str,
     outcome: str,
     method: str = 'regression',
-    confounders: Optional[List[str]] = None
+    confounders: Optional[List[str]] = None,
 ) -> Dict[str, float]:
     """Estimate ATE from observational data.
 
@@ -324,7 +318,7 @@ def estimate_ate_from_data(
             'ci_lower': ci_lower,
             'ci_upper': ci_upper,
             'method': 'regression',
-            'confounders': confounders
+            'confounders': confounders,
         }
 
     elif method == 'matching':
@@ -336,8 +330,8 @@ def estimate_ate_from_data(
 
         # Standard error
         se = np.sqrt(
-            treated[outcome].var() / len(treated) +
-            control[outcome].var() / len(control)
+            treated[outcome].var() / len(treated)
+            + control[outcome].var() / len(control)
         )
 
         ci_lower = ate - 1.96 * se
@@ -348,7 +342,7 @@ def estimate_ate_from_data(
             'ci_lower': ci_lower,
             'ci_upper': ci_upper,
             'method': 'matching',
-            'se': se
+            'se': se,
         }
 
     else:
@@ -360,7 +354,7 @@ def compute_intervention_curve(
     treatment: str,
     outcome: str,
     treatment_range: np.ndarray,
-    n_samples: int = 1000
+    n_samples: int = 1000,
 ) -> pd.DataFrame:
     """Compute dose-response curve for treatment.
 
@@ -391,16 +385,18 @@ def compute_intervention_curve(
         data = scm.do_intervention(
             interventions={treatment: treatment_value},
             n=n_samples,
-            return_dataframe=True
+            return_dataframe=True,
         )
 
-        results.append({
-            'treatment': treatment_value,
-            'outcome_mean': data[outcome].mean(),
-            'outcome_std': data[outcome].std(),
-            'outcome_q25': data[outcome].quantile(0.25),
-            'outcome_q75': data[outcome].quantile(0.75)
-        })
+        results.append(
+            {
+                'treatment': treatment_value,
+                'outcome_mean': data[outcome].mean(),
+                'outcome_std': data[outcome].std(),
+                'outcome_q25': data[outcome].quantile(0.25),
+                'outcome_q75': data[outcome].quantile(0.75),
+            }
+        )
 
     return pd.DataFrame(results)
 
@@ -411,7 +407,7 @@ def test_intervention_effect(
     outcome: str,
     treatment_values: List[Any],
     n_samples: int = 1000,
-    test: str = 'ttest'
+    test: str = 'ttest',
 ) -> Dict[str, Any]:
     """Statistical test for intervention effect.
 
@@ -442,13 +438,13 @@ def test_intervention_effect(
     data_0 = scm.do_intervention(
         interventions={treatment: treatment_values[0]},
         n=n_samples,
-        return_dataframe=True
+        return_dataframe=True,
     )
 
     data_1 = scm.do_intervention(
         interventions={treatment: treatment_values[1]},
         n=n_samples,
-        return_dataframe=True
+        return_dataframe=True,
     )
 
     outcomes_0 = data_0[outcome].values
@@ -465,9 +461,7 @@ def test_intervention_effect(
         raise ValueError(f"Unknown test: {test}")
 
     # Effect size (Cohen's d)
-    pooled_std = np.sqrt(
-        (outcomes_0.var() + outcomes_1.var()) / 2
-    )
+    pooled_std = np.sqrt((outcomes_0.var() + outcomes_1.var()) / 2)
     cohens_d = (outcomes_1.mean() - outcomes_0.mean()) / pooled_std
 
     return {
@@ -477,5 +471,5 @@ def test_intervention_effect(
         'cohens_d': cohens_d,
         'mean_0': outcomes_0.mean(),
         'mean_1': outcomes_1.mean(),
-        'significant': p_value < 0.05
+        'significant': p_value < 0.05,
     }

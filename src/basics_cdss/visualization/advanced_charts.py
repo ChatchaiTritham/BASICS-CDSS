@@ -15,14 +15,15 @@ Affiliation: Naresuan University
 Date: 2026-01-25
 """
 
+from typing import Dict, List, Optional, Tuple, Union
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+import seaborn as sns
 from matplotlib import cm
 from matplotlib.colors import LinearSegmentedColormap
 from mpl_toolkits.mplot3d import Axes3D
-from typing import Dict, List, Optional, Tuple, Union
-import seaborn as sns
 
 # Colorblind-friendly palette
 COLORS = {
@@ -36,31 +37,35 @@ COLORS = {
 }
 
 # Publication settings
-plt.rcParams.update({
-    'font.family': 'serif',
-    'font.serif': ['Times New Roman', 'DejaVu Serif'],
-    'font.size': 12,
-    'axes.labelsize': 14,
-    'axes.titlesize': 16,
-    'xtick.labelsize': 11,
-    'ytick.labelsize': 11,
-    'legend.fontsize': 11,
-    'figure.titlesize': 18,
-    'pdf.fonttype': 42,
-    'ps.fonttype': 42,
-})
+plt.rcParams.update(
+    {
+        'font.family': 'serif',
+        'font.serif': ['Times New Roman', 'DejaVu Serif'],
+        'font.size': 12,
+        'axes.labelsize': 14,
+        'axes.titlesize': 16,
+        'xtick.labelsize': 11,
+        'ytick.labelsize': 11,
+        'legend.fontsize': 11,
+        'figure.titlesize': 18,
+        'pdf.fonttype': 42,
+        'ps.fonttype': 42,
+    }
+)
 
 
-def plot_3d_performance_surface(threshold_range: np.ndarray,
-                                metric_range: np.ndarray,
-                                performance_values: np.ndarray,
-                                xlabel: str = "Threshold",
-                                ylabel: str = "Metric",
-                                zlabel: str = "Performance",
-                                title: str = "3D Performance Landscape",
-                                figsize: Tuple[float, float] = (10.0, 8.0),
-                                save_path: Optional[str] = None,
-                                dpi: int = 300) -> Tuple[plt.Figure, Axes3D]:
+def plot_3d_performance_surface(
+    threshold_range: np.ndarray,
+    metric_range: np.ndarray,
+    performance_values: np.ndarray,
+    xlabel: str = "Threshold",
+    ylabel: str = "Metric",
+    zlabel: str = "Performance",
+    title: str = "3D Performance Landscape",
+    figsize: Tuple[float, float] = (10.0, 8.0),
+    save_path: Optional[str] = None,
+    dpi: int = 300,
+) -> Tuple[plt.Figure, Axes3D]:
     """Plot 3D surface of performance metric across two parameter dimensions.
 
     Parameters:
@@ -94,11 +99,15 @@ def plot_3d_performance_surface(threshold_range: np.ndarray,
     X, Y = np.meshgrid(metric_range, threshold_range)
 
     # Plot surface
-    surf = ax.plot_surface(X, Y, performance_values.T,
-                          cmap='viridis',
-                          edgecolor='none',
-                          alpha=0.9,
-                          antialiased=True)
+    surf = ax.plot_surface(
+        X,
+        Y,
+        performance_values.T,
+        cmap='viridis',
+        edgecolor='none',
+        alpha=0.9,
+        antialiased=True,
+    )
 
     # Styling
     ax.set_xlabel(xlabel, fontsize=13, fontweight='bold', labelpad=10)
@@ -124,16 +133,18 @@ def plot_3d_performance_surface(threshold_range: np.ndarray,
     return fig, ax
 
 
-def plot_contour_performance(threshold_range: np.ndarray,
-                             metric_range: np.ndarray,
-                             performance_values: np.ndarray,
-                             xlabel: str = "Threshold",
-                             ylabel: str = "Metric",
-                             title: str = "Performance Contour Map",
-                             optimal_point: Optional[Tuple[float, float]] = None,
-                             figsize: Tuple[float, float] = (8.0, 7.0),
-                             save_path: Optional[str] = None,
-                             dpi: int = 300) -> Tuple[plt.Figure, plt.Axes]:
+def plot_contour_performance(
+    threshold_range: np.ndarray,
+    metric_range: np.ndarray,
+    performance_values: np.ndarray,
+    xlabel: str = "Threshold",
+    ylabel: str = "Metric",
+    title: str = "Performance Contour Map",
+    optimal_point: Optional[Tuple[float, float]] = None,
+    figsize: Tuple[float, float] = (8.0, 7.0),
+    save_path: Optional[str] = None,
+    dpi: int = 300,
+) -> Tuple[plt.Figure, plt.Axes]:
     """Plot 2D contour map of performance metric.
 
     Parameters:
@@ -168,17 +179,20 @@ def plot_contour_performance(threshold_range: np.ndarray,
 
     # Contour plot
     levels = 15
-    contour = ax.contourf(X, Y, performance_values.T,
-                         levels=levels,
-                         cmap='viridis',
-                         alpha=0.9)
+    contour = ax.contourf(
+        X, Y, performance_values.T, levels=levels, cmap='viridis', alpha=0.9
+    )
 
     # Contour lines
-    contour_lines = ax.contour(X, Y, performance_values.T,
-                              levels=levels,
-                              colors='black',
-                              alpha=0.3,
-                              linewidths=0.5)
+    contour_lines = ax.contour(
+        X,
+        Y,
+        performance_values.T,
+        levels=levels,
+        colors='black',
+        alpha=0.3,
+        linewidths=0.5,
+    )
 
     # Label contours
     ax.clabel(contour_lines, inline=True, fontsize=9, fmt='%.2f')
@@ -189,9 +203,16 @@ def plot_contour_performance(threshold_range: np.ndarray,
 
     # Mark optimal point
     if optimal_point is not None:
-        ax.plot(optimal_point[0], optimal_point[1], 'r*',
-               markersize=20, markeredgecolor='white',
-               markeredgewidth=2, label='Optimal', zorder=10)
+        ax.plot(
+            optimal_point[0],
+            optimal_point[1],
+            'r*',
+            markersize=20,
+            markeredgecolor='white',
+            markeredgewidth=2,
+            label='Optimal',
+            zorder=10,
+        )
         ax.legend(loc='best', frameon=True, fancybox=True, shadow=True)
 
     # Styling
@@ -208,18 +229,20 @@ def plot_contour_performance(threshold_range: np.ndarray,
     return fig, ax
 
 
-def plot_stratified_heatmap(metrics_matrix: np.ndarray,
-                            row_labels: List[str],
-                            col_labels: List[str],
-                            title: str = "Stratified Performance Heatmap",
-                            xlabel: str = "Risk Tier",
-                            ylabel: str = "Model",
-                            cmap: str = "RdYlGn",
-                            vmin: Optional[float] = None,
-                            vmax: Optional[float] = None,
-                            figsize: Tuple[float, float] = (8.0, 6.0),
-                            save_path: Optional[str] = None,
-                            dpi: int = 300) -> Tuple[plt.Figure, plt.Axes]:
+def plot_stratified_heatmap(
+    metrics_matrix: np.ndarray,
+    row_labels: List[str],
+    col_labels: List[str],
+    title: str = "Stratified Performance Heatmap",
+    xlabel: str = "Risk Tier",
+    ylabel: str = "Model",
+    cmap: str = "RdYlGn",
+    vmin: Optional[float] = None,
+    vmax: Optional[float] = None,
+    figsize: Tuple[float, float] = (8.0, 6.0),
+    save_path: Optional[str] = None,
+    dpi: int = 300,
+) -> Tuple[plt.Figure, plt.Axes]:
     """Plot heatmap of performance metrics stratified by groups.
 
     Parameters:
@@ -268,7 +291,7 @@ def plot_stratified_heatmap(metrics_matrix: np.ndarray,
         square=False,
         linewidths=1,
         linecolor='white',
-        ax=ax
+        ax=ax,
     )
 
     # Styling
@@ -288,12 +311,14 @@ def plot_stratified_heatmap(metrics_matrix: np.ndarray,
     return fig, ax
 
 
-def plot_radar_chart(metrics_dict: Dict[str, float],
-                     title: str = "Performance Radar Chart",
-                     max_value: float = 1.0,
-                     figsize: Tuple[float, float] = (7.0, 7.0),
-                     save_path: Optional[str] = None,
-                     dpi: int = 300) -> Tuple[plt.Figure, plt.Axes]:
+def plot_radar_chart(
+    metrics_dict: Dict[str, float],
+    title: str = "Performance Radar Chart",
+    max_value: float = 1.0,
+    figsize: Tuple[float, float] = (7.0, 7.0),
+    save_path: Optional[str] = None,
+    dpi: int = 300,
+) -> Tuple[plt.Figure, plt.Axes]:
     """Plot radar/spider chart for multiple performance metrics.
 
     Parameters:
@@ -329,12 +354,22 @@ def plot_radar_chart(metrics_dict: Dict[str, float],
     angles += angles[:1]
 
     # Create figure
-    fig, ax = plt.subplots(figsize=figsize, subplot_kw=dict(projection='polar'), dpi=dpi)
+    fig, ax = plt.subplots(
+        figsize=figsize, subplot_kw=dict(projection='polar'), dpi=dpi
+    )
 
     # Plot data
-    ax.plot(angles, values, 'o-', linewidth=2.5, color=COLORS['blue'],
-           markersize=8, markerfacecolor=COLORS['cyan'],
-           markeredgecolor=COLORS['blue'], markeredgewidth=2)
+    ax.plot(
+        angles,
+        values,
+        'o-',
+        linewidth=2.5,
+        color=COLORS['blue'],
+        markersize=8,
+        markerfacecolor=COLORS['cyan'],
+        markeredgecolor=COLORS['blue'],
+        markeredgewidth=2,
+    )
     ax.fill(angles, values, alpha=0.25, color=COLORS['blue'])
 
     # Fix axis to go in the right order
@@ -350,8 +385,9 @@ def plot_radar_chart(metrics_dict: Dict[str, float],
 
     # Set y-ticks
     ax.set_yticks(np.linspace(0, max_value, 5))
-    ax.set_yticklabels([f'{v:.1f}' for v in np.linspace(0, max_value, 5)],
-                       fontsize=10, color='grey')
+    ax.set_yticklabels(
+        [f'{v:.1f}' for v in np.linspace(0, max_value, 5)], fontsize=10, color='grey'
+    )
 
     # Add grid
     ax.grid(True, linestyle='--', alpha=0.5)
@@ -367,12 +403,14 @@ def plot_radar_chart(metrics_dict: Dict[str, float],
     return fig, ax
 
 
-def plot_multi_radar_comparison(models_metrics: Dict[str, Dict[str, float]],
-                                title: str = "Multi-Model Radar Comparison",
-                                max_value: float = 1.0,
-                                figsize: Tuple[float, float] = (8.0, 8.0),
-                                save_path: Optional[str] = None,
-                                dpi: int = 300) -> Tuple[plt.Figure, plt.Axes]:
+def plot_multi_radar_comparison(
+    models_metrics: Dict[str, Dict[str, float]],
+    title: str = "Multi-Model Radar Comparison",
+    max_value: float = 1.0,
+    figsize: Tuple[float, float] = (8.0, 8.0),
+    save_path: Optional[str] = None,
+    dpi: int = 300,
+) -> Tuple[plt.Figure, plt.Axes]:
     """Plot radar chart comparing multiple models.
 
     Parameters:
@@ -403,11 +441,19 @@ def plot_multi_radar_comparison(models_metrics: Dict[str, Dict[str, float]],
     angles += angles[:1]
 
     # Create figure
-    fig, ax = plt.subplots(figsize=figsize, subplot_kw=dict(projection='polar'), dpi=dpi)
+    fig, ax = plt.subplots(
+        figsize=figsize, subplot_kw=dict(projection='polar'), dpi=dpi
+    )
 
     # Color cycle
-    colors = [COLORS['blue'], COLORS['orange'], COLORS['teal'],
-             COLORS['red'], COLORS['magenta'], COLORS['cyan']]
+    colors = [
+        COLORS['blue'],
+        COLORS['orange'],
+        COLORS['teal'],
+        COLORS['red'],
+        COLORS['magenta'],
+        COLORS['cyan'],
+    ]
 
     # Plot each model
     for idx, (model_name, metrics) in enumerate(models_metrics.items()):
@@ -415,8 +461,16 @@ def plot_multi_radar_comparison(models_metrics: Dict[str, Dict[str, float]],
         values += values[:1]  # Complete circle
 
         color = colors[idx % len(colors)]
-        ax.plot(angles, values, 'o-', linewidth=2.5, color=color,
-               label=model_name, markersize=6, alpha=0.8)
+        ax.plot(
+            angles,
+            values,
+            'o-',
+            linewidth=2.5,
+            color=color,
+            label=model_name,
+            markersize=6,
+            alpha=0.8,
+        )
         ax.fill(angles, values, alpha=0.1, color=color)
 
     # Fix axis
@@ -430,13 +484,19 @@ def plot_multi_radar_comparison(models_metrics: Dict[str, Dict[str, float]],
     # Set y-limits
     ax.set_ylim(0, max_value)
     ax.set_yticks(np.linspace(0, max_value, 5))
-    ax.set_yticklabels([f'{v:.1f}' for v in np.linspace(0, max_value, 5)],
-                       fontsize=10, color='grey')
+    ax.set_yticklabels(
+        [f'{v:.1f}' for v in np.linspace(0, max_value, 5)], fontsize=10, color='grey'
+    )
 
     # Grid and legend
     ax.grid(True, linestyle='--', alpha=0.5)
-    ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1),
-             frameon=True, fancybox=True, shadow=True)
+    ax.legend(
+        loc='upper right',
+        bbox_to_anchor=(1.3, 1.1),
+        frameon=True,
+        fancybox=True,
+        shadow=True,
+    )
 
     # Title
     ax.set_title(title, fontsize=16, fontweight='bold', pad=30)
@@ -449,12 +509,14 @@ def plot_multi_radar_comparison(models_metrics: Dict[str, Dict[str, float]],
     return fig, ax
 
 
-def plot_parallel_coordinates(df: pd.DataFrame,
-                              class_column: str,
-                              title: str = "Parallel Coordinates Plot",
-                              figsize: Tuple[float, float] = (10.0, 6.0),
-                              save_path: Optional[str] = None,
-                              dpi: int = 300) -> Tuple[plt.Figure, plt.Axes]:
+def plot_parallel_coordinates(
+    df: pd.DataFrame,
+    class_column: str,
+    title: str = "Parallel Coordinates Plot",
+    figsize: Tuple[float, float] = (10.0, 6.0),
+    save_path: Optional[str] = None,
+    dpi: int = 300,
+) -> Tuple[plt.Figure, plt.Axes]:
     """Plot parallel coordinates for multi-dimensional data.
 
     Parameters:
@@ -483,9 +545,14 @@ def plot_parallel_coordinates(df: pd.DataFrame,
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
     # Plot parallel coordinates
-    parallel_coordinates(df, class_column, ax=ax,
-                        color=[COLORS['blue'], COLORS['orange'], COLORS['teal']],
-                        linewidth=2.5, alpha=0.7)
+    parallel_coordinates(
+        df,
+        class_column,
+        ax=ax,
+        color=[COLORS['blue'], COLORS['orange'], COLORS['teal']],
+        linewidth=2.5,
+        alpha=0.7,
+    )
 
     # Styling
     ax.set_title(title, fontsize=16, fontweight='bold', pad=20)
@@ -501,18 +568,20 @@ def plot_parallel_coordinates(df: pd.DataFrame,
     return fig, ax
 
 
-def plot_3d_scatter_performance(x: np.ndarray,
-                                y: np.ndarray,
-                                z: np.ndarray,
-                                colors: Optional[np.ndarray] = None,
-                                labels: Optional[List[str]] = None,
-                                xlabel: str = "Feature 1",
-                                ylabel: str = "Feature 2",
-                                zlabel: str = "Performance",
-                                title: str = "3D Performance Scatter",
-                                figsize: Tuple[float, float] = (10.0, 8.0),
-                                save_path: Optional[str] = None,
-                                dpi: int = 300) -> Tuple[plt.Figure, Axes3D]:
+def plot_3d_scatter_performance(
+    x: np.ndarray,
+    y: np.ndarray,
+    z: np.ndarray,
+    colors: Optional[np.ndarray] = None,
+    labels: Optional[List[str]] = None,
+    xlabel: str = "Feature 1",
+    ylabel: str = "Feature 2",
+    zlabel: str = "Performance",
+    title: str = "3D Performance Scatter",
+    figsize: Tuple[float, float] = (10.0, 8.0),
+    save_path: Optional[str] = None,
+    dpi: int = 300,
+) -> Tuple[plt.Figure, Axes3D]:
     """Plot 3D scatter plot for performance analysis.
 
     Parameters:
@@ -546,8 +615,17 @@ def plot_3d_scatter_performance(x: np.ndarray,
         colors = z  # Color by performance value
 
     # Scatter plot
-    scatter = ax.scatter(x, y, z, c=colors, cmap='viridis',
-                        s=100, alpha=0.8, edgecolors='black', linewidth=1)
+    scatter = ax.scatter(
+        x,
+        y,
+        z,
+        c=colors,
+        cmap='viridis',
+        s=100,
+        alpha=0.8,
+        edgecolors='black',
+        linewidth=1,
+    )
 
     # Add labels
     if labels is not None:

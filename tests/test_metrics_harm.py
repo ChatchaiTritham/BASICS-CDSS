@@ -2,18 +2,15 @@
 Tests for harm-aware evaluation metrics module.
 """
 
-import pytest
 import numpy as np
-from basics_cdss.metrics.harm import (
-    weighted_harm_loss,
-    harm_by_risk_tier,
-    escalation_failure_analysis,
-    harm_concentration_index,
-    compute_harm_metrics,
-    asymmetric_cost_matrix,
-    DEFAULT_HARM_WEIGHTS,
-    HarmMetrics,
-)
+import pytest
+from basics_cdss.metrics.harm import (DEFAULT_HARM_WEIGHTS, HarmMetrics,
+                                      asymmetric_cost_matrix,
+                                      compute_harm_metrics,
+                                      escalation_failure_analysis,
+                                      harm_by_risk_tier,
+                                      harm_concentration_index,
+                                      weighted_harm_loss)
 
 
 class TestWeightedHarmLoss:
@@ -52,7 +49,9 @@ class TestWeightedHarmLoss:
         risk_tiers = np.array(["critical", "minor"])
         custom_weights = {"critical": 100.0, "minor": 1.0}
 
-        loss = weighted_harm_loss(y_true, y_pred, risk_tiers, harm_weights=custom_weights)
+        loss = weighted_harm_loss(
+            y_true, y_pred, risk_tiers, harm_weights=custom_weights
+        )
 
         # Should use custom weights
         # Expected: (100*1 + 1*1) / 2 = 50.5
@@ -143,8 +142,7 @@ class TestEscalationFailureAnalysis:
         risk_tiers = np.array(["critical", "critical", "routine"])
 
         analysis = escalation_failure_analysis(
-            y_true, y_pred, risk_tiers,
-            high_risk_labels=["critical"]
+            y_true, y_pred, risk_tiers, high_risk_labels=["critical"]
         )
 
         assert analysis["escalation_failures"] == 1
@@ -193,7 +191,9 @@ class TestComputeHarmMetrics:
         """Test that all metrics are computed."""
         y_true = np.array([1, 1, 0, 1, 0, 1, 0, 0])
         y_pred = np.array([1, 0, 0, 1, 1, 0, 0, 1])
-        risk_tiers = np.array(["high", "high", "low", "medium", "low", "high", "low", "low"])
+        risk_tiers = np.array(
+            ["high", "high", "low", "medium", "low", "high", "low", "low"]
+        )
 
         metrics = compute_harm_metrics(y_true, y_pred, risk_tiers)
 
@@ -226,9 +226,7 @@ class TestAsymmetricCostMatrix:
         y_true = np.array([1, 1, 0, 0])
         y_pred = np.array([0, 0, 0, 0])  # 2 false negatives
 
-        cost = asymmetric_cost_matrix(
-            y_true, y_pred, cost_fn=10.0, cost_fp=1.0
-        )
+        cost = asymmetric_cost_matrix(y_true, y_pred, cost_fn=10.0, cost_fp=1.0)
 
         # Cost = (2 * 10.0 + 2 * 0.0) / 4 = 5.0
         assert cost == 5.0
@@ -238,9 +236,7 @@ class TestAsymmetricCostMatrix:
         y_true = np.array([1, 1, 0, 0])
         y_pred = np.array([1, 1, 1, 1])  # 2 false positives
 
-        cost = asymmetric_cost_matrix(
-            y_true, y_pred, cost_fn=10.0, cost_fp=1.0
-        )
+        cost = asymmetric_cost_matrix(y_true, y_pred, cost_fn=10.0, cost_fp=1.0)
 
         # Cost = (2 * 0.0 + 2 * 1.0) / 4 = 0.5
         assert cost == 0.5
@@ -250,9 +246,7 @@ class TestAsymmetricCostMatrix:
         y_true = np.array([1, 0, 1, 0])
         y_pred = np.array([1, 0, 1, 0])
 
-        cost = asymmetric_cost_matrix(
-            y_true, y_pred, cost_fn=10.0, cost_fp=1.0
-        )
+        cost = asymmetric_cost_matrix(y_true, y_pred, cost_fn=10.0, cost_fp=1.0)
 
         assert cost == 0.0
 

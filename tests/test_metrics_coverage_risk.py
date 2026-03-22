@@ -2,16 +2,14 @@
 Tests for coverage-risk metrics module.
 """
 
-import pytest
 import numpy as np
-from basics_cdss.metrics.coverage_risk import (
-    coverage_risk_curve,
-    area_under_risk_coverage_curve,
-    selective_prediction_metrics,
-    abstention_rate,
-    stratified_selective_metrics,
-    SelectivePredictionMetrics,
-)
+import pytest
+from basics_cdss.metrics.coverage_risk import (SelectivePredictionMetrics,
+                                               abstention_rate,
+                                               area_under_risk_coverage_curve,
+                                               coverage_risk_curve,
+                                               selective_prediction_metrics,
+                                               stratified_selective_metrics)
 
 
 class TestCoverageRiskCurve:
@@ -22,7 +20,9 @@ class TestCoverageRiskCurve:
         y_true = np.array([1, 1, 0, 1, 0])
         y_prob = np.array([0.9, 0.8, 0.3, 0.7, 0.2])
 
-        coverages, risks, thresholds = coverage_risk_curve(y_true, y_prob, n_thresholds=10)
+        coverages, risks, thresholds = coverage_risk_curve(
+            y_true, y_prob, n_thresholds=10
+        )
 
         # Should return arrays of same length
         assert len(coverages) == len(risks) == len(thresholds)
@@ -35,7 +35,9 @@ class TestCoverageRiskCurve:
         y_true = np.array([1, 1, 0, 1, 0, 1, 0, 0])
         y_prob = np.array([0.9, 0.8, 0.3, 0.7, 0.2, 0.85, 0.15, 0.4])
 
-        coverages, risks, thresholds = coverage_risk_curve(y_true, y_prob, n_thresholds=20)
+        coverages, risks, thresholds = coverage_risk_curve(
+            y_true, y_prob, n_thresholds=20
+        )
 
         # Coverage should generally decrease (allowing for ties)
         for i in range(len(coverages) - 1):
@@ -177,9 +179,13 @@ class TestStratifiedSelectiveMetrics:
         """Test selective prediction stratified by risk tier."""
         y_true = np.array([1, 0, 1, 0, 1, 0, 1, 0])
         y_prob = np.array([0.9, 0.2, 0.8, 0.3, 0.7, 0.1, 0.85, 0.25])
-        risk_tiers = np.array(["high", "low", "high", "low", "medium", "low", "high", "low"])
+        risk_tiers = np.array(
+            ["high", "low", "high", "low", "medium", "low", "high", "low"]
+        )
 
-        metrics = stratified_selective_metrics(y_true, y_prob, risk_tiers, n_thresholds=10)
+        metrics = stratified_selective_metrics(
+            y_true, y_prob, risk_tiers, n_thresholds=10
+        )
 
         # Should have metrics for each tier
         assert "high" in metrics
