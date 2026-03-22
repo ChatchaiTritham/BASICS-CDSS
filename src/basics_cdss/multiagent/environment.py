@@ -5,13 +5,15 @@ interact and clinical workflows unfold.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional, Set
 from enum import Enum
+from typing import Any, Dict, List, Optional, Set
+
 import numpy as np
 
 
 class WardType(Enum):
     """Types of hospital wards."""
+
     EMERGENCY = "emergency"
     ICU = "icu"
     GENERAL = "general"
@@ -28,6 +30,7 @@ class Resource:
         available: Whether resource is available
         location: Ward where resource is located
     """
+
     resource_id: str
     resource_type: str
     available: bool = True
@@ -46,6 +49,7 @@ class Ward:
         patients: List of patient IDs in ward
         resources: Available resources in ward
     """
+
     ward_id: str
     ward_type: WardType
     capacity: int
@@ -125,7 +129,7 @@ class HospitalEnvironment:
         n_beds: int = 20,
         icu_beds: int = 8,
         ed_beds: int = 15,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
     ):
         """Initialize hospital environment.
 
@@ -144,20 +148,12 @@ class HospitalEnvironment:
         # Wards
         self.wards: Dict[str, Ward] = {
             'emergency': Ward(
-                ward_id='emergency',
-                ward_type=WardType.EMERGENCY,
-                capacity=ed_beds
+                ward_id='emergency', ward_type=WardType.EMERGENCY, capacity=ed_beds
             ),
-            'icu': Ward(
-                ward_id='icu',
-                ward_type=WardType.ICU,
-                capacity=icu_beds
-            ),
+            'icu': Ward(ward_id='icu', ward_type=WardType.ICU, capacity=icu_beds),
             'general': Ward(
-                ward_id='general',
-                ward_type=WardType.GENERAL,
-                capacity=n_beds
-            )
+                ward_id='general', ward_type=WardType.GENERAL, capacity=n_beds
+            ),
         }
 
         # Agents
@@ -195,12 +191,14 @@ class HospitalEnvironment:
             self.nurses[agent.agent_id] = agent
 
         # Log event
-        self._log_event({
-            'type': 'agent_added',
-            'agent_id': agent.agent_id,
-            'agent_type': agent.agent_type.value,
-            'timestamp': self.current_time
-        })
+        self._log_event(
+            {
+                'type': 'agent_added',
+                'agent_id': agent.agent_id,
+                'agent_type': agent.agent_type.value,
+                'timestamp': self.current_time,
+            }
+        )
 
     def remove_agent(self, agent_id: str):
         """Remove agent from environment.
@@ -224,20 +222,19 @@ class HospitalEnvironment:
             elif agent.agent_type == AgentType.NURSE:
                 del self.nurses[agent_id]
 
-            self._log_event({
-                'type': 'agent_removed',
-                'agent_id': agent_id,
-                'timestamp': self.current_time
-            })
+            self._log_event(
+                {
+                    'type': 'agent_removed',
+                    'agent_id': agent_id,
+                    'timestamp': self.current_time,
+                }
+            )
 
     def get_all_patients(self) -> List['PatientAgent']:
         """Get all patient agents."""
         return list(self.patients.values())
 
-    def get_patients_for_clinician(
-        self,
-        clinician_id: str
-    ) -> List['PatientAgent']:
+    def get_patients_for_clinician(self, clinician_id: str) -> List['PatientAgent']:
         """Get patients assigned to clinician.
 
         Args:
@@ -261,17 +258,11 @@ class HospitalEnvironment:
         """
         # Return alerts not yet acknowledged
         pending = [
-            alert for alert in self.alerts
-            if not alert.get('acknowledged', False)
+            alert for alert in self.alerts if not alert.get('acknowledged', False)
         ]
         return pending
 
-    def send_alert(
-        self,
-        from_agent: str,
-        to_agent: str,
-        alert_data: Dict[str, Any]
-    ):
+    def send_alert(self, from_agent: str, to_agent: str, alert_data: Dict[str, Any]):
         """Send alert from one agent to another.
 
         Args:
@@ -284,17 +275,19 @@ class HospitalEnvironment:
             'to': to_agent,
             'timestamp': self.current_time,
             'acknowledged': False,
-            **alert_data
+            **alert_data,
         }
 
         self.alerts.append(alert)
 
-        self._log_event({
-            'type': 'alert_sent',
-            'from': from_agent,
-            'to': to_agent,
-            'timestamp': self.current_time
-        })
+        self._log_event(
+            {
+                'type': 'alert_sent',
+                'from': from_agent,
+                'to': to_agent,
+                'timestamp': self.current_time,
+            }
+        )
 
     def acknowledge_alert(self, alert_index: int):
         """Acknowledge an alert.
@@ -319,13 +312,15 @@ class HospitalEnvironment:
             action = agent.step(self, dt)
 
             if action:
-                self._log_event({
-                    'type': 'agent_action',
-                    'agent_id': action.agent_id,
-                    'action_type': action.action_type,
-                    'target': action.target,
-                    'timestamp': self.current_time
-                })
+                self._log_event(
+                    {
+                        'type': 'agent_action',
+                        'agent_id': action.agent_id,
+                        'action_type': action.action_type,
+                        'target': action.target,
+                        'timestamp': self.current_time,
+                    }
+                )
 
         # Evolve patients
         for patient in self.patients.values():
@@ -349,11 +344,7 @@ class HospitalEnvironment:
         """
         self.event_log.append(event)
 
-    def simulate(
-        self,
-        duration_hours: float,
-        dt: float = 1.0
-    ) -> Dict[str, Any]:
+    def simulate(self, duration_hours: float, dt: float = 1.0) -> Dict[str, Any]:
         """Run simulation for specified duration.
 
         Args:
@@ -387,7 +378,7 @@ class HospitalEnvironment:
             'n_patients': len(self.patients),
             'n_clinicians': len(self.clinicians),
             'patient_trajectories': self._get_patient_trajectories(),
-            'metrics': self._compute_metrics()
+            'metrics': self._compute_metrics(),
         }
 
         return results
@@ -398,10 +389,7 @@ class HospitalEnvironment:
 
         for patient_id, patient in self.patients.items():
             trajectories[patient_id] = [
-                {
-                    'timestamp': state.timestamp,
-                    'features': state.features
-                }
+                {'timestamp': state.timestamp, 'features': state.features}
                 for state in patient.digital_twin.history
             ]
 
@@ -412,11 +400,12 @@ class HospitalEnvironment:
         return {
             'total_events': len(self.event_log),
             'total_alerts': len(self.alerts),
-            'alert_rate': len(self.alerts) / self.current_time if self.current_time > 0 else 0,
+            'alert_rate': (
+                len(self.alerts) / self.current_time if self.current_time > 0 else 0
+            ),
             'occupancy': {
-                ward_id: ward.occupancy_rate
-                for ward_id, ward in self.wards.items()
-            }
+                ward_id: ward.occupancy_rate for ward_id, ward in self.wards.items()
+            },
         }
 
     def get_state(self) -> Dict[str, Any]:
@@ -430,13 +419,12 @@ class HospitalEnvironment:
             'n_agents': len(self.agents),
             'n_patients': len(self.patients),
             'wards': {
-                ward_id: {
-                    'occupancy': ward.occupancy_rate,
-                    'patients': ward.patients
-                }
+                ward_id: {'occupancy': ward.occupancy_rate, 'patients': ward.patients}
                 for ward_id, ward in self.wards.items()
             },
-            'pending_alerts': len([a for a in self.alerts if not a.get('acknowledged')])
+            'pending_alerts': len(
+                [a for a in self.alerts if not a.get('acknowledged')]
+            ),
         }
 
     def reset(self):

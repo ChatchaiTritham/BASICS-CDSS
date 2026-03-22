@@ -11,9 +11,11 @@ failures in high-risk scenarios are weighted more heavily than low-risk errors.
 """
 
 from __future__ import annotations
-from typing import Dict, Optional
-import numpy as np
+
 from dataclasses import dataclass
+from typing import Dict, Optional
+
+import numpy as np
 
 
 @dataclass
@@ -27,6 +29,7 @@ class HarmMetrics:
         false_escalations: Count of unnecessary escalations in low-risk cases
         harm_concentration: Fraction of total harm in high-risk tier
     """
+
     weighted_harm_loss: float
     harm_by_tier: Dict[str, float]
     escalation_failures: int
@@ -36,11 +39,11 @@ class HarmMetrics:
 
 # Default harm weights following clinical triage urgency
 DEFAULT_HARM_WEIGHTS = {
-    "high": 10.0,      # High-risk errors are 10x more harmful
-    "medium": 3.0,     # Medium-risk errors are 3x more harmful
-    "low": 1.0,        # Low-risk errors baseline
-    "urgent": 10.0,    # Alias for high
-    "non-urgent": 1.0, # Alias for low
+    "high": 10.0,  # High-risk errors are 10x more harmful
+    "medium": 3.0,  # Medium-risk errors are 3x more harmful
+    "low": 1.0,  # Low-risk errors baseline
+    "urgent": 10.0,  # Alias for high
+    "non-urgent": 1.0,  # Alias for low
 }
 
 
@@ -48,7 +51,7 @@ def weighted_harm_loss(
     y_true: np.ndarray,
     y_pred: np.ndarray,
     risk_tiers: np.ndarray,
-    harm_weights: Optional[Dict[str, float]] = None
+    harm_weights: Optional[Dict[str, float]] = None,
 ) -> float:
     """Compute weighted harm loss prioritizing high-risk scenarios.
 
@@ -85,10 +88,9 @@ def weighted_harm_loss(
         harm_weights = DEFAULT_HARM_WEIGHTS
 
     # Map risk tiers to weights
-    weights = np.array([
-        harm_weights.get(str(tier).lower(), 1.0)
-        for tier in risk_tiers
-    ])
+    weights = np.array(
+        [harm_weights.get(str(tier).lower(), 1.0) for tier in risk_tiers]
+    )
 
     # Indicator of error
     errors = (y_pred != y_true).astype(float)
@@ -103,7 +105,7 @@ def harm_by_risk_tier(
     y_true: np.ndarray,
     y_pred: np.ndarray,
     risk_tiers: np.ndarray,
-    harm_weights: Optional[Dict[str, float]] = None
+    harm_weights: Optional[Dict[str, float]] = None,
 ) -> Dict[str, float]:
     """Compute harm loss separately for each risk tier.
 
@@ -158,7 +160,7 @@ def escalation_failure_analysis(
     y_true: np.ndarray,
     y_pred: np.ndarray,
     risk_tiers: np.ndarray,
-    high_risk_labels: Optional[list] = None
+    high_risk_labels: Optional[list] = None,
 ) -> Dict[str, int]:
     """Analyze escalation failures and false escalations.
 
@@ -213,7 +215,7 @@ def harm_concentration_index(
     y_true: np.ndarray,
     y_pred: np.ndarray,
     risk_tiers: np.ndarray,
-    harm_weights: Optional[Dict[str, float]] = None
+    harm_weights: Optional[Dict[str, float]] = None,
 ) -> float:
     """Measure fraction of total harm concentrated in high-risk tier.
 
@@ -252,8 +254,7 @@ def harm_concentration_index(
     # Sum harm in high-risk tiers
     high_risk_tiers = ["high", "urgent", "critical", "emergency"]
     high_risk_harm = sum(
-        harm for tier, harm in tier_harm.items()
-        if tier.lower() in high_risk_tiers
+        harm for tier, harm in tier_harm.items() if tier.lower() in high_risk_tiers
     )
 
     concentration = high_risk_harm / total_harm
@@ -266,7 +267,7 @@ def compute_harm_metrics(
     y_pred: np.ndarray,
     risk_tiers: np.ndarray,
     harm_weights: Optional[Dict[str, float]] = None,
-    high_risk_labels: Optional[list] = None
+    high_risk_labels: Optional[list] = None,
 ) -> HarmMetrics:
     """Compute comprehensive harm-aware evaluation metrics.
 
@@ -295,9 +296,7 @@ def compute_harm_metrics(
         y_true, y_pred, risk_tiers, high_risk_labels
     )
 
-    concentration = harm_concentration_index(
-        y_true, y_pred, risk_tiers, harm_weights
-    )
+    concentration = harm_concentration_index(y_true, y_pred, risk_tiers, harm_weights)
 
     return HarmMetrics(
         weighted_harm_loss=weighted_loss,
@@ -314,7 +313,7 @@ def asymmetric_cost_matrix(
     cost_fn: float = 1.0,
     cost_fp: float = 0.1,
     cost_tn: float = 0.0,
-    cost_tp: float = 0.0
+    cost_tp: float = 0.0,
 ) -> float:
     """Compute cost using asymmetric cost matrix.
 
@@ -350,12 +349,7 @@ def asymmetric_cost_matrix(
     fn = ((y_true == 1) & (y_pred == 0)).sum()
 
     # Total cost
-    total_cost = (
-        cost_tp * tp +
-        cost_fp * fp +
-        cost_tn * tn +
-        cost_fn * fn
-    )
+    total_cost = cost_tp * tp + cost_fp * fp + cost_tn * tn + cost_fn * fn
 
     # Average cost per sample
     avg_cost = total_cost / len(y_true)

@@ -10,7 +10,8 @@ Key metrics:
 - Trajectory calibration: Does confidence match temporal outcome accuracy?
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 import numpy as np
 import pandas as pd
 from basics_cdss.temporal.digital_twin import PatientState
@@ -19,7 +20,7 @@ from basics_cdss.temporal.digital_twin import PatientState
 def temporal_consistency_score(
     predictions: List[Dict[str, Any]],
     window_size: int = 3,
-    intervention_keys: Optional[List[str]] = None
+    intervention_keys: Optional[List[str]] = None,
 ) -> float:
     """Measure consistency of CDSS recommendations over time.
 
@@ -58,7 +59,7 @@ def temporal_consistency_score(
     total_comparisons = 0
 
     for i in range(n_windows):
-        window = predictions[i:i+window_size]
+        window = predictions[i : i + window_size]
 
         # Count intervention changes within window
         for key in intervention_keys:
@@ -66,7 +67,7 @@ def temporal_consistency_score(
 
             # Count transitions
             for j in range(len(values) - 1):
-                if values[j] != values[j+1]:
+                if values[j] != values[j + 1]:
                     changes += 1
                 total_comparisons += 1
 
@@ -82,7 +83,7 @@ def delayed_intervention_risk(
     trajectory_immediate: List[PatientState],
     trajectory_delayed: List[PatientState],
     harm_function: Optional[callable] = None,
-    delay_hours: float = 6.0
+    delay_hours: float = 6.0,
 ) -> Dict[str, float]:
     """Quantify risk of delaying intervention.
 
@@ -128,22 +129,22 @@ def delayed_intervention_risk(
         'harm_increase': harm_delayed - harm_immediate,
         'harm_increase_percent': (
             (harm_delayed - harm_immediate) / harm_immediate * 100
-            if harm_immediate > 0 else 0.0
+            if harm_immediate > 0
+            else 0.0
         ),
         'peak_harm_immediate': peak_harm_immediate,
         'peak_harm_delayed': peak_harm_delayed,
         'delay_hours': delay_hours,
         'harm_per_hour_delay': (
-            (harm_delayed - harm_immediate) / delay_hours
-            if delay_hours > 0 else 0.0
-        )
+            (harm_delayed - harm_immediate) / delay_hours if delay_hours > 0 else 0.0
+        ),
     }
 
 
 def counterfactual_regret(
     factual_trajectory: List[PatientState],
     counterfactual_trajectories: List[List[PatientState]],
-    harm_function: Optional[callable] = None
+    harm_function: Optional[callable] = None,
 ) -> Dict[str, float]:
     """Compute regret from counterfactual analysis.
 
@@ -195,7 +196,7 @@ def counterfactual_regret(
         'regret': regret,
         'regret_percent': (regret / factual_harm * 100) if factual_harm > 0 else 0.0,
         'n_alternatives': len(cf_harms),
-        'factual_rank': sorted(cf_harms + [factual_harm]).index(factual_harm) + 1
+        'factual_rank': sorted(cf_harms + [factual_harm]).index(factual_harm) + 1,
     }
 
 
@@ -204,7 +205,7 @@ def trajectory_calibration_error(
     predictions: List[List[Dict[str, Any]]],
     outcomes: List[int],
     confidence_key: str = 'confidence',
-    n_bins: int = 10
+    n_bins: int = 10,
 ) -> float:
     """Compute calibration error for temporal predictions.
 
@@ -235,10 +236,7 @@ def trajectory_calibration_error(
     # Extract confidence scores (use maximum confidence from trajectory)
     confidences = []
     for pred_traj in predictions:
-        max_conf = max(
-            pred.get(confidence_key, 0.5)
-            for pred in pred_traj
-        )
+        max_conf = max(pred.get(confidence_key, 0.5) for pred in pred_traj)
         confidences.append(max_conf)
 
     confidences = np.array(confidences)
@@ -269,8 +267,7 @@ def trajectory_calibration_error(
 
 
 def temporal_harm_trajectory(
-    trajectory: List[PatientState],
-    harm_function: Optional[callable] = None
+    trajectory: List[PatientState], harm_function: Optional[callable] = None
 ) -> np.ndarray:
     """Compute harm at each time point in trajectory.
 
@@ -295,16 +292,14 @@ def temporal_harm_trajectory(
     if harm_function is None:
         harm_function = lambda state: state.features.get('_infection_severity', 0.0)
 
-    harm_values = np.array([
-        harm_function(state) for state in trajectory
-    ])
+    harm_values = np.array([harm_function(state) for state in trajectory])
 
     return harm_values
 
 
 def intervention_timing_analysis(
     trajectories_by_timing: Dict[float, List[List[PatientState]]],
-    harm_function: Optional[callable] = None
+    harm_function: Optional[callable] = None,
 ) -> pd.DataFrame:
     """Analyze impact of intervention timing on outcomes.
 
@@ -338,23 +333,22 @@ def intervention_timing_analysis(
 
     for timing, trajectories in trajectories_by_timing.items():
         # Compute final harm for each trajectory
-        final_harms = [
-            harm_function(traj[-1]) for traj in trajectories
-        ]
+        final_harms = [harm_function(traj[-1]) for traj in trajectories]
 
         # Compute cumulative harm
         cumulative_harms = [
-            sum(harm_function(state) for state in traj)
-            for traj in trajectories
+            sum(harm_function(state) for state in traj) for traj in trajectories
         ]
 
-        results.append({
-            'intervention_time': timing,
-            'mean_final_harm': np.mean(final_harms),
-            'std_final_harm': np.std(final_harms),
-            'mean_cumulative_harm': np.mean(cumulative_harms),
-            'std_cumulative_harm': np.std(cumulative_harms),
-            'n_trajectories': len(trajectories)
-        })
+        results.append(
+            {
+                'intervention_time': timing,
+                'mean_final_harm': np.mean(final_harms),
+                'std_final_harm': np.std(final_harms),
+                'mean_cumulative_harm': np.mean(cumulative_harms),
+                'std_cumulative_harm': np.std(cumulative_harms),
+                'n_trajectories': len(trajectories),
+            }
+        )
 
     return pd.DataFrame(results).sort_values('intervention_time')

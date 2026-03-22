@@ -10,11 +10,13 @@ All evaluation runs must be logged for governance compliance and reproducibility
 """
 
 from __future__ import annotations
-from dataclasses import dataclass, field, asdict
-from typing import Any, Dict, Optional
-from pathlib import Path
-from datetime import datetime
+
 import json
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Optional
+
 import yaml
 
 
@@ -32,6 +34,7 @@ class EvaluationConfig:
         harm_weights: Harm weight mapping by risk tier
         metadata: Additional metadata (e.g., experiment name, author)
     """
+
     seed: int = 42
     n_per_archetype: int = 10
     perturbation_type: Optional[str] = "composite"
@@ -65,6 +68,7 @@ class ExecutionLog:
         warnings: Any warnings generated
         results_summary: High-level results summary
     """
+
     timestamp: str
     config: EvaluationConfig
     n_scenarios: int
@@ -89,9 +93,7 @@ class ExecutionLog:
 
 
 def save_config(
-    config: EvaluationConfig,
-    output_path: str | Path,
-    format: str = "yaml"
+    config: EvaluationConfig, output_path: str | Path, format: str = "yaml"
 ) -> None:
     """Save evaluation configuration to file.
 
@@ -154,7 +156,7 @@ def log_evaluation_run(
     errors: Optional[list] = None,
     warnings: Optional[list] = None,
     output_path: Optional[str | Path] = None,
-    format: str = "yaml"
+    format: str = "yaml",
 ) -> ExecutionLog:
     """Log evaluation run with complete metadata.
 
@@ -213,9 +215,7 @@ def log_evaluation_run(
 
 
 def create_audit_trail(
-    config_path: str | Path,
-    log_path: str | Path,
-    output_dir: str | Path
+    config_path: str | Path, log_path: str | Path, output_dir: str | Path
 ) -> Dict[str, Path]:
     """Create audit trail package with config and log.
 
@@ -258,7 +258,7 @@ def create_audit_trail(
         "files": {
             "config": str(config_out.name),
             "execution_log": str(log_out.name),
-        }
+        },
     }
 
     manifest_path = output_dir / "MANIFEST.yaml"

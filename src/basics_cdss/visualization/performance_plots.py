@@ -16,13 +16,14 @@ Affiliation: Naresuan University
 Date: 2026-01-25
 """
 
+from typing import Dict, List, Optional, Tuple, Union
+
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.gridspec import GridSpec
-from typing import Dict, List, Optional, Tuple, Union
 import seaborn as sns
+from matplotlib.gridspec import GridSpec
 
 # Colorblind-friendly palette (Paul Tol's vibrant scheme)
 COLORS = {
@@ -36,29 +37,33 @@ COLORS = {
 }
 
 # Publication settings
-plt.rcParams.update({
-    'font.family': 'serif',
-    'font.serif': ['Times New Roman', 'DejaVu Serif'],
-    'font.size': 12,
-    'axes.labelsize': 14,
-    'axes.titlesize': 16,
-    'xtick.labelsize': 12,
-    'ytick.labelsize': 12,
-    'legend.fontsize': 11,
-    'figure.titlesize': 18,
-    'pdf.fonttype': 42,
-    'ps.fonttype': 42,
-})
+plt.rcParams.update(
+    {
+        'font.family': 'serif',
+        'font.serif': ['Times New Roman', 'DejaVu Serif'],
+        'font.size': 12,
+        'axes.labelsize': 14,
+        'axes.titlesize': 16,
+        'xtick.labelsize': 12,
+        'ytick.labelsize': 12,
+        'legend.fontsize': 11,
+        'figure.titlesize': 18,
+        'pdf.fonttype': 42,
+        'ps.fonttype': 42,
+    }
+)
 
 
-def plot_confusion_matrix(confusion_matrix: np.ndarray,
-                          class_names: Optional[List[str]] = None,
-                          normalize: bool = False,
-                          title: str = "Confusion Matrix",
-                          figsize: Tuple[float, float] = (7.0, 6.0),
-                          cmap: str = "Blues",
-                          save_path: Optional[str] = None,
-                          dpi: int = 300) -> Tuple[plt.Figure, plt.Axes]:
+def plot_confusion_matrix(
+    confusion_matrix: np.ndarray,
+    class_names: Optional[List[str]] = None,
+    normalize: bool = False,
+    title: str = "Confusion Matrix",
+    figsize: Tuple[float, float] = (7.0, 6.0),
+    cmap: str = "Blues",
+    save_path: Optional[str] = None,
+    dpi: int = 300,
+) -> Tuple[plt.Figure, plt.Axes]:
     """Plot confusion matrix as heatmap.
 
     Parameters:
@@ -108,7 +113,7 @@ def plot_confusion_matrix(confusion_matrix: np.ndarray,
         yticklabels=class_names,
         vmin=vmin,
         vmax=vmax,
-        ax=ax
+        ax=ax,
     )
 
     # Labels
@@ -128,15 +133,17 @@ def plot_confusion_matrix(confusion_matrix: np.ndarray,
     return fig, ax
 
 
-def plot_roc_curve(fpr: np.ndarray,
-                   tpr: np.ndarray,
-                   roc_auc: float,
-                   title: str = "ROC Curve",
-                   label: Optional[str] = None,
-                   figsize: Tuple[float, float] = (7.0, 6.0),
-                   save_path: Optional[str] = None,
-                   dpi: int = 300,
-                   ax: Optional[plt.Axes] = None) -> Tuple[plt.Figure, plt.Axes]:
+def plot_roc_curve(
+    fpr: np.ndarray,
+    tpr: np.ndarray,
+    roc_auc: float,
+    title: str = "ROC Curve",
+    label: Optional[str] = None,
+    figsize: Tuple[float, float] = (7.0, 6.0),
+    save_path: Optional[str] = None,
+    dpi: int = 300,
+    ax: Optional[plt.Axes] = None,
+) -> Tuple[plt.Figure, plt.Axes]:
     """Plot ROC (Receiver Operating Characteristic) curve.
 
     Parameters:
@@ -173,11 +180,19 @@ def plot_roc_curve(fpr: np.ndarray,
     ax.plot(fpr, tpr, color=COLORS['blue'], lw=2.5, label=label)
 
     # Plot diagonal (random classifier)
-    ax.plot([0, 1], [0, 1], color=COLORS['grey'], lw=2, linestyle='--',
-            label='Random (AUC = 0.500)')
+    ax.plot(
+        [0, 1],
+        [0, 1],
+        color=COLORS['grey'],
+        lw=2,
+        linestyle='--',
+        label='Random (AUC = 0.500)',
+    )
 
     # Styling
-    ax.set_xlabel('False Positive Rate (1 - Specificity)', fontsize=14, fontweight='bold')
+    ax.set_xlabel(
+        'False Positive Rate (1 - Specificity)', fontsize=14, fontweight='bold'
+    )
     ax.set_ylabel('True Positive Rate (Sensitivity)', fontsize=14, fontweight='bold')
     ax.set_title(title, fontsize=16, fontweight='bold', pad=20)
 
@@ -197,16 +212,18 @@ def plot_roc_curve(fpr: np.ndarray,
     return fig, ax
 
 
-def plot_pr_curve(precision: np.ndarray,
-                  recall: np.ndarray,
-                  pr_auc: float,
-                  baseline_prevalence: Optional[float] = None,
-                  title: str = "Precision-Recall Curve",
-                  label: Optional[str] = None,
-                  figsize: Tuple[float, float] = (7.0, 6.0),
-                  save_path: Optional[str] = None,
-                  dpi: int = 300,
-                  ax: Optional[plt.Axes] = None) -> Tuple[plt.Figure, plt.Axes]:
+def plot_pr_curve(
+    precision: np.ndarray,
+    recall: np.ndarray,
+    pr_auc: float,
+    baseline_prevalence: Optional[float] = None,
+    title: str = "Precision-Recall Curve",
+    label: Optional[str] = None,
+    figsize: Tuple[float, float] = (7.0, 6.0),
+    save_path: Optional[str] = None,
+    dpi: int = 300,
+    ax: Optional[plt.Axes] = None,
+) -> Tuple[plt.Figure, plt.Axes]:
     """Plot Precision-Recall curve.
 
     Parameters:
@@ -245,8 +262,13 @@ def plot_pr_curve(precision: np.ndarray,
 
     # Plot baseline (random classifier at prevalence)
     if baseline_prevalence is not None:
-        ax.axhline(y=baseline_prevalence, color=COLORS['grey'], lw=2,
-                  linestyle='--', label=f'Baseline (Prevalence = {baseline_prevalence:.3f})')
+        ax.axhline(
+            y=baseline_prevalence,
+            color=COLORS['grey'],
+            lw=2,
+            linestyle='--',
+            label=f'Baseline (Prevalence = {baseline_prevalence:.3f})',
+        )
 
     # Styling
     ax.set_xlabel('Recall (Sensitivity)', fontsize=14, fontweight='bold')
@@ -269,14 +291,16 @@ def plot_pr_curve(precision: np.ndarray,
     return fig, ax
 
 
-def plot_sensitivity_specificity_curve(thresholds: np.ndarray,
-                                       sensitivity: np.ndarray,
-                                       specificity: np.ndarray,
-                                       optimal_threshold: Optional[float] = None,
-                                       title: str = "Sensitivity-Specificity Tradeoff",
-                                       figsize: Tuple[float, float] = (7.0, 6.0),
-                                       save_path: Optional[str] = None,
-                                       dpi: int = 300) -> Tuple[plt.Figure, plt.Axes]:
+def plot_sensitivity_specificity_curve(
+    thresholds: np.ndarray,
+    sensitivity: np.ndarray,
+    specificity: np.ndarray,
+    optimal_threshold: Optional[float] = None,
+    title: str = "Sensitivity-Specificity Tradeoff",
+    figsize: Tuple[float, float] = (7.0, 6.0),
+    save_path: Optional[str] = None,
+    dpi: int = 300,
+) -> Tuple[plt.Figure, plt.Axes]:
     """Plot sensitivity and specificity vs. threshold.
 
     Parameters:
@@ -307,24 +331,58 @@ def plot_sensitivity_specificity_curve(thresholds: np.ndarray,
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
     # Plot curves
-    ax.plot(thresholds, sensitivity, color=COLORS['blue'], lw=2.5,
-            marker='o', markersize=6, label='Sensitivity (TPR)')
-    ax.plot(thresholds, specificity, color=COLORS['orange'], lw=2.5,
-            marker='s', markersize=6, label='Specificity (TNR)')
+    ax.plot(
+        thresholds,
+        sensitivity,
+        color=COLORS['blue'],
+        lw=2.5,
+        marker='o',
+        markersize=6,
+        label='Sensitivity (TPR)',
+    )
+    ax.plot(
+        thresholds,
+        specificity,
+        color=COLORS['orange'],
+        lw=2.5,
+        marker='s',
+        markersize=6,
+        label='Specificity (TNR)',
+    )
 
     # Highlight optimal threshold
     if optimal_threshold is not None:
         # Find index closest to optimal threshold
         idx = np.argmin(np.abs(thresholds - optimal_threshold))
 
-        ax.axvline(x=optimal_threshold, color=COLORS['red'], lw=2,
-                  linestyle='--', alpha=0.7, label=f'Optimal (τ = {optimal_threshold:.2f})')
+        ax.axvline(
+            x=optimal_threshold,
+            color=COLORS['red'],
+            lw=2,
+            linestyle='--',
+            alpha=0.7,
+            label=f'Optimal (τ = {optimal_threshold:.2f})',
+        )
 
         # Mark points
-        ax.plot(optimal_threshold, sensitivity[idx], 'o', color=COLORS['blue'],
-               markersize=12, markeredgecolor='black', markeredgewidth=2)
-        ax.plot(optimal_threshold, specificity[idx], 's', color=COLORS['orange'],
-               markersize=12, markeredgecolor='black', markeredgewidth=2)
+        ax.plot(
+            optimal_threshold,
+            sensitivity[idx],
+            'o',
+            color=COLORS['blue'],
+            markersize=12,
+            markeredgecolor='black',
+            markeredgewidth=2,
+        )
+        ax.plot(
+            optimal_threshold,
+            specificity[idx],
+            's',
+            color=COLORS['orange'],
+            markersize=12,
+            markeredgecolor='black',
+            markeredgewidth=2,
+        )
 
     # Styling
     ax.set_xlabel('Classification Threshold', fontsize=14, fontweight='bold')
@@ -344,11 +402,13 @@ def plot_sensitivity_specificity_curve(thresholds: np.ndarray,
     return fig, ax
 
 
-def plot_threshold_analysis(df_threshold: pd.DataFrame,
-                            title: str = "Threshold Analysis",
-                            figsize: Tuple[float, float] = (7.0, 8.0),
-                            save_path: Optional[str] = None,
-                            dpi: int = 300) -> Tuple[plt.Figure, np.ndarray]:
+def plot_threshold_analysis(
+    df_threshold: pd.DataFrame,
+    title: str = "Threshold Analysis",
+    figsize: Tuple[float, float] = (7.0, 8.0),
+    save_path: Optional[str] = None,
+    dpi: int = 300,
+) -> Tuple[plt.Figure, np.ndarray]:
     """Plot comprehensive threshold analysis (3 panels).
 
     Parameters:
@@ -371,53 +431,107 @@ def plot_threshold_analysis(df_threshold: pd.DataFrame,
     fig, axes = plt.subplots(3, 1, figsize=figsize, dpi=dpi)
 
     # Panel (a): Sensitivity and Specificity
-    axes[0].plot(df_threshold['threshold'], df_threshold['sensitivity'],
-                color=COLORS['blue'], lw=2.5, marker='o', markersize=6,
-                label='Sensitivity')
-    axes[0].plot(df_threshold['threshold'], df_threshold['specificity'],
-                color=COLORS['orange'], lw=2.5, marker='s', markersize=6,
-                label='Specificity')
+    axes[0].plot(
+        df_threshold['threshold'],
+        df_threshold['sensitivity'],
+        color=COLORS['blue'],
+        lw=2.5,
+        marker='o',
+        markersize=6,
+        label='Sensitivity',
+    )
+    axes[0].plot(
+        df_threshold['threshold'],
+        df_threshold['specificity'],
+        color=COLORS['orange'],
+        lw=2.5,
+        marker='s',
+        markersize=6,
+        label='Specificity',
+    )
     axes[0].set_ylabel('Metric Value', fontsize=12, fontweight='bold')
-    axes[0].set_title('(a) Sensitivity & Specificity vs. Threshold',
-                     fontsize=13, fontweight='bold', loc='left')
+    axes[0].set_title(
+        '(a) Sensitivity & Specificity vs. Threshold',
+        fontsize=13,
+        fontweight='bold',
+        loc='left',
+    )
     axes[0].grid(True, alpha=0.3, linestyle='--')
     axes[0].legend(loc='best', frameon=True)
     axes[0].set_ylim([-0.05, 1.05])
 
     # Panel (b): Precision and F1-Score
-    axes[1].plot(df_threshold['threshold'], df_threshold['precision'],
-                color=COLORS['teal'], lw=2.5, marker='^', markersize=6,
-                label='Precision')
-    axes[1].plot(df_threshold['threshold'], df_threshold['f1_score'],
-                color=COLORS['magenta'], lw=2.5, marker='D', markersize=6,
-                label='F1-Score')
+    axes[1].plot(
+        df_threshold['threshold'],
+        df_threshold['precision'],
+        color=COLORS['teal'],
+        lw=2.5,
+        marker='^',
+        markersize=6,
+        label='Precision',
+    )
+    axes[1].plot(
+        df_threshold['threshold'],
+        df_threshold['f1_score'],
+        color=COLORS['magenta'],
+        lw=2.5,
+        marker='D',
+        markersize=6,
+        label='F1-Score',
+    )
     axes[1].set_ylabel('Metric Value', fontsize=12, fontweight='bold')
-    axes[1].set_title('(b) Precision & F1-Score vs. Threshold',
-                     fontsize=13, fontweight='bold', loc='left')
+    axes[1].set_title(
+        '(b) Precision & F1-Score vs. Threshold',
+        fontsize=13,
+        fontweight='bold',
+        loc='left',
+    )
     axes[1].grid(True, alpha=0.3, linestyle='--')
     axes[1].legend(loc='best', frameon=True)
     axes[1].set_ylim([-0.05, 1.05])
 
     # Panel (c): Youden's J Statistic
-    axes[2].plot(df_threshold['threshold'], df_threshold['youdens_j'],
-                color=COLORS['red'], lw=2.5, marker='o', markersize=6,
-                label="Youden's J")
+    axes[2].plot(
+        df_threshold['threshold'],
+        df_threshold['youdens_j'],
+        color=COLORS['red'],
+        lw=2.5,
+        marker='o',
+        markersize=6,
+        label="Youden's J",
+    )
 
     # Find and mark optimal threshold (max Youden's J)
     optimal_idx = df_threshold['youdens_j'].idxmax()
     optimal_threshold = df_threshold.loc[optimal_idx, 'threshold']
     optimal_j = df_threshold.loc[optimal_idx, 'youdens_j']
 
-    axes[2].axvline(x=optimal_threshold, color=COLORS['grey'], lw=2,
-                   linestyle='--', alpha=0.7,
-                   label=f'Optimal τ = {optimal_threshold:.2f}')
-    axes[2].plot(optimal_threshold, optimal_j, 'o', color=COLORS['red'],
-                markersize=12, markeredgecolor='black', markeredgewidth=2)
+    axes[2].axvline(
+        x=optimal_threshold,
+        color=COLORS['grey'],
+        lw=2,
+        linestyle='--',
+        alpha=0.7,
+        label=f'Optimal τ = {optimal_threshold:.2f}',
+    )
+    axes[2].plot(
+        optimal_threshold,
+        optimal_j,
+        'o',
+        color=COLORS['red'],
+        markersize=12,
+        markeredgecolor='black',
+        markeredgewidth=2,
+    )
 
     axes[2].set_xlabel('Classification Threshold', fontsize=12, fontweight='bold')
     axes[2].set_ylabel("Youden's J", fontsize=12, fontweight='bold')
-    axes[2].set_title("(c) Youden's J Statistic (Optimal Threshold Selection)",
-                     fontsize=13, fontweight='bold', loc='left')
+    axes[2].set_title(
+        "(c) Youden's J Statistic (Optimal Threshold Selection)",
+        fontsize=13,
+        fontweight='bold',
+        loc='left',
+    )
     axes[2].grid(True, alpha=0.3, linestyle='--')
     axes[2].legend(loc='best', frameon=True)
 
@@ -432,11 +546,13 @@ def plot_threshold_analysis(df_threshold: pd.DataFrame,
     return fig, axes
 
 
-def plot_multi_model_roc(models_data: Dict[str, Tuple[np.ndarray, np.ndarray, float]],
-                         title: str = "ROC Curve Comparison",
-                         figsize: Tuple[float, float] = (7.0, 6.0),
-                         save_path: Optional[str] = None,
-                         dpi: int = 300) -> Tuple[plt.Figure, plt.Axes]:
+def plot_multi_model_roc(
+    models_data: Dict[str, Tuple[np.ndarray, np.ndarray, float]],
+    title: str = "ROC Curve Comparison",
+    figsize: Tuple[float, float] = (7.0, 6.0),
+    save_path: Optional[str] = None,
+    dpi: int = 300,
+) -> Tuple[plt.Figure, plt.Axes]:
     """Plot ROC curves for multiple models on same axes.
 
     Parameters:
@@ -459,21 +575,34 @@ def plot_multi_model_roc(models_data: Dict[str, Tuple[np.ndarray, np.ndarray, fl
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
 
     # Color cycle
-    colors = [COLORS['blue'], COLORS['orange'], COLORS['teal'],
-             COLORS['red'], COLORS['magenta'], COLORS['cyan']]
+    colors = [
+        COLORS['blue'],
+        COLORS['orange'],
+        COLORS['teal'],
+        COLORS['red'],
+        COLORS['magenta'],
+        COLORS['cyan'],
+    ]
 
     # Plot each model
     for idx, (model_name, (fpr, tpr, auc)) in enumerate(models_data.items()):
         color = colors[idx % len(colors)]
-        ax.plot(fpr, tpr, color=color, lw=2.5,
-               label=f'{model_name} (AUC = {auc:.3f})')
+        ax.plot(fpr, tpr, color=color, lw=2.5, label=f'{model_name} (AUC = {auc:.3f})')
 
     # Plot diagonal
-    ax.plot([0, 1], [0, 1], color=COLORS['grey'], lw=2, linestyle='--',
-           label='Random (AUC = 0.500)')
+    ax.plot(
+        [0, 1],
+        [0, 1],
+        color=COLORS['grey'],
+        lw=2,
+        linestyle='--',
+        label='Random (AUC = 0.500)',
+    )
 
     # Styling
-    ax.set_xlabel('False Positive Rate (1 - Specificity)', fontsize=14, fontweight='bold')
+    ax.set_xlabel(
+        'False Positive Rate (1 - Specificity)', fontsize=14, fontweight='bold'
+    )
     ax.set_ylabel('True Positive Rate (Sensitivity)', fontsize=14, fontweight='bold')
     ax.set_title(title, fontsize=16, fontweight='bold', pad=20)
 
@@ -491,12 +620,14 @@ def plot_multi_model_roc(models_data: Dict[str, Tuple[np.ndarray, np.ndarray, fl
     return fig, ax
 
 
-def plot_metrics_comparison_bar(metrics_dict: Dict[str, Dict[str, float]],
-                                metrics_to_plot: Optional[List[str]] = None,
-                                title: str = "Performance Metrics Comparison",
-                                figsize: Tuple[float, float] = (10.0, 6.0),
-                                save_path: Optional[str] = None,
-                                dpi: int = 300) -> Tuple[plt.Figure, plt.Axes]:
+def plot_metrics_comparison_bar(
+    metrics_dict: Dict[str, Dict[str, float]],
+    metrics_to_plot: Optional[List[str]] = None,
+    title: str = "Performance Metrics Comparison",
+    figsize: Tuple[float, float] = (10.0, 6.0),
+    save_path: Optional[str] = None,
+    dpi: int = 300,
+) -> Tuple[plt.Figure, plt.Axes]:
     """Plot grouped bar chart comparing metrics across models.
 
     Parameters:
@@ -533,23 +664,39 @@ def plot_metrics_comparison_bar(metrics_dict: Dict[str, Dict[str, float]],
     x = np.arange(n_metrics)
     width = 0.8 / n_models
 
-    colors = [COLORS['blue'], COLORS['orange'], COLORS['teal'],
-             COLORS['red'], COLORS['magenta'], COLORS['cyan']]
+    colors = [
+        COLORS['blue'],
+        COLORS['orange'],
+        COLORS['teal'],
+        COLORS['red'],
+        COLORS['magenta'],
+        COLORS['cyan'],
+    ]
 
     # Plot bars for each model
     for idx, model_name in enumerate(models):
-        values = [metrics_dict[model_name].get(metric, 0.0) for metric in metrics_to_plot]
-        offset = (idx - n_models/2 + 0.5) * width
-        ax.bar(x + offset, values, width, label=model_name,
-              color=colors[idx % len(colors)], edgecolor='black', linewidth=1.2)
+        values = [
+            metrics_dict[model_name].get(metric, 0.0) for metric in metrics_to_plot
+        ]
+        offset = (idx - n_models / 2 + 0.5) * width
+        ax.bar(
+            x + offset,
+            values,
+            width,
+            label=model_name,
+            color=colors[idx % len(colors)],
+            edgecolor='black',
+            linewidth=1.2,
+        )
 
     # Styling
     ax.set_xlabel('Metrics', fontsize=14, fontweight='bold')
     ax.set_ylabel('Score', fontsize=14, fontweight='bold')
     ax.set_title(title, fontsize=16, fontweight='bold', pad=20)
     ax.set_xticks(x)
-    ax.set_xticklabels([m.replace('_', ' ').title() for m in metrics_to_plot],
-                       rotation=0, ha='center')
+    ax.set_xticklabels(
+        [m.replace('_', ' ').title() for m in metrics_to_plot], rotation=0, ha='center'
+    )
     ax.set_ylim([0, 1.0])
     ax.grid(True, alpha=0.3, linestyle='--', axis='y')
     ax.legend(loc='lower right', frameon=True, fancybox=True, shadow=True)
@@ -562,14 +709,16 @@ def plot_metrics_comparison_bar(metrics_dict: Dict[str, Dict[str, float]],
     return fig, ax
 
 
-def plot_multi_class_confusion_matrix(confusion_matrix: np.ndarray,
-                                      class_names: List[str],
-                                      normalize: bool = False,
-                                      title: str = "Multi-Class Confusion Matrix",
-                                      figsize: Tuple[float, float] = (8.0, 7.0),
-                                      cmap: str = "Blues",
-                                      save_path: Optional[str] = None,
-                                      dpi: int = 300) -> Tuple[plt.Figure, plt.Axes]:
+def plot_multi_class_confusion_matrix(
+    confusion_matrix: np.ndarray,
+    class_names: List[str],
+    normalize: bool = False,
+    title: str = "Multi-Class Confusion Matrix",
+    figsize: Tuple[float, float] = (8.0, 7.0),
+    cmap: str = "Blues",
+    save_path: Optional[str] = None,
+    dpi: int = 300,
+) -> Tuple[plt.Figure, plt.Axes]:
     """Plot confusion matrix for multi-class classification.
 
     Parameters:
@@ -614,7 +763,7 @@ def plot_multi_class_confusion_matrix(confusion_matrix: np.ndarray,
         cbar_kws={'label': 'Proportion' if normalize else 'Count'},
         xticklabels=class_names,
         yticklabels=class_names,
-        ax=ax
+        ax=ax,
     )
 
     # Labels

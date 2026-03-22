@@ -13,24 +13,18 @@ Affiliation: Naresuan University
 Date: 2026-01-25
 """
 
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Optional, Tuple, Union
-from dataclasses import dataclass
 from scipy import stats
-from sklearn.metrics import (
-    confusion_matrix as sklearn_confusion_matrix,
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score,
-    roc_auc_score,
-    average_precision_score,
-    roc_curve,
-    precision_recall_curve,
-    matthews_corrcoef,
-    cohen_kappa_score,
-)
+from sklearn.metrics import (accuracy_score, average_precision_score,
+                             cohen_kappa_score)
+from sklearn.metrics import confusion_matrix as sklearn_confusion_matrix
+from sklearn.metrics import (f1_score, matthews_corrcoef,
+                             precision_recall_curve, precision_score,
+                             recall_score, roc_auc_score, roc_curve)
 
 
 @dataclass
@@ -51,6 +45,7 @@ class PerformanceMetrics:
         fpr: False Positive Rate (FP)/(FP+TN)
         fnr: False Negative Rate (FN)/(FN+TP)
     """
+
     accuracy: float
     precision: float
     recall: float
@@ -94,6 +89,7 @@ class ConfusionMatrixMetrics:
         total: Total samples
         prevalence: Disease prevalence (TP+FN)/Total
     """
+
     tn: int
     fp: int
     fn: int
@@ -114,12 +110,10 @@ class ConfusionMatrixMetrics:
 
     def to_array(self) -> np.ndarray:
         """Return 2x2 confusion matrix as numpy array."""
-        return np.array([[self.tn, self.fp],
-                        [self.fn, self.tp]])
+        return np.array([[self.tn, self.fp], [self.fn, self.tp]])
 
 
-def confusion_matrix(y_true: np.ndarray,
-                    y_pred: np.ndarray) -> ConfusionMatrixMetrics:
+def confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray) -> ConfusionMatrixMetrics:
     """Compute confusion matrix with derived metrics.
 
     Parameters:
@@ -147,13 +141,13 @@ def confusion_matrix(y_true: np.ndarray,
         fn=int(fn),
         tp=int(tp),
         total=total,
-        prevalence=prevalence
+        prevalence=prevalence,
     )
 
 
-def compute_performance_metrics(y_true: np.ndarray,
-                                y_pred: np.ndarray,
-                                y_prob: Optional[np.ndarray] = None) -> PerformanceMetrics:
+def compute_performance_metrics(
+    y_true: np.ndarray, y_pred: np.ndarray, y_prob: Optional[np.ndarray] = None
+) -> PerformanceMetrics:
     """Compute comprehensive performance metrics.
 
     Parameters:
@@ -217,15 +211,17 @@ def compute_performance_metrics(y_true: np.ndarray,
         kappa=kappa,
         npv=npv,
         fpr=fpr,
-        fnr=fnr
+        fnr=fnr,
     )
 
 
-def stratified_performance_metrics(y_true: np.ndarray,
-                                   y_pred: np.ndarray,
-                                   y_prob: Optional[np.ndarray] = None,
-                                   strata: Optional[np.ndarray] = None,
-                                   strata_names: Optional[List[str]] = None) -> Dict[str, PerformanceMetrics]:
+def stratified_performance_metrics(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    y_prob: Optional[np.ndarray] = None,
+    strata: Optional[np.ndarray] = None,
+    strata_names: Optional[List[str]] = None,
+) -> Dict[str, PerformanceMetrics]:
     """Compute performance metrics stratified by groups (e.g., risk tiers).
 
     Parameters:
@@ -277,8 +273,9 @@ def stratified_performance_metrics(y_true: np.ndarray,
     return results
 
 
-def compute_roc_curve(y_true: np.ndarray,
-                     y_prob: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def compute_roc_curve(
+    y_true: np.ndarray, y_prob: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Compute ROC curve (FPR, TPR, thresholds).
 
     Parameters:
@@ -296,8 +293,9 @@ def compute_roc_curve(y_true: np.ndarray,
     return roc_curve(y_true, y_prob)
 
 
-def compute_pr_curve(y_true: np.ndarray,
-                    y_prob: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def compute_pr_curve(
+    y_true: np.ndarray, y_prob: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Compute Precision-Recall curve.
 
     Parameters:
@@ -315,9 +313,9 @@ def compute_pr_curve(y_true: np.ndarray,
     return precision_recall_curve(y_true, y_prob)
 
 
-def sensitivity_specificity_analysis(y_true: np.ndarray,
-                                     y_prob: np.ndarray,
-                                     thresholds: Optional[np.ndarray] = None) -> pd.DataFrame:
+def sensitivity_specificity_analysis(
+    y_true: np.ndarray, y_prob: np.ndarray, thresholds: Optional[np.ndarray] = None
+) -> pd.DataFrame:
     """Analyze sensitivity and specificity across different thresholds.
 
     Parameters:
@@ -345,25 +343,29 @@ def sensitivity_specificity_analysis(y_true: np.ndarray,
         # Youden's J statistic (sensitivity + specificity - 1)
         youdens_j = metrics.recall + metrics.specificity - 1.0
 
-        results.append({
-            'threshold': threshold,
-            'sensitivity': metrics.recall,
-            'specificity': metrics.specificity,
-            'precision': metrics.precision,
-            'f1_score': metrics.f1_score,
-            'youdens_j': youdens_j
-        })
+        results.append(
+            {
+                'threshold': threshold,
+                'sensitivity': metrics.recall,
+                'specificity': metrics.specificity,
+                'precision': metrics.precision,
+                'f1_score': metrics.f1_score,
+                'youdens_j': youdens_j,
+            }
+        )
 
     return pd.DataFrame(results)
 
 
-def bootstrap_confidence_interval(y_true: np.ndarray,
-                                  y_pred: np.ndarray,
-                                  y_prob: Optional[np.ndarray] = None,
-                                  metric: str = 'f1_score',
-                                  n_bootstrap: int = 1000,
-                                  confidence_level: float = 0.95,
-                                  seed: int = 42) -> Tuple[float, float, float]:
+def bootstrap_confidence_interval(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    y_prob: Optional[np.ndarray] = None,
+    metric: str = 'f1_score',
+    n_bootstrap: int = 1000,
+    confidence_level: float = 0.95,
+    seed: int = 42,
+) -> Tuple[float, float, float]:
     """Compute bootstrap confidence interval for a performance metric.
 
     Parameters:
@@ -425,9 +427,9 @@ def bootstrap_confidence_interval(y_true: np.ndarray,
     return point_estimate, lower_bound, upper_bound
 
 
-def mcnemar_test(y_true: np.ndarray,
-                y_pred_a: np.ndarray,
-                y_pred_b: np.ndarray) -> Tuple[float, float]:
+def mcnemar_test(
+    y_true: np.ndarray, y_pred_a: np.ndarray, y_pred_b: np.ndarray
+) -> Tuple[float, float]:
     """McNemar's test for comparing two classifiers.
 
     Tests whether two classifiers have significantly different error rates.
@@ -451,8 +453,8 @@ def mcnemar_test(y_true: np.ndarray,
     # Create contingency table
     # n_01: A wrong, B correct
     # n_10: A correct, B wrong
-    correct_a = (y_pred_a == y_true)
-    correct_b = (y_pred_b == y_true)
+    correct_a = y_pred_a == y_true
+    correct_b = y_pred_b == y_true
 
     n_01 = np.sum(~correct_a & correct_b)
     n_10 = np.sum(correct_a & ~correct_b)
@@ -469,9 +471,9 @@ def mcnemar_test(y_true: np.ndarray,
     return statistic, p_value
 
 
-def multi_class_metrics(y_true: np.ndarray,
-                        y_pred: np.ndarray,
-                        class_names: Optional[List[str]] = None) -> pd.DataFrame:
+def multi_class_metrics(
+    y_true: np.ndarray, y_pred: np.ndarray, class_names: Optional[List[str]] = None
+) -> pd.DataFrame:
     """Compute per-class metrics for multi-class classification.
 
     Parameters:
@@ -491,10 +493,7 @@ def multi_class_metrics(y_true: np.ndarray,
 
     # Get classification report as dict
     report = classification_report(
-        y_true, y_pred,
-        target_names=class_names,
-        output_dict=True,
-        zero_division=0
+        y_true, y_pred, target_names=class_names, output_dict=True, zero_division=0
     )
 
     # Convert to DataFrame
@@ -506,38 +505,46 @@ def multi_class_metrics(y_true: np.ndarray,
     rows = []
     for cls in classes:
         if cls in report:
-            rows.append({
-                'class': cls,
-                'precision': report[cls]['precision'],
-                'recall': report[cls]['recall'],
-                'f1_score': report[cls]['f1-score'],
-                'support': int(report[cls]['support'])
-            })
+            rows.append(
+                {
+                    'class': cls,
+                    'precision': report[cls]['precision'],
+                    'recall': report[cls]['recall'],
+                    'f1_score': report[cls]['f1-score'],
+                    'support': int(report[cls]['support']),
+                }
+            )
 
     # Add macro and weighted averages
-    rows.append({
-        'class': 'macro avg',
-        'precision': report['macro avg']['precision'],
-        'recall': report['macro avg']['recall'],
-        'f1_score': report['macro avg']['f1-score'],
-        'support': int(report['macro avg']['support'])
-    })
+    rows.append(
+        {
+            'class': 'macro avg',
+            'precision': report['macro avg']['precision'],
+            'recall': report['macro avg']['recall'],
+            'f1_score': report['macro avg']['f1-score'],
+            'support': int(report['macro avg']['support']),
+        }
+    )
 
-    rows.append({
-        'class': 'weighted avg',
-        'precision': report['weighted avg']['precision'],
-        'recall': report['weighted avg']['recall'],
-        'f1_score': report['weighted avg']['f1-score'],
-        'support': int(report['weighted avg']['support'])
-    })
+    rows.append(
+        {
+            'class': 'weighted avg',
+            'precision': report['weighted avg']['precision'],
+            'recall': report['weighted avg']['recall'],
+            'f1_score': report['weighted avg']['f1-score'],
+            'support': int(report['weighted avg']['support']),
+        }
+    )
 
     return pd.DataFrame(rows)
 
 
-def performance_summary(y_true: np.ndarray,
-                       y_pred: np.ndarray,
-                       y_prob: Optional[np.ndarray] = None,
-                       strata: Optional[np.ndarray] = None) -> Dict[str, Union[PerformanceMetrics, Dict]]:
+def performance_summary(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    y_prob: Optional[np.ndarray] = None,
+    strata: Optional[np.ndarray] = None,
+) -> Dict[str, Union[PerformanceMetrics, Dict]]:
     """Generate comprehensive performance summary.
 
     Parameters:

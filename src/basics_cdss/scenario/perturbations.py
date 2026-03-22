@@ -11,10 +11,12 @@ All operators preserve clinical plausibility and are deterministic given a rando
 """
 
 from __future__ import annotations
-from typing import Any, Dict, List, Optional, Set
-from dataclasses import dataclass, field
-import numpy as np
+
 import copy
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Set
+
+import numpy as np
 
 
 @dataclass
@@ -30,11 +32,12 @@ class PerturbationConfig:
         conflict_pairs: Dict mapping features to contradictory value mappings
         degrade_map: Dict mapping specific terms to vague descriptors
     """
+
     p_mask: float = 0.2
     noise_sigma: float = 0.1
-    protected_features: Set[str] = field(default_factory=lambda: {
-        "archetype_id", "triage_tier", "action", "patient_id"
-    })
+    protected_features: Set[str] = field(
+        default_factory=lambda: {"archetype_id", "triage_tier", "action", "patient_id"}
+    )
     continuous_features: List[str] = field(default_factory=list)
     categorical_features: List[str] = field(default_factory=list)
     conflict_pairs: Dict[str, Dict[Any, Any]] = field(default_factory=dict)
@@ -44,7 +47,9 @@ class PerturbationConfig:
 class PerturbationOperator:
     """Base class for perturbation operators."""
 
-    def __init__(self, config: Optional[PerturbationConfig] = None, seed: Optional[int] = None):
+    def __init__(
+        self, config: Optional[PerturbationConfig] = None, seed: Optional[int] = None
+    ):
         """Initialize perturbation operator.
 
         Args:
@@ -54,7 +59,9 @@ class PerturbationOperator:
         self.config = config or PerturbationConfig()
         self.rng = np.random.default_rng(seed)
 
-    def apply(self, features: Dict[str, Any]) -> tuple[Dict[str, Any], Dict[str, float]]:
+    def apply(
+        self, features: Dict[str, Any]
+    ) -> tuple[Dict[str, Any], Dict[str, float]]:
         """Apply perturbation to features.
 
         Args:
@@ -79,7 +86,9 @@ class MaskOperator(PerturbationOperator):
     - Validation: Clinical plausibility check; retain key safety signals
     """
 
-    def apply(self, features: Dict[str, Any]) -> tuple[Dict[str, Any], Dict[str, float]]:
+    def apply(
+        self, features: Dict[str, Any]
+    ) -> tuple[Dict[str, Any], Dict[str, float]]:
         """Apply masking perturbation.
 
         Args:
@@ -91,7 +100,9 @@ class MaskOperator(PerturbationOperator):
             - uncertainty_profile: {"missingness": fraction_masked}
         """
         perturbed = copy.deepcopy(features)
-        maskable_keys = [k for k in features.keys() if k not in self.config.protected_features]
+        maskable_keys = [
+            k for k in features.keys() if k not in self.config.protected_features
+        ]
 
         if not maskable_keys:
             return perturbed, {"missingness": 0.0}
@@ -123,7 +134,9 @@ class NoiseOperator(PerturbationOperator):
     - Validation: Bounded within clinically reasonable ranges
     """
 
-    def apply(self, features: Dict[str, Any]) -> tuple[Dict[str, Any], Dict[str, float]]:
+    def apply(
+        self, features: Dict[str, Any]
+    ) -> tuple[Dict[str, Any], Dict[str, float]]:
         """Apply noise perturbation to continuous features.
 
         Args:
@@ -138,11 +151,14 @@ class NoiseOperator(PerturbationOperator):
 
         # Identify continuous features to perturb
         if self.config.continuous_features:
-            target_features = [k for k in self.config.continuous_features if k in features]
+            target_features = [
+                k for k in self.config.continuous_features if k in features
+            ]
         else:
             # Auto-detect: numeric values that aren't protected
             target_features = [
-                k for k, v in features.items()
+                k
+                for k, v in features.items()
                 if k not in self.config.protected_features
                 and isinstance(v, (int, float, np.number))
             ]
@@ -174,7 +190,9 @@ class ConflictOperator(PerturbationOperator):
     - Validation: Must not violate hard clinical constraints
     """
 
-    def apply(self, features: Dict[str, Any]) -> tuple[Dict[str, Any], Dict[str, float]]:
+    def apply(
+        self, features: Dict[str, Any]
+    ) -> tuple[Dict[str, Any], Dict[str, float]]:
         """Apply conflict perturbation.
 
         Args:
@@ -192,8 +210,7 @@ class ConflictOperator(PerturbationOperator):
 
         # Identify applicable conflict pairs
         applicable_pairs = {
-            k: v for k, v in self.config.conflict_pairs.items()
-            if k in features
+            k: v for k, v in self.config.conflict_pairs.items() if k in features
         }
 
         if not applicable_pairs:
@@ -210,7 +227,9 @@ class ConflictOperator(PerturbationOperator):
                     perturbed[feature_key] = conflict_map[current_value]
                     conflicts_introduced += 1
 
-        conflict_rate = conflicts_introduced / len(applicable_pairs) if applicable_pairs else 0.0
+        conflict_rate = (
+            conflicts_introduced / len(applicable_pairs) if applicable_pairs else 0.0
+        )
 
         return perturbed, {"conflict": conflict_rate}
 
@@ -227,7 +246,9 @@ class DegradeOperator(PerturbationOperator):
     - Validation: Semantic coherence preserved
     """
 
-    def apply(self, features: Dict[str, Any]) -> tuple[Dict[str, Any], Dict[str, float]]:
+    def apply(
+        self, features: Dict[str, Any]
+    ) -> tuple[Dict[str, Any], Dict[str, float]]:
         """Apply degradation perturbation.
 
         Args:
@@ -258,7 +279,9 @@ class DegradeOperator(PerturbationOperator):
                     perturbed[key] = self.config.degrade_map[value]
                     degraded_count += 1
 
-        degradation_rate = degraded_count / applicable_count if applicable_count > 0 else 0.0
+        degradation_rate = (
+            degraded_count / applicable_count if applicable_count > 0 else 0.0
+        )
 
         return perturbed, {"degradation": degradation_rate}
 
@@ -274,7 +297,7 @@ class CompositePerturbation(PerturbationOperator):
         self,
         operators: List[PerturbationOperator],
         config: Optional[PerturbationConfig] = None,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
     ):
         """Initialize composite perturbation.
 
@@ -286,7 +309,9 @@ class CompositePerturbation(PerturbationOperator):
         super().__init__(config, seed)
         self.operators = operators
 
-    def apply(self, features: Dict[str, Any]) -> tuple[Dict[str, Any], Dict[str, float]]:
+    def apply(
+        self, features: Dict[str, Any]
+    ) -> tuple[Dict[str, Any], Dict[str, float]]:
         """Apply all operators in sequence.
 
         Args:
@@ -308,7 +333,7 @@ class CompositePerturbation(PerturbationOperator):
 def create_default_perturbation(
     perturbation_type: str,
     config: Optional[PerturbationConfig] = None,
-    seed: Optional[int] = None
+    seed: Optional[int] = None,
 ) -> PerturbationOperator:
     """Factory function to create perturbation operators.
 

@@ -1,6 +1,9 @@
 from __future__ import annotations
+
 from pathlib import Path
+
 import pandas as pd
+
 
 def load_archetypes_csv(path: str | Path) -> pd.DataFrame:
     """Load SynDX archetypes CSV (synthetic; no patient data)."""

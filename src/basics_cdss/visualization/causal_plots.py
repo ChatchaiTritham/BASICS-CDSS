@@ -10,15 +10,17 @@ Compliant with:
 - Journal of Causal Inference guidelines
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
+from typing import Dict, List, Optional, Set, Tuple, Union
+
 import matplotlib.gridspec as gridspec
-from matplotlib.patches import FancyArrowPatch, Circle, Rectangle, FancyBboxPatch
-from matplotlib.lines import Line2D
-from typing import Dict, List, Tuple, Optional, Union, Set
-import pandas as pd
-from scipy import stats
+import matplotlib.pyplot as plt
 import networkx as nx
+import numpy as np
+import pandas as pd
+from matplotlib.lines import Line2D
+from matplotlib.patches import (Circle, FancyArrowPatch, FancyBboxPatch,
+                                Rectangle)
+from scipy import stats
 
 # Publication-quality styling
 STYLE_CONFIG = {
@@ -35,12 +37,12 @@ STYLE_CONFIG = {
 
 # Colorblind-friendly palette
 COLORS = {
-    'treatment': '#0077BB',      # Blue
-    'outcome': '#CC3311',        # Red
-    'confounder': '#EE7733',     # Orange
-    'mediator': '#33BB55',       # Green
-    'instrumental': '#9933CC',   # Purple
-    'collider': '#BBBBBB',       # Gray
+    'treatment': '#0077BB',  # Blue
+    'outcome': '#CC3311',  # Red
+    'confounder': '#EE7733',  # Orange
+    'mediator': '#33BB55',  # Green
+    'instrumental': '#9933CC',  # Purple
+    'collider': '#BBBBBB',  # Gray
 }
 
 
@@ -50,7 +52,7 @@ def plot_causal_dag(
     highlight_path: Optional[List[str]] = None,
     title: str = "Causal Directed Acyclic Graph",
     save_path: Optional[str] = None,
-    figsize: Tuple[float, float] = (7.0, 7.0)
+    figsize: Tuple[float, float] = (7.0, 7.0),
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plot causal DAG with proper node coloring and edge styles.
@@ -88,72 +90,131 @@ def plot_causal_dag(
     if node_types is None:
         node_types = {node: 'confounder' for node in graph.nodes()}
 
-    node_colors = [COLORS.get(node_types.get(node, 'confounder'), '#BBBBBB')
-                   for node in graph.nodes()]
+    node_colors = [
+        COLORS.get(node_types.get(node, 'confounder'), '#BBBBBB')
+        for node in graph.nodes()
+    ]
 
     # Draw nodes
-    nx.draw_networkx_nodes(graph, pos, ax=ax,
-                          node_color=node_colors,
-                          node_size=2000,
-                          edgecolors='black',
-                          linewidths=2.0,
-                          alpha=0.9)
+    nx.draw_networkx_nodes(
+        graph,
+        pos,
+        ax=ax,
+        node_color=node_colors,
+        node_size=2000,
+        edgecolors='black',
+        linewidths=2.0,
+        alpha=0.9,
+    )
 
     # Draw edges
     if highlight_path:
         # Draw regular edges first
-        regular_edges = [(u, v) for u, v in graph.edges()
-                        if not (u in highlight_path and v in highlight_path)]
-        nx.draw_networkx_edges(graph, pos, ax=ax,
-                              edgelist=regular_edges,
-                              edge_color='black',
-                              width=2.0,
-                              alpha=0.5,
-                              arrowsize=20,
-                              arrowstyle='->')
+        regular_edges = [
+            (u, v)
+            for u, v in graph.edges()
+            if not (u in highlight_path and v in highlight_path)
+        ]
+        nx.draw_networkx_edges(
+            graph,
+            pos,
+            ax=ax,
+            edgelist=regular_edges,
+            edge_color='black',
+            width=2.0,
+            alpha=0.5,
+            arrowsize=20,
+            arrowstyle='->',
+        )
 
         # Draw highlighted path edges
-        highlight_edges = [(highlight_path[i], highlight_path[i+1])
-                          for i in range(len(highlight_path)-1)
-                          if graph.has_edge(highlight_path[i], highlight_path[i+1])]
-        nx.draw_networkx_edges(graph, pos, ax=ax,
-                              edgelist=highlight_edges,
-                              edge_color='red',
-                              width=4.0,
-                              alpha=0.9,
-                              arrowsize=25,
-                              arrowstyle='->')
+        highlight_edges = [
+            (highlight_path[i], highlight_path[i + 1])
+            for i in range(len(highlight_path) - 1)
+            if graph.has_edge(highlight_path[i], highlight_path[i + 1])
+        ]
+        nx.draw_networkx_edges(
+            graph,
+            pos,
+            ax=ax,
+            edgelist=highlight_edges,
+            edge_color='red',
+            width=4.0,
+            alpha=0.9,
+            arrowsize=25,
+            arrowstyle='->',
+        )
     else:
-        nx.draw_networkx_edges(graph, pos, ax=ax,
-                              edge_color='black',
-                              width=2.0,
-                              alpha=0.6,
-                              arrowsize=20,
-                              arrowstyle='->')
+        nx.draw_networkx_edges(
+            graph,
+            pos,
+            ax=ax,
+            edge_color='black',
+            width=2.0,
+            alpha=0.6,
+            arrowsize=20,
+            arrowstyle='->',
+        )
 
     # Draw labels
-    nx.draw_networkx_labels(graph, pos, ax=ax,
-                           font_size=12,
-                           font_weight='bold',
-                           font_family='serif')
+    nx.draw_networkx_labels(
+        graph, pos, ax=ax, font_size=12, font_weight='bold', font_family='serif'
+    )
 
     # Create legend
     legend_elements = [
-        Line2D([0], [0], marker='o', color='w', label='Treatment',
-               markerfacecolor=COLORS['treatment'], markersize=12,
-               markeredgecolor='black', markeredgewidth=2),
-        Line2D([0], [0], marker='o', color='w', label='Outcome',
-               markerfacecolor=COLORS['outcome'], markersize=12,
-               markeredgecolor='black', markeredgewidth=2),
-        Line2D([0], [0], marker='o', color='w', label='Confounder',
-               markerfacecolor=COLORS['confounder'], markersize=12,
-               markeredgecolor='black', markeredgewidth=2),
-        Line2D([0], [0], marker='o', color='w', label='Mediator',
-               markerfacecolor=COLORS['mediator'], markersize=12,
-               markeredgecolor='black', markeredgewidth=2),
+        Line2D(
+            [0],
+            [0],
+            marker='o',
+            color='w',
+            label='Treatment',
+            markerfacecolor=COLORS['treatment'],
+            markersize=12,
+            markeredgecolor='black',
+            markeredgewidth=2,
+        ),
+        Line2D(
+            [0],
+            [0],
+            marker='o',
+            color='w',
+            label='Outcome',
+            markerfacecolor=COLORS['outcome'],
+            markersize=12,
+            markeredgecolor='black',
+            markeredgewidth=2,
+        ),
+        Line2D(
+            [0],
+            [0],
+            marker='o',
+            color='w',
+            label='Confounder',
+            markerfacecolor=COLORS['confounder'],
+            markersize=12,
+            markeredgecolor='black',
+            markeredgewidth=2,
+        ),
+        Line2D(
+            [0],
+            [0],
+            marker='o',
+            color='w',
+            label='Mediator',
+            markerfacecolor=COLORS['mediator'],
+            markersize=12,
+            markeredgecolor='black',
+            markeredgewidth=2,
+        ),
     ]
-    ax.legend(handles=legend_elements, loc='upper right',
-             framealpha=0.95, fontsize=11, edgecolor='black')
+    ax.legend(
+        handles=legend_elements,
+        loc='upper right',
+        framealpha=0.95,
+        fontsize=11,
+        edgecolor='black',
+    )
 
     ax.set_title(title, fontweight='bold', pad=15)
     ax.axis('off')
@@ -161,8 +222,9 @@ def plot_causal_dag(
 
     if save_path:
         for ext in ['pdf', 'eps', 'png']:
-            fig.savefig(save_path.replace('.png', f'.{ext}'),
-                       dpi=300, bbox_inches='tight')
+            fig.savefig(
+                save_path.replace('.png', f'.{ext}'), dpi=300, bbox_inches='tight'
+            )
 
     return fig, ax
 
@@ -171,7 +233,7 @@ def plot_intervention_effects(
     ate_results: Dict[str, Dict[str, float]],
     title: str = "Average Treatment Effects (ATE)",
     save_path: Optional[str] = None,
-    figsize: Tuple[float, float] = (7.0, 6.0)
+    figsize: Tuple[float, float] = (7.0, 6.0),
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plot Average Treatment Effects (ATE) with confidence intervals.
@@ -207,17 +269,27 @@ def plot_intervention_effects(
     y_pos = np.arange(len(interventions))
 
     # Color by significance
-    colors = [COLORS['treatment'] if p < 0.05 else COLORS['collider']
-             for p in p_values]
+    colors = [COLORS['treatment'] if p < 0.05 else COLORS['collider'] for p in p_values]
 
     # Plot error bars
-    for i, (y, ate, ci_l, ci_u, p, color) in enumerate(zip(y_pos, ates, ci_lowers, ci_uppers, p_values, colors)):
+    for i, (y, ate, ci_l, ci_u, p, color) in enumerate(
+        zip(y_pos, ates, ci_lowers, ci_uppers, p_values, colors)
+    ):
         # Draw error bar
         ax.plot([ci_l, ci_u], [y, y], color=color, linewidth=2.5, alpha=0.8)
         # Draw point estimate
         marker = 'D' if p < 0.05 else 'o'
-        ax.scatter(ate, y, s=150, color=color, edgecolors='black',
-                  linewidth=2, marker=marker, zorder=3, alpha=0.9)
+        ax.scatter(
+            ate,
+            y,
+            s=150,
+            color=color,
+            edgecolors='black',
+            linewidth=2,
+            marker=marker,
+            zorder=3,
+            alpha=0.9,
+        )
 
         # Add significance asterisks
         if p < 0.001:
@@ -229,12 +301,25 @@ def plot_intervention_effects(
         else:
             sig_text = 'ns'
 
-        ax.text(ci_u + 0.01, y, sig_text, va='center', fontweight='bold',
-               fontsize=12, color=color)
+        ax.text(
+            ci_u + 0.01,
+            y,
+            sig_text,
+            va='center',
+            fontweight='bold',
+            fontsize=12,
+            color=color,
+        )
 
     # Add zero line
-    ax.axvline(x=0, color='black', linestyle='--', linewidth=2.0,
-              alpha=0.7, label='Null Effect')
+    ax.axvline(
+        x=0,
+        color='black',
+        linestyle='--',
+        linewidth=2.0,
+        alpha=0.7,
+        label='Null Effect',
+    )
 
     # Formatting
     ax.set_yticks(y_pos)
@@ -246,22 +331,44 @@ def plot_intervention_effects(
 
     # Legend
     legend_elements = [
-        Line2D([0], [0], marker='D', color='w', label='Significant (p<0.05)',
-               markerfacecolor=COLORS['treatment'], markersize=10,
-               markeredgecolor='black', markeredgewidth=2),
-        Line2D([0], [0], marker='o', color='w', label='Not Significant',
-               markerfacecolor=COLORS['collider'], markersize=10,
-               markeredgecolor='black', markeredgewidth=2),
+        Line2D(
+            [0],
+            [0],
+            marker='D',
+            color='w',
+            label='Significant (p<0.05)',
+            markerfacecolor=COLORS['treatment'],
+            markersize=10,
+            markeredgecolor='black',
+            markeredgewidth=2,
+        ),
+        Line2D(
+            [0],
+            [0],
+            marker='o',
+            color='w',
+            label='Not Significant',
+            markerfacecolor=COLORS['collider'],
+            markersize=10,
+            markeredgecolor='black',
+            markeredgewidth=2,
+        ),
     ]
-    ax.legend(handles=legend_elements, loc='lower right',
-             framealpha=0.95, fontsize=11, edgecolor='black')
+    ax.legend(
+        handles=legend_elements,
+        loc='lower right',
+        framealpha=0.95,
+        fontsize=11,
+        edgecolor='black',
+    )
 
     plt.tight_layout()
 
     if save_path:
         for ext in ['pdf', 'eps', 'png']:
-            fig.savefig(save_path.replace('.png', f'.{ext}'),
-                       dpi=300, bbox_inches='tight')
+            fig.savefig(
+                save_path.replace('.png', f'.{ext}'), dpi=300, bbox_inches='tight'
+            )
 
     return fig, ax
 
@@ -273,7 +380,7 @@ def plot_cate_heterogeneity(
     ci_uppers: List[float],
     title: str = "Conditional Average Treatment Effects (CATE)",
     save_path: Optional[str] = None,
-    figsize: Tuple[float, float] = (7.0, 6.0)
+    figsize: Tuple[float, float] = (7.0, 6.0),
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plot Conditional Average Treatment Effects across subgroups.
@@ -307,11 +414,20 @@ def plot_cate_heterogeneity(
     # Plot forest plot style
     for i, (y, cate, ci_l, ci_u) in enumerate(zip(y_pos, cates, ci_lowers, ci_uppers)):
         # Error bar
-        ax.plot([ci_l, ci_u], [y, y], color=COLORS['treatment'],
-               linewidth=3.0, alpha=0.7)
+        ax.plot(
+            [ci_l, ci_u], [y, y], color=COLORS['treatment'], linewidth=3.0, alpha=0.7
+        )
         # Point estimate
-        ax.scatter(cate, y, s=200, color=COLORS['outcome'],
-                  edgecolors='black', linewidth=2, marker='s', zorder=3)
+        ax.scatter(
+            cate,
+            y,
+            s=200,
+            color=COLORS['outcome'],
+            edgecolors='black',
+            linewidth=2,
+            marker='s',
+            zorder=3,
+        )
 
     # Add zero line
     ax.axvline(x=0, color='black', linestyle='--', linewidth=2.0, alpha=0.7)
@@ -328,8 +444,9 @@ def plot_cate_heterogeneity(
 
     if save_path:
         for ext in ['pdf', 'eps', 'png']:
-            fig.savefig(save_path.replace('.png', f'.{ext}'),
-                       dpi=300, bbox_inches='tight')
+            fig.savefig(
+                save_path.replace('.png', f'.{ext}'), dpi=300, bbox_inches='tight'
+            )
 
     return fig, ax
 
@@ -341,7 +458,7 @@ def plot_confounding_analysis(
     unadjusted_effect: float,
     title: str = "Confounding Bias Analysis",
     save_path: Optional[str] = None,
-    figsize: Tuple[float, float] = (7.0, 7.0)
+    figsize: Tuple[float, float] = (7.0, 7.0),
 ) -> Tuple[plt.Figure, np.ndarray]:
     """
     Plot confounding analysis showing bias from each confounder.
@@ -372,14 +489,26 @@ def plot_confounding_analysis(
 
     # Plot 1: Bias magnitude
     y_pos = np.arange(len(confounders))
-    bars = ax1.barh(y_pos, bias_estimates, color=COLORS['confounder'],
-                    edgecolor='black', linewidth=1.5, alpha=0.8)
+    bars = ax1.barh(
+        y_pos,
+        bias_estimates,
+        color=COLORS['confounder'],
+        edgecolor='black',
+        linewidth=1.5,
+        alpha=0.8,
+    )
 
     # Add value labels
     for i, (bar, bias) in enumerate(zip(bars, bias_estimates)):
         width = bar.get_width()
-        ax1.text(width + 0.005, bar.get_y() + bar.get_height()/2,
-                f'{bias:.3f}', ha='left', va='center', fontweight='bold')
+        ax1.text(
+            width + 0.005,
+            bar.get_y() + bar.get_height() / 2,
+            f'{bias:.3f}',
+            ha='left',
+            va='center',
+            fontweight='bold',
+        )
 
     ax1.set_yticks(y_pos)
     ax1.set_yticklabels(confounders, fontsize=11)
@@ -398,12 +527,25 @@ def plot_confounding_analysis(
     for i, (y, effect, color) in enumerate(zip(y_pos2, effects, colors_effects)):
         # Draw error bar (simplified, no actual CI here)
         ci_width = abs(effect) * 0.1
-        ax2.plot([effect - ci_width, effect + ci_width], [y, y],
-                color=color, linewidth=2.5, alpha=0.7)
+        ax2.plot(
+            [effect - ci_width, effect + ci_width],
+            [y, y],
+            color=color,
+            linewidth=2.5,
+            alpha=0.7,
+        )
         # Draw point
         marker = 'o' if i == 0 else 's'
-        ax2.scatter(effect, y, s=150, color=color, edgecolors='black',
-                   linewidth=2, marker=marker, zorder=3)
+        ax2.scatter(
+            effect,
+            y,
+            s=150,
+            color=color,
+            edgecolors='black',
+            linewidth=2,
+            marker=marker,
+            zorder=3,
+        )
 
     # Add zero line
     ax2.axvline(x=0, color='black', linestyle='--', linewidth=2.0, alpha=0.7)
@@ -411,8 +553,9 @@ def plot_confounding_analysis(
     ax2.set_yticks(y_pos2)
     ax2.set_yticklabels(labels, fontsize=10)
     ax2.set_xlabel('Treatment Effect Estimate', fontweight='bold')
-    ax2.set_title('(b) Effect Estimates: Unadjusted vs Adjusted',
-                 fontweight='bold', pad=10)
+    ax2.set_title(
+        '(b) Effect Estimates: Unadjusted vs Adjusted', fontweight='bold', pad=10
+    )
     ax2.grid(axis='x', alpha=0.3, linestyle='--', linewidth=0.5)
     ax2.set_axisbelow(True)
 
@@ -420,8 +563,9 @@ def plot_confounding_analysis(
 
     if save_path:
         for ext in ['pdf', 'eps', 'png']:
-            fig.savefig(save_path.replace('.png', f'.{ext}'),
-                       dpi=300, bbox_inches='tight')
+            fig.savefig(
+                save_path.replace('.png', f'.{ext}'), dpi=300, bbox_inches='tight'
+            )
 
     return fig, np.array([ax1, ax2])
 
@@ -433,7 +577,7 @@ def plot_backdoor_adjustment(
     graph: nx.DiGraph,
     title: str = "Backdoor Adjustment Strategy",
     save_path: Optional[str] = None,
-    figsize: Tuple[float, float] = (7.0, 6.0)
+    figsize: Tuple[float, float] = (7.0, 6.0),
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Visualize backdoor adjustment by highlighting backdoor paths and adjustment set.
@@ -479,12 +623,16 @@ def plot_backdoor_adjustment(
             node_colors.append(COLORS['collider'])
 
     # Draw nodes
-    nx.draw_networkx_nodes(graph, pos, ax=ax,
-                          node_color=node_colors,
-                          node_size=2500,
-                          edgecolors='black',
-                          linewidths=2.5,
-                          alpha=0.9)
+    nx.draw_networkx_nodes(
+        graph,
+        pos,
+        ax=ax,
+        node_color=node_colors,
+        node_size=2500,
+        edgecolors='black',
+        linewidths=2.5,
+        alpha=0.9,
+    )
 
     # Draw edges (backdoor paths in red, others in black)
     for u, v in graph.edges():
@@ -498,24 +646,42 @@ def plot_backdoor_adjustment(
             edge_width = 2.0
             edge_alpha = 0.5
 
-        nx.draw_networkx_edges(graph, pos, [(u, v)], ax=ax,
-                              edge_color=edge_color,
-                              width=edge_width,
-                              alpha=edge_alpha,
-                              arrowsize=20,
-                              arrowstyle='->')
+        nx.draw_networkx_edges(
+            graph,
+            pos,
+            [(u, v)],
+            ax=ax,
+            edge_color=edge_color,
+            width=edge_width,
+            alpha=edge_alpha,
+            arrowsize=20,
+            arrowstyle='->',
+        )
 
     # Draw labels
-    nx.draw_networkx_labels(graph, pos, ax=ax,
-                           font_size=12,
-                           font_weight='bold',
-                           font_family='serif')
+    nx.draw_networkx_labels(
+        graph, pos, ax=ax, font_size=12, font_weight='bold', font_family='serif'
+    )
 
     # Add adjustment set box
     textstr = 'Adjustment Set:\n' + '\n'.join([f'  • {c}' for c in confounders])
-    props = dict(boxstyle='round,pad=0.8', facecolor='wheat', alpha=0.9, edgecolor='black', linewidth=2)
-    ax.text(0.02, 0.98, textstr, transform=ax.transAxes, fontsize=11,
-           verticalalignment='top', bbox=props, fontweight='bold')
+    props = dict(
+        boxstyle='round,pad=0.8',
+        facecolor='wheat',
+        alpha=0.9,
+        edgecolor='black',
+        linewidth=2,
+    )
+    ax.text(
+        0.02,
+        0.98,
+        textstr,
+        transform=ax.transAxes,
+        fontsize=11,
+        verticalalignment='top',
+        bbox=props,
+        fontweight='bold',
+    )
 
     ax.set_title(title, fontweight='bold', pad=15)
     ax.axis('off')
@@ -523,8 +689,9 @@ def plot_backdoor_adjustment(
 
     if save_path:
         for ext in ['pdf', 'eps', 'png']:
-            fig.savefig(save_path.replace('.png', f'.{ext}'),
-                       dpi=300, bbox_inches='tight')
+            fig.savefig(
+                save_path.replace('.png', f'.{ext}'), dpi=300, bbox_inches='tight'
+            )
 
     return fig, ax
 

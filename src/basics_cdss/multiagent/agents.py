@@ -4,16 +4,18 @@ This module defines autonomous agents representing different actors
 in the healthcare system.
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional, Callable
-from abc import ABC, abstractmethod
-from enum import Enum
-import numpy as np
 import uuid
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional
+
+import numpy as np
 
 
 class AgentType(Enum):
     """Types of agents in the simulation."""
+
     PATIENT = "patient"
     CLINICIAN = "clinician"
     NURSE = "nurse"
@@ -23,6 +25,7 @@ class AgentType(Enum):
 
 class AgentState(Enum):
     """States an agent can be in."""
+
     IDLE = "idle"
     BUSY = "busy"
     UNAVAILABLE = "unavailable"
@@ -40,6 +43,7 @@ class AgentAction:
         parameters: Action parameters
         timestamp: When action was taken
     """
+
     agent_id: str
     action_type: str
     target: Optional[str] = None
@@ -72,7 +76,7 @@ class Agent(ABC):
         self,
         agent_id: Optional[str] = None,
         agent_type: AgentType = AgentType.CLINICIAN,
-        name: Optional[str] = None
+        name: Optional[str] = None,
     ):
         """Initialize agent.
 
@@ -115,9 +119,7 @@ class Agent(ABC):
 
     @abstractmethod
     def act(
-        self,
-        decision: Dict[str, Any],
-        environment: 'HospitalEnvironment'
+        self, decision: Dict[str, Any], environment: 'HospitalEnvironment'
     ) -> AgentAction:
         """Execute action based on decision.
 
@@ -131,9 +133,7 @@ class Agent(ABC):
         pass
 
     def step(
-        self,
-        environment: 'HospitalEnvironment',
-        dt: float = 1.0
+        self, environment: 'HospitalEnvironment', dt: float = 1.0
     ) -> Optional[AgentAction]:
         """Execute one simulation step.
 
@@ -191,7 +191,7 @@ class PatientAgent(Agent):
         archetype_id: str,
         digital_twin: 'PatientDigitalTwin',
         agent_id: Optional[str] = None,
-        name: Optional[str] = None
+        name: Optional[str] = None,
     ):
         super().__init__(agent_id, AgentType.PATIENT, name)
         self.archetype_id = archetype_id
@@ -204,7 +204,7 @@ class PatientAgent(Agent):
         """Perceive environment (patients don't actively perceive much)."""
         return {
             'current_state': self.current_state.features,
-            'timestamp': self.current_state.timestamp
+            'timestamp': self.current_state.timestamp,
         }
 
     def decide(self, perception: Dict[str, Any]) -> Dict[str, Any]:
@@ -212,15 +212,13 @@ class PatientAgent(Agent):
         return {}
 
     def act(
-        self,
-        decision: Dict[str, Any],
-        environment: 'HospitalEnvironment'
+        self, decision: Dict[str, Any], environment: 'HospitalEnvironment'
     ) -> AgentAction:
         """Patients don't take active actions."""
         return AgentAction(
             agent_id=self.agent_id,
             action_type='evolve',
-            timestamp=self.current_state.timestamp
+            timestamp=self.current_state.timestamp,
         )
 
     def evolve(self, dt: float = 1.0, interventions: Optional[Dict[str, Any]] = None):
@@ -233,10 +231,12 @@ class PatientAgent(Agent):
         self.current_state = self.digital_twin.step(dt, interventions)
 
         if interventions:
-            self.interventions_received.append({
-                'timestamp': self.current_state.timestamp,
-                'interventions': interventions
-            })
+            self.interventions_received.append(
+                {
+                    'timestamp': self.current_state.timestamp,
+                    'interventions': interventions,
+                }
+            )
 
 
 class ClinicianAgent(Agent):
@@ -266,7 +266,7 @@ class ClinicianAgent(Agent):
         workload_capacity: int = 5,
         cdss_trust: float = 0.7,
         agent_id: Optional[str] = None,
-        name: Optional[str] = None
+        name: Optional[str] = None,
     ):
         super().__init__(agent_id, AgentType.CLINICIAN, name)
         self.experience_level = experience_level
@@ -285,23 +285,19 @@ class ClinicianAgent(Agent):
 
     def _get_base_accuracy(self) -> float:
         """Get base diagnostic accuracy by experience level."""
-        accuracy_map = {
-            'junior': 0.75,
-            'mid': 0.85,
-            'senior': 0.90,
-            'expert': 0.95
-        }
+        accuracy_map = {'junior': 0.75, 'mid': 0.85, 'senior': 0.90, 'expert': 0.95}
         return accuracy_map.get(self.experience_level, 0.85)
 
     def _get_response_time_fn(self) -> Callable:
         """Get response time function based on experience."""
+
         def response_time(workload_ratio):
             # Response time increases with workload
             base_time = {
                 'junior': 30,  # minutes
                 'mid': 20,
                 'senior': 15,
-                'expert': 10
+                'expert': 10,
             }.get(self.experience_level, 20)
 
             # Exponential increase with workload
@@ -315,7 +311,7 @@ class ClinicianAgent(Agent):
             'patients': environment.get_patients_for_clinician(self.agent_id),
             'pending_alerts': environment.get_pending_alerts(self.agent_id),
             'workload': self.workload,
-            'timestamp': environment.current_time
+            'timestamp': environment.current_time,
         }
         return perception
 
@@ -334,11 +330,13 @@ class ClinicianAgent(Agent):
             # Decide whether to follow CDSS recommendation
             follow_alert = self._evaluate_alert(alert)
 
-            self.alerts_received.append({
-                'timestamp': perception['timestamp'],
-                'alert': alert,
-                'followed': follow_alert
-            })
+            self.alerts_received.append(
+                {
+                    'timestamp': perception['timestamp'],
+                    'alert': alert,
+                    'followed': follow_alert,
+                }
+            )
 
             if follow_alert:
                 decision['intervention'] = alert['recommendation']
@@ -371,9 +369,7 @@ class ClinicianAgent(Agent):
         return np.random.random() < follow_prob
 
     def act(
-        self,
-        decision: Dict[str, Any],
-        environment: 'HospitalEnvironment'
+        self, decision: Dict[str, Any], environment: 'HospitalEnvironment'
     ) -> AgentAction:
         """Execute clinical action."""
         if 'intervention' in decision:
@@ -382,20 +378,19 @@ class ClinicianAgent(Agent):
                 action_type='intervention',
                 target=decision['patient_id'],
                 parameters={'intervention': decision['intervention']},
-                timestamp=environment.current_time
+                timestamp=environment.current_time,
             )
 
-            self.decisions_made.append({
-                'timestamp': environment.current_time,
-                'decision': decision
-            })
+            self.decisions_made.append(
+                {'timestamp': environment.current_time, 'decision': decision}
+            )
 
             return action
 
         return AgentAction(
             agent_id=self.agent_id,
             action_type='monitor',
-            timestamp=environment.current_time
+            timestamp=environment.current_time,
         )
 
 
@@ -422,7 +417,7 @@ class CDSSAgent(Agent):
         alert_threshold: float = 0.8,
         alert_cooldown: float = 2.0,
         agent_id: Optional[str] = None,
-        name: Optional[str] = None
+        name: Optional[str] = None,
     ):
         super().__init__(agent_id, AgentType.CDSS, name)
         self.model = model
@@ -435,7 +430,7 @@ class CDSSAgent(Agent):
         """Perceive patient states."""
         return {
             'patients': environment.get_all_patients(),
-            'timestamp': environment.current_time
+            'timestamp': environment.current_time,
         }
 
     def decide(self, perception: Dict[str, Any]) -> Dict[str, Any]:
@@ -450,12 +445,18 @@ class CDSSAgent(Agent):
             risk_score = self._assess_risk(patient_state)
 
             # Check if alert should be generated
-            if self._should_alert(patient.agent_id, risk_score, perception['timestamp']):
-                decisions.append({
-                    'patient_id': patient.agent_id,
-                    'risk_score': risk_score,
-                    'recommendation': self._generate_recommendation(patient_state, risk_score)
-                })
+            if self._should_alert(
+                patient.agent_id, risk_score, perception['timestamp']
+            ):
+                decisions.append(
+                    {
+                        'patient_id': patient.agent_id,
+                        'risk_score': risk_score,
+                        'recommendation': self._generate_recommendation(
+                            patient_state, risk_score
+                        ),
+                    }
+                )
 
         return {'alerts': decisions}
 
@@ -472,10 +473,7 @@ class CDSSAgent(Agent):
         return risk
 
     def _should_alert(
-        self,
-        patient_id: str,
-        risk_score: float,
-        current_time: float
+        self, patient_id: str, risk_score: float, current_time: float
     ) -> bool:
         """Determine if alert should be generated."""
         # Check threshold
@@ -491,32 +489,25 @@ class CDSSAgent(Agent):
         return True
 
     def _generate_recommendation(
-        self,
-        patient_state: Dict[str, Any],
-        risk_score: float
+        self, patient_state: Dict[str, Any], risk_score: float
     ) -> Dict[str, Any]:
         """Generate treatment recommendation."""
         # Simplified recommendation logic
         if risk_score > 0.9:
             return {
                 'urgency': 'critical',
-                'actions': ['immediate_intervention', 'icu_transfer']
+                'actions': ['immediate_intervention', 'icu_transfer'],
             }
         elif risk_score > 0.8:
             return {
                 'urgency': 'high',
-                'actions': ['close_monitoring', 'consider_intervention']
+                'actions': ['close_monitoring', 'consider_intervention'],
             }
         else:
-            return {
-                'urgency': 'moderate',
-                'actions': ['monitor']
-            }
+            return {'urgency': 'moderate', 'actions': ['monitor']}
 
     def act(
-        self,
-        decision: Dict[str, Any],
-        environment: 'HospitalEnvironment'
+        self, decision: Dict[str, Any], environment: 'HospitalEnvironment'
     ) -> AgentAction:
         """Generate alert actions."""
         if 'alerts' in decision and decision['alerts']:
@@ -526,18 +517,20 @@ class CDSSAgent(Agent):
                     action_type='generate_alert',
                     target=alert_info['patient_id'],
                     parameters=alert_info,
-                    timestamp=environment.current_time
+                    timestamp=environment.current_time,
                 )
 
                 self.alerts_generated.append(alert_info)
-                self.last_alert_time[alert_info['patient_id']] = environment.current_time
+                self.last_alert_time[alert_info['patient_id']] = (
+                    environment.current_time
+                )
 
                 return alert
 
         return AgentAction(
             agent_id=self.agent_id,
             action_type='monitor',
-            timestamp=environment.current_time
+            timestamp=environment.current_time,
         )
 
 
@@ -560,7 +553,7 @@ class NurseAgent(Agent):
         assigned_patients: Optional[List[str]] = None,
         monitoring_frequency: float = 1.0,
         agent_id: Optional[str] = None,
-        name: Optional[str] = None
+        name: Optional[str] = None,
     ):
         super().__init__(agent_id, AgentType.NURSE, name)
         self.assigned_patients = assigned_patients or []
@@ -570,38 +563,33 @@ class NurseAgent(Agent):
     def perceive(self, environment: 'HospitalEnvironment') -> Dict[str, Any]:
         """Perceive assigned patients."""
         patients = [
-            p for p in environment.get_all_patients()
+            p
+            for p in environment.get_all_patients()
             if p.agent_id in self.assigned_patients
         ]
 
-        return {
-            'patients': patients,
-            'timestamp': environment.current_time
-        }
+        return {'patients': patients, 'timestamp': environment.current_time}
 
     def decide(self, perception: Dict[str, Any]) -> Dict[str, Any]:
         """Decide monitoring actions."""
-        return {
-            'action': 'monitor_patients',
-            'patients': perception['patients']
-        }
+        return {'action': 'monitor_patients', 'patients': perception['patients']}
 
     def act(
-        self,
-        decision: Dict[str, Any],
-        environment: 'HospitalEnvironment'
+        self, decision: Dict[str, Any], environment: 'HospitalEnvironment'
     ) -> AgentAction:
         """Execute monitoring."""
         # Record observations
         for patient in decision.get('patients', []):
-            self.observations.append({
-                'timestamp': environment.current_time,
-                'patient_id': patient.agent_id,
-                'state': patient.current_state.features
-            })
+            self.observations.append(
+                {
+                    'timestamp': environment.current_time,
+                    'patient_id': patient.agent_id,
+                    'state': patient.current_state.features,
+                }
+            )
 
         return AgentAction(
             agent_id=self.agent_id,
             action_type='monitor',
-            timestamp=environment.current_time
+            timestamp=environment.current_time,
         )
