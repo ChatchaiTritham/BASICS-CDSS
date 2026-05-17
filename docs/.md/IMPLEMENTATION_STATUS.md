@@ -498,13 +498,13 @@ BASICS-CDSS consists of three main tiers plus supporting infrastructure:
 ## Support and Contact
 
 ### Bug Reports
-- GitHub Issues: [github.com/yourusername/BASICS-CDSS/issues](https://github.com/yourusername/BASICS-CDSS/issues)
+- GitHub Issues: [github.com/ChatchaiTritham/BASICS-CDSS/issues](https://github.com/ChatchaiTritham/BASICS-CDSS/issues)
 
 ### Feature Requests
-- GitHub Discussions: [github.com/yourusername/BASICS-CDSS/discussions](https://github.com/yourusername/BASICS-CDSS/discussions)
+- GitHub Discussions: [github.com/ChatchaiTritham/BASICS-CDSS/discussions](https://github.com/ChatchaiTritham/BASICS-CDSS/discussions)
 
 ### Questions
-- Email: your.email@institution.edu
+- Email: chatchait66@nu.ac.th
 - Documentation: [https://basics-cdss.readthedocs.io](https://basics-cdss.readthedocs.io)
 
 ---
@@ -532,10 +532,10 @@ If you use BASICS-CDSS in your research, please cite:
 ```bibtex
 @software{basics_cdss,
   title={BASICS-CDSS: Bayesian Archetypes for Simulating Inconsistencies in Clinical Decision Support Systems},
-  author={[Your Name]},
+  author={Chatchai Tritham},
   year={2025},
   version={0.1.0},
-  url={https://github.com/yourusername/BASICS-CDSS}
+  url={https://github.com/ChatchaiTritham/BASICS-CDSS}
 }
 ```
 
