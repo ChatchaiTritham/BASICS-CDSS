@@ -484,8 +484,8 @@ If you use BASICS-CDSS Advanced Simulation in your research, please cite:
 ```
 @software{basics_cdss,
   title={BASICS-CDSS: Bayesian Archetypes for Simulating Inconsistencies in Clinical Decision Support Systems},
-  author={[Your Name]},
+  author={Chatchai Tritham},
   year={2025},
-  url={https://github.com/yourusername/BASICS-CDSS}
+  url={https://github.com/ChatchaiTritham/BASICS-CDSS}
 }
 ```

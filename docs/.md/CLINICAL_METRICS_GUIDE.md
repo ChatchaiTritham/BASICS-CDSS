@@ -884,6 +884,6 @@ help(risk_control_conformal)
 
 ---
 
-**For questions or support, see:** [BASICS-CDSS GitHub Issues](https://github.com/yourusername/BASICS-CDSS/issues)
+**For questions or support, see:** [BASICS-CDSS GitHub Issues](https://github.com/ChatchaiTritham/BASICS-CDSS/issues)
 
 **License:** MIT | **Version:** 2.1.0 | **Last Updated:** 2025-01-25
