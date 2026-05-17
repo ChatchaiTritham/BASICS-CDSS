@@ -25,6 +25,8 @@ pip install -e .
   - `examples/generate_xai_figures.py`: explainability figure generation
   - `examples/generate_clinical_metrics_figures.py`: clinical metrics figure generation
   - `examples/publication_figures.py`: publication-style figure bundle
+- Manuscript figure script:
+  - `scripts/generate_manuscript_figures.py`: curated manuscript figure set
 - Notebooks:
   - `notebooks/00_quickstart.ipynb`
   - `notebooks/01_basics_scenario_instantiation.ipynb`
@@ -33,6 +35,29 @@ pip install -e .
   - `notebooks/04_harm_aware_evaluation.ipynb`
   - `notebooks/05_end_to_end_pipeline.ipynb`
   - `notebooks/06_digital_twin_simulation.ipynb`
+
+## Curated Manuscript Figures
+
+The curated manuscript figure set is maintained for manuscripts that are still
+in preparation. This status does not imply publication, acceptance, or final
+journal readiness for every raw baseline, demo, output, or legacy image in the
+repository.
+
+Regenerate the curated figure set:
+
+```bash
+python scripts/generate_manuscript_figures.py
+```
+
+Outputs:
+
+- `figures/manuscript/`: selected PDF and PNG manuscript/supplementary figures
+- `FIGURE_MANIFEST.csv`: figure role, source script, source artifact, caption,
+  and intended article section
+
+The broader `examples/figures/`, `examples/output/`, and `figures/legacy/`
+trees remain reproducibility archives unless a figure is promoted into the
+manifest.
 
 ## Cross-Repository Tutorial Charts
 
@@ -50,6 +75,44 @@ Importable code lives in `src/basics_cdss/`.
 ```bash
 pytest tests -v
 ```
+
+## Manuscript Alignment
+
+Canonical manuscript package:
+
+- `D:\PhD-NU\Manuscript\Manuscript\BSPC_BASICS-CDSS-Digital-Twin\elsarticle`
+
+The manuscript frames BASICS-CDSS as a beyond-accuracy evaluation methodology
+for clinical decision support. This repository supplies the corresponding code
+and figure artifacts for:
+
+- calibration and reliability analysis
+- coverage-risk and selective prediction behavior
+- abstention-aware evaluation
+- harm-by-tier summaries
+- decision-curve and net-benefit interpretation
+- digital-twin style temporal evaluation
+
+The manuscript currently uses local figure names, while this repository now
+exports a curated manuscript/supplementary figure set under
+`figures/manuscript/`. Treat `FIGURE_MANIFEST.csv` as the repository-side
+source of truth for promoted figure artifacts.
+
+## Methodological References
+
+The repository follows the manuscript's evaluation framing:
+
+- Calibration and reliability: expected calibration error, reliability curves,
+  and threshold-dependent clinical usefulness.
+- Selective prediction: coverage-risk analysis and abstention-aware reporting.
+- Clinical utility: decision-curve analysis and net benefit.
+- Safety evaluation: harm stratification by risk tier rather than accuracy
+  alone.
+
+## Citation
+
+The associated manuscript is still in preparation. Until its publication status
+changes, cite this software repository using `CITATION.cff`.
 
 ## Contact
 
