@@ -78,10 +78,6 @@ pytest tests -v
 
 ## Manuscript Alignment
 
-Canonical manuscript package:
-
-- `D:\PhD-NU\Manuscript\Manuscript\BSPC_BASICS-CDSS-Digital-Twin\elsarticle`
-
 The manuscript frames BASICS-CDSS as a beyond-accuracy evaluation methodology
 for clinical decision support. This repository supplies the corresponding code
 and figure artifacts for:
