@@ -1,7 +1,7 @@
-"""
+﻿"""
 BASICS-CDSS Publication Figure Generator
 
-Master script to generate all publication-ready figures for manuscripts.
+Master script to generate all manuscript-preparation figures for manuscripts.
 Generates figures for all three tiers plus baseline evaluation plots.
 
 Output Organization:
@@ -270,7 +270,7 @@ def generate_tier1_figures(output_dir: Path):
     biomarkers = {
         'Lactate (mmol/L)': 2.0 * np.exp(time48/30) - np.exp(time48/50),
         'Procalcitonin (ng/mL)': 0.5 + time48/10 - (time48/20)**2/10,
-        'WBC (×10³/μL)': 12 + 5*np.sin(time48/6)
+        'WBC (ร—10ยณ/ฮผL)': 12 + 5*np.sin(time48/6)
     }
     stages = [(0, 12, 'Early Sepsis'), (12, 36, 'Severe Sepsis'), (36, 48, 'Recovery')]
     fig, axes = plot_disease_progression(time48, biomarkers, stages,
@@ -528,7 +528,7 @@ def main():
     print(f"  - Tier 1:    4 figures (digital twin temporal analysis)")
     print(f"  - Tier 2:    5 figures (causal simulation & interventions)")
     print(f"  - Tier 3:    5 figures (multi-agent system dynamics)")
-    print(f"  - TOTAL:    26 publication-ready figures")
+    print(f"  - TOTAL:    26 manuscript-preparation figures")
     print("\n" + "="*80)
 
 
