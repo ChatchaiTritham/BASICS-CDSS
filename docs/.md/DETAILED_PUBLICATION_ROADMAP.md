@@ -1105,4 +1105,4 @@ Sep  █ Paper 5 published
 
 **Document Version:** 1.0
 **Last Updated:** January 2026
-**Contact:** [Your email]
+**Contact:** chatchait66@nu.ac.th

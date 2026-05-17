@@ -519,7 +519,7 @@ Metrics including:
 3. Conformal Prediction (distribution-free uncertainty quantification)
 
 **Public Repository:**
-https://github.com/[YourUsername]/BASICS-CDSS
+https://github.com/ChatchaiTritham/BASICS-CDSS
 
 **Installation:**
 ```
@@ -549,7 +549,7 @@ python examples/generate_clinical_metrics_figures.py --n-samples [N] --output-di
 
 **License:** MIT License (open source, commercial use allowed)
 
-**Contact:** [Your email] for questions about code implementation
+**Contact:** chatchait66@nu.ac.th for questions about code implementation
 ```
 
 ---
