@@ -1,9 +1,9 @@
-"""
+﻿"""
 Performance Figures Generation Script
 
 Master script to generate all performance visualization figures for BASICS-CDSS.
 
-Generates publication-ready figures:
+Generates manuscript-preparation figures:
 - Confusion matrices (binary & multi-class)
 - ROC curves
 - Precision-Recall curves

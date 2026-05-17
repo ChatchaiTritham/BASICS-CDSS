@@ -1,7 +1,7 @@
-"""
+﻿"""
 Generate all figures for BASICS-CDSS Paper 1: Digital Twin Simulation for CDSS Evaluation
 
-This script generates 16 publication-ready figures (7 main + 9 supplementary):
+This script generates 16 manuscript-preparation figures (7 main + 9 supplementary):
 - Figure 2: Disease Progression Trajectories
 - Figure 3: Sepsis Counterfactual Analysis
 - Figure 4: Intervention Timing Optimization
@@ -90,7 +90,7 @@ def generate_figure2_disease_trajectories():
     axes[0, 0].plot(time_hours, temp_very_delayed, color=CB_COLORS['red'], label='Very Delayed >12h', linewidth=2)
     axes[0, 0].axhline(38, color='gray', linestyle='--', alpha=0.5, linewidth=1)
     axes[0, 0].fill_between(time_hours, 36.5, 37.5, alpha=0.1, color='green', label='Normal range')
-    axes[0, 0].set_ylabel('Temperature (°C)', fontsize=10, fontweight='bold')
+    axes[0, 0].set_ylabel('Temperature (ยฐC)', fontsize=10, fontweight='bold')
     axes[0, 0].set_title('A1. Sepsis: Temperature', fontsize=11, fontweight='bold')
     axes[0, 0].legend(fontsize=8, loc='upper right')
     axes[0, 0].grid(True, alpha=0.3)
@@ -146,7 +146,7 @@ def generate_figure2_disease_trajectories():
     axes[1, 0].plot(time_hours, spo2_delayed, color=CB_COLORS['red'], label='Delayed LPV', linewidth=2)
     axes[1, 0].axhline(90, color='gray', linestyle='--', alpha=0.5)
     axes[1, 0].fill_between(time_hours, 94, 100, alpha=0.1, color='green')
-    axes[1, 0].set_ylabel('SpO₂ (%)', fontsize=10, fontweight='bold')
+    axes[1, 0].set_ylabel('SpOโ (%)', fontsize=10, fontweight='bold')
     axes[1, 0].set_title('B1. ARDS: Oxygen Saturation', fontsize=11, fontweight='bold')
     axes[1, 0].legend(fontsize=8, loc='lower left')
     axes[1, 0].grid(True, alpha=0.3)
@@ -157,7 +157,7 @@ def generate_figure2_disease_trajectories():
     axes[1, 1].axhline(200, color='gray', linestyle='--', alpha=0.5, label='Mild ARDS')
     axes[1, 1].axhline(100, color='gray', linestyle='--', alpha=0.5, label='Severe ARDS')
     axes[1, 1].fill_between(time_hours, 300, 400, alpha=0.1, color='green')
-    axes[1, 1].set_ylabel('PaO₂/FiO₂ (mmHg)', fontsize=10, fontweight='bold')
+    axes[1, 1].set_ylabel('PaOโ/FiOโ (mmHg)', fontsize=10, fontweight='bold')
     axes[1, 1].set_title('B2. ARDS: PF Ratio', fontsize=11, fontweight='bold')
     axes[1, 1].grid(True, alpha=0.3)
 
@@ -166,7 +166,7 @@ def generate_figure2_disease_trajectories():
     axes[1, 2].plot(time_hours, peep_delayed, color=CB_COLORS['red'], linewidth=2)
     axes[1, 2].axhline(10, color='gray', linestyle='--', alpha=0.5)
     axes[1, 2].fill_between(time_hours, 10, 15, alpha=0.1, color='green', label='Recommended range')
-    axes[1, 2].set_ylabel('PEEP (cmH₂O)', fontsize=10, fontweight='bold')
+    axes[1, 2].set_ylabel('PEEP (cmHโO)', fontsize=10, fontweight='bold')
     axes[1, 2].set_title('B3. ARDS: PEEP Setting', fontsize=11, fontweight='bold')
     axes[1, 2].grid(True, alpha=0.3)
 
@@ -175,7 +175,7 @@ def generate_figure2_disease_trajectories():
     axes[1, 3].plot(time_hours, compliance_delayed, color=CB_COLORS['red'], linewidth=2)
     axes[1, 3].axhline(40, color='gray', linestyle='--', alpha=0.5)
     axes[1, 3].fill_between(time_hours, 50, 70, alpha=0.1, color='green')
-    axes[1, 3].set_ylabel('Compliance (mL/cmH₂O)', fontsize=10, fontweight='bold')
+    axes[1, 3].set_ylabel('Compliance (mL/cmHโO)', fontsize=10, fontweight='bold')
     axes[1, 3].set_title('B4. ARDS: Lung Compliance', fontsize=11, fontweight='bold')
     axes[1, 3].grid(True, alpha=0.3)
 
@@ -347,7 +347,7 @@ def generate_figure3_sepsis_counterfactual():
 
     bars = axes[1, 1].bar(timing_categories, sofa_mean, yerr=sofa_ci, capsize=5,
                           color=colors_sofa, edgecolor='black', linewidth=1.5, alpha=0.8)
-    axes[1, 1].axhline(8, color='red', linestyle='--', linewidth=2, label='Septic shock threshold (SOFA ≥8)')
+    axes[1, 1].axhline(8, color='red', linestyle='--', linewidth=2, label='Septic shock threshold (SOFA โฅ8)')
     axes[1, 1].set_ylabel('SOFA Score', fontsize=11, fontweight='bold')
     axes[1, 1].set_xlabel('Antibiotic Timing Category', fontsize=11, fontweight='bold')
     axes[1, 1].set_title('D. Organ Damage by Timing Category', fontsize=12, fontweight='bold')

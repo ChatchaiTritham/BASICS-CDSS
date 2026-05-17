@@ -1,7 +1,7 @@
-"""
+﻿"""
 Performance Visualization Module
 
-Publication-ready 2D visualizations for classification performance metrics:
+Manuscript-preparation 2D visualizations for classification performance metrics:
 - Confusion matrix heatmaps
 - ROC curves
 - Precision-Recall curves
@@ -361,7 +361,7 @@ def plot_sensitivity_specificity_curve(
             lw=2,
             linestyle='--',
             alpha=0.7,
-            label=f'Optimal (τ = {optimal_threshold:.2f})',
+            label=f'Optimal (ฯ = {optimal_threshold:.2f})',
         )
 
         # Mark points
@@ -512,7 +512,7 @@ def plot_threshold_analysis(
         lw=2,
         linestyle='--',
         alpha=0.7,
-        label=f'Optimal τ = {optimal_threshold:.2f}',
+        label=f'Optimal ฯ = {optimal_threshold:.2f}',
     )
     axes[2].plot(
         optimal_threshold,
