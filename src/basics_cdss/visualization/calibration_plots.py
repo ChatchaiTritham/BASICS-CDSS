@@ -1,7 +1,7 @@
-"""
+﻿"""
 Calibration visualization functions for BASICS-CDSS.
 
-Publication-ready plots for calibration analysis including:
+Manuscript-preparation plots for calibration analysis including:
 - Reliability diagrams
 - Stratified calibration by risk tier
 - Calibration comparison across models

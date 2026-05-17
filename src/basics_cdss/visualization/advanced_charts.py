@@ -1,4 +1,4 @@
-"""
+﻿"""
 Advanced Charts Module
 
 Advanced 2D/3D visualization for CDSS performance analysis:
@@ -8,7 +8,7 @@ Advanced 2D/3D visualization for CDSS performance analysis:
 - Multi-dimensional performance landscapes
 - Stratified performance heatmaps
 
-Publication-ready (IEEE/Nature/JAMA compliant)
+Manuscript-preparation (IEEE/Nature/JAMA compliant)
 
 Author: Chatchai Tritham
 Affiliation: Naresuan University

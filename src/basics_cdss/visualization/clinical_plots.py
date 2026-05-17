@@ -1,7 +1,7 @@
-"""
+﻿"""
 Clinical Metrics Visualization Module
 
-Provides publication-ready 2D and 3D visualization functions for:
+Provides manuscript-preparation 2D and 3D visualization functions for:
 - Clinical Utility Metrics (Decision Curves, Net Benefit, NNT)
 - Fairness Metrics (Demographic Parity, Equalized Odds, Calibration)
 - Conformal Prediction (Prediction Sets, Coverage, Intervals)
@@ -520,7 +520,7 @@ def plot_demographic_parity(
     ax.set_ylabel('Positive Prediction Rate', fontweight='bold')
     ax.set_xlabel('Protected Group', fontweight='bold')
     ax.set_title(
-        f'Demographic Parity Assessment (Δ = {dp_result.parity_difference:.3f})',
+        f'Demographic Parity Assessment (ฮ” = {dp_result.parity_difference:.3f})',
         fontweight='bold',
     )
     ax.legend()
@@ -616,8 +616,8 @@ def plot_equalized_odds(
     ax.set_ylabel('Rate', fontweight='bold')
     ax.set_xlabel('Protected Group', fontweight='bold')
     ax.set_title(
-        f'Equalized Odds (TPR Δ = {eo_result.tpr_difference:.3f}, '
-        f'FPR Δ = {eo_result.fpr_difference:.3f})',
+        f'Equalized Odds (TPR ฮ” = {eo_result.tpr_difference:.3f}, '
+        f'FPR ฮ” = {eo_result.fpr_difference:.3f})',
         fontweight='bold',
     )
     ax.set_xticks(x)
@@ -678,7 +678,7 @@ def plot_disparate_impact(
     ]
     ratios = [r.disparate_impact_ratio for r in di_results]
 
-    # Color by fairness (0.8 ≤ DI ≤ 1.25 is fair)
+    # Color by fairness (0.8 โค DI โค 1.25 is fair)
     colors = []
     for r in di_results:
         if r.is_fair:
@@ -1008,7 +1008,7 @@ def plot_conformal_intervals(
         elinewidth=2,
         capsize=3,
         markersize=4,
-        label='Predicted ± Interval',
+        label='Predicted ยฑ Interval',
     )
 
     # Plot true values if provided
@@ -1090,7 +1090,7 @@ def plot_coverage_vs_alpha(
         label='Empirical Coverage',
     )
 
-    ax.set_xlabel('Target Coverage (1 - α)', fontweight='bold')
+    ax.set_xlabel('Target Coverage (1 - ฮฑ)', fontweight='bold')
     ax.set_ylabel('Empirical Coverage', fontweight='bold')
     ax.set_title('Conformal Prediction Coverage Guarantee', fontweight='bold')
     ax.legend()
