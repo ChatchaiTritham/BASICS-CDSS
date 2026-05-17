@@ -1,4 +1,4 @@
-# BASICS-CDSS
+﻿# BASICS-CDSS
 
 ## Overview
 
@@ -93,22 +93,6 @@ The manuscript currently uses local figure names, while this repository now
 exports a curated manuscript/supplementary figure set under
 `figures/manuscript/`. Treat `FIGURE_MANIFEST.csv` as the repository-side
 source of truth for promoted figure artifacts.
-
-## Methodological References
-
-The repository follows the manuscript's evaluation framing:
-
-- Calibration and reliability: expected calibration error, reliability curves,
-  and threshold-dependent clinical usefulness.
-- Selective prediction: coverage-risk analysis and abstention-aware reporting.
-- Clinical utility: decision-curve analysis and net benefit.
-- Safety evaluation: harm stratification by risk tier rather than accuracy
-  alone.
-
-## Citation
-
-The associated manuscript is still in preparation. Until its publication status
-changes, cite this software repository using `CITATION.cff`.
 
 ## Contact
 
