@@ -1,8 +1,8 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Automated Figure Copy Script for BASICS-CDSS Manuscripts
 
-This script copies publication-ready figures from the BASICS-CDSS repository
+This script copies manuscript-preparation figures from the BASICS-CDSS repository
 to the manuscript directories for Papers 2 and 3.
 
 Usage:
@@ -182,7 +182,7 @@ def main():
 
     print(f"{Colors.BOLD}Repository Status:{Colors.END}")
     print_success(f"BASICS-CDSS v2.1.0 - Production Ready")
-    print_success(f"46+ publication-ready figures available")
+    print_success(f"46+ manuscript-preparation figures available")
     print_success(f"Fully tested and reproducible")
 
     print(f"\n{Colors.BOLD}Manuscript Status:{Colors.END}")

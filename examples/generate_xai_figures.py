@@ -1,11 +1,11 @@
-"""
+﻿"""
 Generate XAI (Explainable AI) Figures for BASICS-CDSS
 
 This script demonstrates the complete XAI capabilities of BASICS-CDSS:
 1. SHAP (Shapley value) analysis with game-theoretic interpretation
 2. Counterfactual explanations for clinical decisions
 
-Generates publication-ready figures for:
+Generates manuscript-preparation figures for:
 - Feature importance rankings (major vs minor players)
 - SHAP waterfall, summary, and dependence plots
 - Counterfactual comparisons and intervention suggestions
@@ -165,9 +165,9 @@ def create_synthetic_clinical_data(n_samples=500, random_state=42):
         'resp_rate': 'Respiratory Rate (breaths/min)',
         'troponin': 'Troponin I (ng/mL)',
         'lactate': 'Serum Lactate (mmol/L)',
-        'temperature': 'Body Temperature (°C)',
+        'temperature': 'Body Temperature (ยฐC)',
         'spo2': 'Oxygen Saturation (%)',
-        'wbc': 'White Blood Cell Count (×10⁹/L)',
+        'wbc': 'White Blood Cell Count (ร—10โน/L)',
         'creatinine': 'Serum Creatinine (mg/dL)',
         'age': 'Age (years)',
         'gender': 'Gender (0=F, 1=M)',
@@ -327,11 +327,11 @@ def generate_shap_figures(model, X, y, feature_names, output_dir):
         f.write("In cooperative game theory, features are 'players' in a game where the\n")
         f.write("'payoff' is the prediction accuracy. Shapley values provide a fair\n")
         f.write("attribution of this payoff to each player.\n\n")
-        f.write("- MAJOR PLAYERS have high Shapley values → strong influence on decision\n")
-        f.write("- MINOR PLAYERS have low Shapley values → weak influence on decision\n\n")
+        f.write("- MAJOR PLAYERS have high Shapley values โ’ strong influence on decision\n")
+        f.write("- MINOR PLAYERS have low Shapley values โ’ weak influence on decision\n\n")
         f.write("This aligns with clinical intuition:\n")
-        f.write("  • Critical symptoms (e.g., troponin, BP) → major players\n")
-        f.write("  • Uncertain/ambiguous signs → minor players\n")
+        f.write("  โ€ข Critical symptoms (e.g., troponin, BP) โ’ major players\n")
+        f.write("  โ€ข Uncertain/ambiguous signs โ’ minor players\n")
         f.write("=" * 80 + "\n")
 
     print(f"[OK] Generated {7 if has_interactions else 6} SHAP figure types")
@@ -493,7 +493,7 @@ def generate_counterfactual_figures(model, X, y, feature_names, output_dir):
         for feat, (old, new) in cf.feature_changes.items():
             change = new - old
             pct = abs(change / old * 100) if old != 0 else 0
-            f.write(f"  {feat:20s}: {old:8.2f} → {new:8.2f}  "
+            f.write(f"  {feat:20s}: {old:8.2f} โ’ {new:8.2f}  "
                    f"(change: {change:+.2f}, {pct:.1f}%)\n")
 
         f.write("\n" + "=" * 80 + "\n")

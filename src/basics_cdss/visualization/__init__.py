@@ -1,7 +1,7 @@
-"""
+﻿"""
 Visualization module for BASICS-CDSS evaluation results.
 
-This module provides publication-ready plotting functions for:
+This module provides manuscript-preparation plotting functions for:
 - Calibration reliability diagrams
 - Coverage-risk curves
 - Harm concentration visualizations

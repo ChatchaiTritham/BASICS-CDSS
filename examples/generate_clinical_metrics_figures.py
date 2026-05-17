@@ -1,4 +1,4 @@
-"""
+﻿"""
 Clinical Metrics Figure Generation Script
 
 Generates comprehensive 2D and 3D visualization figures for Phase 1 Medical AI metrics:
@@ -6,7 +6,7 @@ Generates comprehensive 2D and 3D visualization figures for Phase 1 Medical AI m
 2. Fairness Metrics (Demographic Parity, Equalized Odds, Calibration)
 3. Conformal Prediction (Uncertainty Quantification with Guarantees)
 
-This script demonstrates all visualization capabilities for publication-ready figures
+This script demonstrates all visualization capabilities for manuscript-preparation figures
 suitable for FDA submissions, ethical AI reports, and medical AI papers.
 
 Usage:
@@ -451,7 +451,7 @@ def main():
         print("    - conformal_intervals_regression.pdf")
 
     print("-" * 80)
-    print("\nThese figures are publication-ready for:")
+    print("\nThese figures are manuscript-preparation for:")
     print("  [OK] FDA 510(k) submissions")
     print("  [OK] Ethical AI audit reports")
     print("  [OK] Medical AI research papers (IEEE/Nature/JAMA)")
