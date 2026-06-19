@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "BASICS-CDSS: Beyond-Accuracy Evaluation Methodology for Safety-Critical Clinical Decision Support"
+abstract: >-
+  A beyond-accuracy evaluation methodology for safety-critical clinical decision
+  support. Given predictions and outcomes, it computes calibration,
+  coverage-risk, harm, and utility metrics, stratifies results by safety tier,
+  and exports curated manuscript and supplementary figures, including reliability
+  diagrams, coverage-risk and abstention analyses, and harm-by-tier summaries.
+type: software
+authors:
+  - given-names: Chatchai
+    family-names: Tritham
+    email: chatchait66@nu.ac.th
+    orcid: "https://orcid.org/0000-0001-7899-228X"
+    affiliation: >-
+      Department of Computer Science and Information Technology, Faculty of
+      Science, Naresuan University, Phitsanulok 65000, Thailand
+  - given-names: Chakkrit Snae
+    family-names: Namahoot
+    email: chakkrits@nu.ac.th
+    orcid: "https://orcid.org/0000-0003-4660-4590"
+    affiliation: >-
+      Department of Computer Science and Information Technology, Faculty of
+      Science, Naresuan University, Phitsanulok 65000, Thailand
+license: MIT
+repository-code: "https://github.com/ChatchaiTritham/BASICS-CDSS"
+version: 1.0.0
+keywords:
+  - clinical decision support systems
+  - beyond-accuracy evaluation
+  - model calibration
+  - coverage-risk trade-off
+  - selective prediction
+  - patient safety

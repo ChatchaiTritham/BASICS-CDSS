@@ -1,0 +1,151 @@
+{
+  "seed": 42,
+  "dbrs": {
+    "n_evaluated": 48,
+    "n_critical_gt_1.15": 2,
+    "dbrs_min": 0.9320695102685624,
+    "dbrs_max": 27.999999999999996,
+    "dbrs_mean": 1.5788209335542278,
+    "critical_biomarkers": [
+      "cardiac:heart_rate:gradient_boosting",
+      "cardiac:st_elevation:logistic_regression"
+    ]
+  },
+  "tcb": {
+    "loss_metric": "brier",
+    "rho": 0.2,
+    "delta_min": 0.013055499999999984,
+    "rho_delta_min": 0.002611099999999997,
+    "fraction_bound_holds": 1.0,
+    "per_model_loss_gap": {
+      "gradient_boosting": 0.016032165582172797,
+      "logistic_regression": 0.024805642077830065,
+      "random_forest": 0.013055499999999984
+    }
+  },
+  "tcs": {
+    "by_missingness_mean": {
+      "0.2": 0.8164675925925926,
+      "0.4": 0.7883835978835979,
+      "0.6": 0.8255198412698412
+    },
+    "min_mean_tcs": 0.6778571428571428,
+    "max_mean_tcs": 0.942
+  },
+  "tce": {
+    "loss_form": "L2_trajectory",
+    "per_model_mean": {
+      "gradient_boosting": 0.2813007038559972,
+      "logistic_regression": 0.24985246072680842,
+      "random_forest": 0.24283563462588698
+    },
+    "overall_mean_tce": 0.2579962664028975,
+    "min_mean_tce": 0.10894046824444577,
+    "max_mean_tce": 0.4054604624931185,
+    "per_model_disease": {
+      "logistic_regression:sepsis": 0.4054604624931185,
+      "logistic_regression:ards": 0.18864966070149372,
+      "logistic_regression:cardiac": 0.155447258985813,
+      "random_forest:sepsis": 0.36953785591682914,
+      "random_forest:ards": 0.25002857971638603,
+      "random_forest:cardiac": 0.10894046824444577,
+      "gradient_boosting:sepsis": 0.394880412584022,
+      "gradient_boosting:ards": 0.3095372124026376,
+      "gradient_boosting:cardiac": 0.13948448658133208
+    }
+  },
+  "bews": {
+    "threshold_z": 1.96,
+    "flagged_diseases": [],
+    "per_biomarker": {
+      "sepsis:temperature": {
+        "lead_time_hours": 24.0,
+        "precision": 0.7974683544303798,
+        "max_deviation": 2.611472185579105
+      },
+      "sepsis:heart_rate": {
+        "lead_time_hours": 24.0,
+        "precision": 0.7777777777777778,
+        "max_deviation": 2.518450417101504
+      },
+      "sepsis:respiratory_rate": {
+        "lead_time_hours": 24.0,
+        "precision": 0.5754716981132075,
+        "max_deviation": 2.3699644377848013
+      },
+      "sepsis:white_blood_cell_count": {
+        "lead_time_hours": 24.0,
+        "precision": 0.8076923076923077,
+        "max_deviation": 2.812593904640283
+      },
+      "sepsis:blood_pressure_sys": {
+        "lead_time_hours": 24.0,
+        "precision": 0.75,
+        "max_deviation": 2.78048991323597
+      },
+      "sepsis:lactate": {
+        "lead_time_hours": 24.0,
+        "precision": 0.8076923076923077,
+        "max_deviation": 2.701502616036181
+      },
+      "ards:oxygen_saturation": {
+        "lead_time_hours": 24.0,
+        "precision": 0.7079646017699115,
+        "max_deviation": 3.3255868322994924
+      },
+      "ards:respiratory_rate": {
+        "lead_time_hours": 24.0,
+        "precision": 0.7008547008547008,
+        "max_deviation": 4.424871407919314
+      },
+      "ards:pf_ratio": {
+        "lead_time_hours": 24.0,
+        "precision": 0.8080808080808081,
+        "max_deviation": 3.9970344269790954
+      },
+      "ards:heart_rate": {
+        "lead_time_hours": 24.0,
+        "precision": 0.7094017094017094,
+        "max_deviation": 3.1148908639156043
+      },
+      "cardiac:heart_rate": {
+        "lead_time_hours": 24.0,
+        "precision": 0.6428571428571429,
+        "max_deviation": 2.5051494494739166
+      },
+      "cardiac:blood_pressure_sys": {
+        "lead_time_hours": 24.0,
+        "precision": 0.391304347826087,
+        "max_deviation": 2.2521443192133566
+      },
+      "cardiac:blood_pressure_dia": {
+        "lead_time_hours": null,
+        "precision": null,
+        "max_deviation": 1.955911150940617
+      },
+      "cardiac:troponin": {
+        "lead_time_hours": 24.0,
+        "precision": 0.675,
+        "max_deviation": 2.677692725334783
+      },
+      "cardiac:st_elevation": {
+        "lead_time_hours": 24.0,
+        "precision": 0.6585365853658537,
+        "max_deviation": 2.7873528836035955
+      },
+      "cardiac:chest_pain_score": {
+        "lead_time_hours": 24.0,
+        "precision": 0.6585365853658537,
+        "max_deviation": 2.7041200473117493
+      }
+    },
+    "lead_time_hours_range": [
+      24.0,
+      24.0
+    ],
+    "precision_range": [
+      0.391304347826087,
+      0.8080808080808081
+    ]
+  }
+}

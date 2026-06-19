@@ -201,16 +201,68 @@ def counterfactual_regret(
 
 
 def trajectory_calibration_error(
+    predicted_risk: "np.ndarray",
+    true_risk: "np.ndarray",
+) -> float:
+    """Temporal Calibration Error (TCE) -- main-text L2 trajectory form.
+
+    NOTE (definition change, 2026-06-19): this function now implements the
+    manuscript MAIN-TEXT definition of TCE,
+
+        TCE = (1 / T) * sum_t || y_hat(t) - y(t) ||_2 ,
+
+    i.e. the time-averaged Euclidean (L2) distance between the model's predicted
+    risk trajectory y_hat(t) and the reference risk trajectory y(t) along a single
+    twin. The human review gate (BASICS_BUILD_SPEC.md) selected the L2 trajectory
+    form over the previous ECE-style binning. The earlier ECE-style implementation
+    is preserved as ``trajectory_calibration_error_ece`` below for backward
+    compatibility; the supplementary .tex still describes the ECE form and must be
+    reconciled to this L2 definition by a human (do NOT silently edit the .tex).
+
+    For a scalar (per-timestep) risk both ``predicted_risk`` and ``true_risk`` are
+    1-D arrays of length T and the L2 norm at each t reduces to the absolute
+    difference; the function also accepts 2-D arrays (T x d) and takes the row-wise
+    L2 norm, matching the general ||.||_2 in the definition.
+
+    Args:
+        predicted_risk: y_hat(t), shape (T,) or (T, d) -- model predicted risk at
+            each timestep along ONE twin's trajectory.
+        true_risk: y(t), same shape -- reference/true risk (or label) trajectory.
+
+    Returns:
+        The time-averaged L2 trajectory calibration error (>= 0; 0 = perfect).
+    """
+    yhat = np.asarray(predicted_risk, dtype=float)
+    ytrue = np.asarray(true_risk, dtype=float)
+    if yhat.shape != ytrue.shape:
+        raise ValueError(
+            "predicted_risk and true_risk must have identical shape; "
+            f"got {yhat.shape} and {ytrue.shape}"
+        )
+    if yhat.size == 0:
+        return 0.0
+    if yhat.ndim == 1:
+        per_step_l2 = np.abs(yhat - ytrue)
+    else:
+        # Row-wise (per-timestep) Euclidean norm over the feature/risk axis.
+        per_step_l2 = np.linalg.norm(yhat - ytrue, axis=1)
+    return float(np.mean(per_step_l2))
+
+
+def trajectory_calibration_error_ece(
     trajectories: List[List[PatientState]],
     predictions: List[List[Dict[str, Any]]],
     outcomes: List[int],
     confidence_key: str = 'confidence',
     n_bins: int = 10,
 ) -> float:
-    """Compute calibration error for temporal predictions.
+    """DEPRECATED ECE-style temporal calibration error (kept for compatibility).
 
-    Extends Expected Calibration Error (ECE) to temporal domain by
-    considering entire trajectories.
+    This is the ORIGINAL implementation that bins by trajectory confidence and
+    accumulates an Expected-Calibration-Error-style score. It does NOT match the
+    manuscript main-text L2 definition (see ``trajectory_calibration_error``); it
+    is retained only so existing callers / supplementary experiments do not break.
+    New code should use the L2 ``trajectory_calibration_error``.
 
     Args:
         trajectories: List of patient trajectories
@@ -221,17 +273,6 @@ def trajectory_calibration_error(
 
     Returns:
         Temporal calibration error (0 = perfect calibration)
-
-    Example:
-        >>> # Collect predictions and outcomes over multiple patients
-        >>> trajectories = [twin.simulate(24) for twin in digital_twins]
-        >>> predictions = [[cdss.predict_with_confidence(state) for state in traj]
-        ...               for traj in trajectories]
-        >>> outcomes = [1 if traj[-1]['_infection_severity'] > 0.7 else 0
-        ...            for traj in trajectories]
-        >>>
-        >>> tce = trajectory_calibration_error(trajectories, predictions, outcomes)
-        >>> print(f"Temporal Calibration Error: {tce:.4f}")
     """
     # Extract confidence scores (use maximum confidence from trajectory)
     confidences = []

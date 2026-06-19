@@ -1,0 +1,12 @@
+{
+  "seed": 42,
+  "python": "3.13.14",
+  "numpy": "2.4.6",
+  "pandas": "3.0.3",
+  "supported_models": [
+    "gradient_boosting",
+    "logistic_regression",
+    "random_forest"
+  ],
+  "note": "Metrics are computed from seeded digital-twin simulation using the committed package code only. Deep sequence models (LSTM, TCN) and XGBoost are not part of the committed dependency set and are not evaluated here. The counterfactual antibiotic-delay sweep now emits a calibrated mortality probability (mortality_prob), derived from the terminal cumulative organ-damage state D via a logistic link (damage_to_mortality, anchored to Kumar 2006, not tuned to any target). The reported slope_pp_per_hr and r_squared are computed with np.polyfit over the realised sweep, not hardcoded. See REPRODUCIBILITY.md."
+}
