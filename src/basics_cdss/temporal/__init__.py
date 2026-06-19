@@ -44,7 +44,8 @@ from basics_cdss.temporal.disease_models import (CardiacEventModel,
 from basics_cdss.temporal.metrics import (counterfactual_regret,
                                           delayed_intervention_risk,
                                           temporal_consistency_score,
-                                          trajectory_calibration_error)
+                                          trajectory_calibration_error,
+                                          trajectory_calibration_error_ece)
 from basics_cdss.temporal.temporal_perturbations import (
     TemporalConflictOperator, TemporalMaskOperator, TemporalNoiseOperator,
     TemporalPerturbationOperator)
@@ -71,4 +72,5 @@ __all__ = [
     "delayed_intervention_risk",
     "counterfactual_regret",
     "trajectory_calibration_error",
+    "trajectory_calibration_error_ece",
 ]

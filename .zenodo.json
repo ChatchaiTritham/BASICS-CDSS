@@ -1,0 +1,28 @@
+{
+  "title": "BASICS-CDSS: Beyond-Accuracy Evaluation Methodology for Safety-Critical Clinical Decision Support",
+  "description": "A beyond-accuracy evaluation methodology for safety-critical clinical decision support. Given predictions and outcomes, it computes calibration, coverage-risk, harm, and utility metrics, stratifies results by safety tier, and exports curated manuscript and supplementary figures, including reliability diagrams, coverage-risk and abstention analyses, and harm-by-tier summaries.",
+  "upload_type": "software",
+  "license": "MIT",
+  "access_right": "open",
+  "version": "1.0.0",
+  "creators": [
+    {
+      "name": "Tritham, Chatchai",
+      "orcid": "0000-0001-7899-228X",
+      "affiliation": "Department of Computer Science and Information Technology, Faculty of Science, Naresuan University, Phitsanulok 65000, Thailand"
+    },
+    {
+      "name": "Namahoot, Chakkrit Snae",
+      "orcid": "0000-0003-4660-4590",
+      "affiliation": "Department of Computer Science and Information Technology, Faculty of Science, Naresuan University, Phitsanulok 65000, Thailand"
+    }
+  ],
+  "keywords": [
+    "clinical decision support systems",
+    "beyond-accuracy evaluation",
+    "model calibration",
+    "coverage-risk trade-off",
+    "selective prediction",
+    "patient safety"
+  ]
+}
