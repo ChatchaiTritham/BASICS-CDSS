@@ -1,4 +1,13 @@
 ﻿"""
+DEPRECATED ILLUSTRATIVE FIGURE SCRIPT.
+
+Trajectory and metric values here (e.g. the 12.3 + 4.8/hour mortality slope, the
+0.873/0.891/0.887 AUROC degradation curves) are hardcoded display constants, not
+computed from data. For figures backed by genuinely computed metrics use:
+
+    python scripts/run_all.py
+    python scripts/generate_results_figures.py
+
 Generate all figures for BASICS-CDSS Paper 1: Digital Twin Simulation for CDSS Evaluation
 
 This script generates 16 manuscript-preparation figures (7 main + 9 supplementary):

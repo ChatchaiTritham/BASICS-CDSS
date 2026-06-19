@@ -1,4 +1,16 @@
 """
+DEPRECATED ILLUSTRATIVE FIGURE SCRIPT.
+
+The model statistics in this file (AUROC/accuracy dictionaries, NNT, harm
+reduction, net-benefit constants) are hardcoded display values and the inputs
+are synthesised at runtime; the curves are illustrative, not computed from data.
+For figures backed by genuinely computed metrics use:
+
+    python scripts/run_all.py
+    python scripts/generate_results_figures.py
+
+This script is retained only for the legacy illustrative figure set.
+
 Generate 12 Baseline Metrics Figures (Used Across All 4 Papers)
 
 These figures are identical across Papers 1-4 and only need to be generated once:

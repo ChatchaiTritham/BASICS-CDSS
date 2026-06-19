@@ -1,4 +1,13 @@
 """
+DEPRECATED ILLUSTRATIVE FIGURE SCRIPT.
+
+Values here (mortality slope 12.3 + 4.8*hours, AUROC degradation constants
+0.873/0.891/0.887, fixed degradation slopes) are hardcoded display constants,
+not computed from data. For figures backed by genuinely computed metrics use:
+
+    python scripts/run_all.py
+    python scripts/generate_results_figures.py
+
 Generate remaining figures (4-7) for BASICS-CDSS Paper 1
 """
 
