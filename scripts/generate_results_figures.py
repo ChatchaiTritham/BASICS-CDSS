@@ -11,6 +11,11 @@ Run ``python scripts/run_all.py`` first, then::
 
 Outputs (PNG + PDF) into ``figures/results/`` and records data provenance in
 ``figures/results/figure_provenance.csv``.
+
+Styling/IO go through the shared, byte-identical ``pubviz`` module (vendored as
+``scripts/pubviz.py``): ``apply_pub_style`` for the canonical top-tier rcParams,
+``save_fig`` for matched vector PDF + 300-dpi PNG, and ``PALETTE`` for the
+Okabe-Ito colour-blind-safe series order.
 """
 
 from __future__ import annotations
@@ -21,37 +26,15 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib as mpl  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from pubviz import apply_pub_style, save_fig, PALETTE, load_results, results_dir  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "results"
 OUTDIR = ROOT / "figures" / "results"
-DPI = 300
-
-# Color-blind-safe (Okabe-Ito) — canonical shared palette, use in this order.
-PALETTE = ["#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9", "#000000"]
-
-
-def apply_pub_style() -> None:
-    """Apply the canonical top-tier publication style (shared across all repos)."""
-    mpl.rcParams.update({
-        "figure.dpi": 150, "savefig.dpi": 300, "savefig.bbox": "tight",
-        "savefig.pad_inches": 0.02,
-        "font.family": "serif",
-        "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
-        "mathtext.fontset": "stix",
-        "font.size": 10, "axes.titlesize": 11, "axes.labelsize": 10,
-        "xtick.labelsize": 9, "ytick.labelsize": 9, "legend.fontsize": 9,
-        "axes.spines.top": False, "axes.spines.right": False,
-        "axes.linewidth": 0.8, "axes.grid": True,
-        "grid.alpha": 0.3, "grid.linewidth": 0.6,
-        "lines.linewidth": 1.6, "lines.markersize": 5,
-        "legend.frameon": False, "figure.constrained_layout.use": True,
-        "axes.prop_cycle": mpl.cycler(color=PALETTE),
-    })
 
 
 def _require(name: str) -> Path:
@@ -63,13 +46,28 @@ def _require(name: str) -> Path:
     return path
 
 
-def _save(fig, stem: str) -> tuple[str, str]:
-    png = OUTDIR / f"{stem}.png"
-    pdf = OUTDIR / f"{stem}.pdf"
-    fig.savefig(png, dpi=DPI, bbox_inches="tight")
-    fig.savefig(pdf, bbox_inches="tight")
+def _emit(fig, stem: str) -> tuple[str, str]:
+    """Save matched PDF + 300-dpi PNG via the shared helper; return repo-relative paths."""
+    save_fig(fig, stem, out_dir=OUTDIR)
     plt.close(fig)
-    return str(png.relative_to(ROOT)), str(pdf.relative_to(ROOT))
+    png = (OUTDIR / f"{stem}.png").relative_to(ROOT)
+    pdf = (OUTDIR / f"{stem}.pdf").relative_to(ROOT)
+    return str(png), str(pdf)
+
+
+def _wilson_ci(p: float, n: int, z: float = 1.96) -> tuple[float, float]:
+    """Wilson score interval for a proportion p estimated from n trials.
+
+    Coverage is the fraction of n_test cases covered, so its sampling
+    uncertainty is binomial; the Wilson interval is the standard, honest band
+    for a proportion. n is read from the computed results, never hardcoded.
+    """
+    if n <= 0:
+        return p, p
+    denom = 1.0 + z * z / n
+    center = (p + z * z / (2 * n)) / denom
+    half = (z * np.sqrt(p * (1 - p) / n + z * z / (4 * n * n))) / denom
+    return max(0.0, center - half), min(1.0, center + half)
 
 
 def fig_auroc_static_vs_temporal(prov: list) -> None:
@@ -95,7 +93,7 @@ def fig_auroc_static_vs_temporal(prov: list) -> None:
     ax.legend(loc="lower right")
     ax.grid(True, axis="y")
     ax.set_axisbelow(True)
-    png, pdf = _save(fig, "fig_auroc_static_vs_temporal")
+    png, pdf = _emit(fig, "fig_auroc_static_vs_temporal")
     prov.append(("F-AUROC", png, pdf, "results/model_metrics.csv"))
 
 
@@ -116,7 +114,7 @@ def fig_calibration(prov: list) -> None:
     ax.legend(loc="best")
     ax.grid(True)
     ax.set_axisbelow(True)
-    png, pdf = _save(fig, "fig_calibration_ece")
+    png, pdf = _emit(fig, "fig_calibration_ece")
     prov.append(("F-ECE", png, pdf, "results/model_metrics.csv"))
 
 
@@ -137,32 +135,54 @@ def fig_decision_curve(prov: list) -> None:
     ax.legend(loc="best")
     ax.grid(True, axis="y")
     ax.set_axisbelow(True)
-    png, pdf = _save(fig, "fig_decision_curve")
+    png, pdf = _emit(fig, "fig_decision_curve")
     prov.append(("F-DCA", png, pdf, "results/decision_curve.csv"))
 
 
 def fig_conformal(prov: list) -> None:
     df = pd.read_csv(_require("conformal.csv"))
+    # n_test per model backs the binomial (Wilson) CI on empirical coverage;
+    # read from the computed metrics table, never hardcoded.
+    metrics = pd.read_csv(_require("model_metrics.csv"))
+    n_by_model = (
+        metrics.groupby("model")["n_test"].max().astype(int).to_dict()
+    )
+
     fig, ax = plt.subplots(figsize=(7.2, 4.0))
     markers = ("o", "s", "^", "D")
-    for i, target in enumerate(sorted(df["target_coverage"].unique())):
-        sub = df[df["target_coverage"] == target]
+    targets = sorted(df["target_coverage"].unique())
+    models = list(dict.fromkeys(df["model"]))
+    labels = [m.replace("_", " ").title() for m in models]
+    xpos = np.arange(len(models))
+    # small horizontal offset per target so CI bars do not overlap
+    offsets = np.linspace(-0.12, 0.12, len(targets)) if len(targets) > 1 else [0.0]
+
+    for i, target in enumerate(targets):
+        sub = df[df["target_coverage"] == target].set_index("model")
         color = PALETTE[i % len(PALETTE)]
-        labels = [m.replace("_", " ").title() for m in sub["model"]]
-        ax.plot(
-            labels, sub["empirical_coverage"], marker=markers[i % len(markers)],
-            color=color, label=f"Empirical (target {target:.2f})",
+        emp = np.array([sub.loc[m, "empirical_coverage"] for m in models], float)
+        lo = np.empty_like(emp)
+        hi = np.empty_like(emp)
+        for j, m in enumerate(models):
+            l, h = _wilson_ci(emp[j], n_by_model.get(m, 0))
+            lo[j], hi[j] = l, h
+        yerr = np.vstack([emp - lo, hi - emp])
+        ax.errorbar(
+            xpos + offsets[i], emp, yerr=yerr, marker=markers[i % len(markers)],
+            ls="none", color=color, capsize=4, elinewidth=0.9,
+            label=f"Empirical (target {target:.2f}), 95% Wilson CI",
         )
         ax.axhline(target, ls="--", lw=1.0, color=color, alpha=0.6)
+    ax.set_xticks(xpos)
+    ax.set_xticklabels(labels, rotation=12, ha="right")
     ax.set_xlabel("Model")
     ax.set_ylabel("Coverage (fraction of test cases)")
     ax.set_title("Conformal empirical vs target coverage")
-    ax.tick_params(axis="x", rotation=12)
     ax.legend(loc="best")
     ax.grid(True)
     ax.set_axisbelow(True)
-    png, pdf = _save(fig, "fig_conformal_coverage")
-    prov.append(("F-CONF", png, pdf, "results/conformal.csv"))
+    png, pdf = _emit(fig, "fig_conformal_coverage")
+    prov.append(("F-CONF", png, pdf, "results/conformal.csv; results/model_metrics.csv"))
 
 
 def fig_counterfactual_delay(prov: list) -> None:
@@ -185,7 +205,7 @@ def fig_counterfactual_delay(prov: list) -> None:
     ax.legend(loc="best")
     ax.grid(True)
     ax.set_axisbelow(True)
-    png, pdf = _save(fig, "fig_counterfactual_delay")
+    png, pdf = _emit(fig, "fig_counterfactual_delay")
     prov.append(("F-CF", png, pdf, "results/counterfactual_delay.csv"))
 
 
