@@ -1,9 +1,9 @@
 """Render headline figures from genuinely computed results.
 
-Unlike the legacy figure scripts (``generate_baseline_metrics.py``,
-``generate_paper1_figures*.py``), this script plots NO hardcoded literals. It
-reads ``results/*.csv`` produced by ``scripts/run_all.py`` and draws every value
-from those tables, so each figure is traceable to a computed metric.
+This script plots NO hardcoded literals (the earlier hardcoded figure scripts
+have been removed). It reads ``results/*.csv`` produced by ``scripts/run_all.py``
+and draws every value from those tables, so each figure is traceable to a
+computed metric.
 
 Run ``python scripts/run_all.py`` first, then::
 
