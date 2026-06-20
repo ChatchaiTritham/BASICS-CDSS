@@ -30,10 +30,8 @@ All figures below are read from `results/` after `python scripts/run_all.py` at 
 src/basics_cdss/      package: temporal (digital twin, disease models, counterfactual),
                       metrics, clinical_metrics, causal, xai, visualization, governance
 scripts/              run_all.py (driver) + generate_results_figures.py (figures from results/)
-                      + legacy figure scripts (deprecated, see note below)
 results/              CSV/JSON written by run_all.py (the source of every reported number)
-figures/results/      figures rendered directly from results/*.csv
-figures/manuscript/   curated PNG/PDF subset (FIGURE_MANIFEST.csv) — see caveat in Results
+figures/results/      figures rendered directly from results/*.csv (the only figures used for claims)
 figures/legacy/       archived illustrative artifacts (not used for headline claims)
 tests/                unit, smoke, and metric checks
 examples/             runnable demonstrations
@@ -67,7 +65,7 @@ The honest, results-driven figure set lives in `figures/results/` and is regener
 - `figures/results/fig_conformal_coverage.png` — empirical vs. target conformal coverage. Markers sit on the 0.90/0.95 reference lines, confirming coverage validity under both regimes.
 - `figures/results/fig_counterfactual_delay.png` — terminal harm vs. antibiotic delay over 120 seeded sepsis twins. The curve rises monotonically then flattens, the saturation that makes the fitted slope shallow.
 
-**Caveat on `figures/manuscript/` and FIGURE_MANIFEST.csv.** That curated set (BASICS-F1…F6) is copied by `generate_manuscript_figures.py` from `examples/figures/baseline/`, which is produced by `generate_baseline_metrics.py` — a script that is explicitly marked deprecated and **hardcodes display values** (including XGBoost/LSTM/TCN AUROC literals of 0.873/0.891/0.887 that have no implementation in this package) over runtime-synthesised inputs. Treat those figures as illustrative only. For figures backed by computed metrics, use `figures/results/`.
+The earlier hardcoded figure scripts (`generate_baseline_metrics.py`, `generate_paper1_figures*.py`) and the curated `figures/manuscript/` set they fed have been removed: they baked in display literals (including XGBoost/LSTM/TCN AUROC values of 0.873/0.891/0.887 for models with no implementation in this package) over runtime-synthesised inputs. Only `figures/results/`, rendered from `results/*.csv`, is used for any claim.
 
 ## Data
 
