@@ -41,6 +41,8 @@ data/, evaluation/    placeholders; the cohort is generated, not loaded
 ## Installation
 
 ```bash
+git clone https://github.com/ChatchaiTritham/BASICS-CDSS.git
+cd BASICS-CDSS
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e .
 ```
