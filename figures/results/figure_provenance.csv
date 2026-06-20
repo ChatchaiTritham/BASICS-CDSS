@@ -2,5 +2,5 @@ figure_id,png,pdf,source_data
 F-AUROC,figures\results\fig_auroc_static_vs_temporal.png,figures\results\fig_auroc_static_vs_temporal.pdf,results/model_metrics.csv
 F-ECE,figures\results\fig_calibration_ece.png,figures\results\fig_calibration_ece.pdf,results/model_metrics.csv
 F-DCA,figures\results\fig_decision_curve.png,figures\results\fig_decision_curve.pdf,results/decision_curve.csv
-F-CONF,figures\results\fig_conformal_coverage.png,figures\results\fig_conformal_coverage.pdf,results/conformal.csv
+F-CONF,figures\results\fig_conformal_coverage.png,figures\results\fig_conformal_coverage.pdf,results/conformal.csv; results/model_metrics.csv
 F-CF,figures\results\fig_counterfactual_delay.png,figures\results\fig_counterfactual_delay.pdf,results/counterfactual_delay.csv
