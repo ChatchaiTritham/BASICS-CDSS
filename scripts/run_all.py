@@ -6,10 +6,14 @@ pipeline and writes the metrics it genuinely computes to ``results/``:
 1. Build a digital-twin cohort (sepsis / ARDS / cardiac) with the committed
    ODE-based disease models in ``basics_cdss.temporal``.
 2. Derive a static feature table + outcome labels from the twin trajectories.
-3. Train the model families the committed package actually supports
-   (scikit-learn: logistic regression, random forest, gradient boosting),
-   under a clean ("static") split and a degraded ("temporal") split produced
-   with the committed perturbation operators.
+3. Train every model family the manuscript headlines, under a clean ("static")
+   split and a degraded ("temporal") split produced with the committed
+   perturbation operators:
+     - tabular (initial-state features): logistic regression, random forest,
+       gradient boosting, XGBoost;
+     - sequence (per-twin 24-hour trajectory tensor): LSTM and TCN (torch),
+       with the degraded regime applying the same 20% MCAR + 2x noise per
+       timestep. All models are seeded to 42.
 4. Evaluate every model with the committed metric modules
    (performance / calibration / coverage-risk / harm / utility / conformal).
 5. Run the committed counterfactual evaluator to obtain a real
@@ -17,9 +21,7 @@ pipeline and writes the metrics it genuinely computes to ``results/``:
 
 The pipeline is honest by construction: it reports only what the committed
 code computes from seeded data. Numbers are NOT tuned to the manuscript.
-Metrics that the repository has no committed implementation for (deep
-sequence models, calibrated mortality percentages) are intentionally absent;
-see REPRODUCIBILITY.md for the manuscript-vs-code gap analysis.
+See REPRODUCIBILITY.md for the manuscript-vs-code reconciliation.
 
 Run from the repository root::
 
@@ -67,6 +69,7 @@ from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
+from xgboost import XGBClassifier
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SRC = REPO_ROOT / "src"
@@ -102,6 +105,9 @@ from basics_cdss.temporal.disease_models import (  # noqa: E402
     RespiratoryDistressModel,
     SepsisModel,
 )
+from basics_cdss.temporal.sequence_models import (  # noqa: E402
+    TorchSequenceClassifier,
+)
 
 SEED = 42
 RESULTS_DIR = REPO_ROOT / "results"
@@ -117,9 +123,10 @@ COHORT = {
 HORIZON_HOURS = 24.0
 DT = 1.0
 
-# Models the committed package can train with its declared dependencies
-# (scikit-learn only). The package declares NO deep-learning or XGBoost
-# dependency, so LSTM / TCN / XGBoost headline rows have no implementation here.
+# Tabular model families, all trained on the same initial-state feature table.
+# Every model the manuscript headlines is now reproduced by the committed
+# artifact: LR / RF / GB / XGBoost are tabular (this dict); LSTM / TCN are genuine
+# sequence models over the per-twin 24-hour trajectory (SEQUENCE_MODEL_FACTORIES).
 MODEL_FACTORIES = {
     "logistic_regression": lambda: make_pipeline(
         StandardScaler(), LogisticRegression(max_iter=2000, random_state=SEED)
@@ -128,6 +135,29 @@ MODEL_FACTORIES = {
         n_estimators=200, random_state=SEED
     ),
     "gradient_boosting": lambda: GradientBoostingClassifier(random_state=SEED),
+    "xgboost": lambda: XGBClassifier(
+        n_estimators=300,
+        max_depth=4,
+        learning_rate=0.1,
+        subsample=0.9,
+        colsample_bytree=0.9,
+        eval_metric="logloss",
+        n_jobs=1,
+        tree_method="hist",
+        random_state=SEED,
+    ),
+}
+
+# Sequence model families. These consume the per-twin 24-hour trajectory tensor
+# (n x T x d), NOT the single initial-state row. They are seeded (torch + numpy)
+# and CPU-trainable in seconds; see basics_cdss.temporal.sequence_models.
+SEQUENCE_MODEL_FACTORIES = {
+    "lstm": lambda: TorchSequenceClassifier(
+        arch="lstm", seed=SEED, hidden=64, num_layers=1, epochs=80, lr=0.01
+    ),
+    "tcn": lambda: TorchSequenceClassifier(
+        arch="tcn", seed=SEED, hidden=64, epochs=80, lr=0.01
+    ),
 }
 
 
@@ -338,12 +368,77 @@ def _degrade(X: np.ndarray, rng: np.random.RandomState, missing: float = 0.20,
     return Xd
 
 
+def build_trajectory_tensor(df: pd.DataFrame) -> np.ndarray:
+    """Build the per-twin observable-trajectory tensor aligned to cohort row order.
+
+    Returns an ``(n, T, d)`` float array where T = HORIZON/DT + 1 timesteps and d =
+    ``len(_FEATURE_COLUMNS)``. Trajectories are recovered with the SAME seeds and
+    order as ``build_cohort`` (via ``_simulate_cohort_trajectories``), so row i of
+    the tensor is the same twin as row i of ``df``. Disease-disjoint NaN columns are
+    imputed with the cohort-wide column median (the same imputation the tabular
+    table uses) so every channel is finite for the sequence models.
+    """
+    n = len(df)
+    n_timesteps = int(HORIZON_HOURS / DT) + 1
+    d = len(_FEATURE_COLUMNS)
+    tensor = np.full((n, n_timesteps, d), np.nan, dtype=float)
+    flat = -1
+    for disease, i, init, trajectory in _simulate_cohort_trajectories():
+        flat += 1
+        seq = np.vstack(
+            [_twin_timestep_features(s.features) for s in trajectory]
+        )
+        tensor[flat, : seq.shape[0], :] = seq[:n_timesteps]
+    # Impute disease-disjoint NaNs with the per-column median over all twins/steps.
+    for j in range(d):
+        col = tensor[:, :, j]
+        med = np.nanmedian(col)
+        col[np.isnan(col)] = 0.0 if np.isnan(med) else med
+        tensor[:, :, j] = col
+    return tensor
+
+
+def _degrade_sequence(X_seq: np.ndarray,
+                      rng: np.random.RandomState,
+                      missing: float = 0.20,
+                      noise: float = 2.0) -> np.ndarray:
+    """Per-timestep MCAR + Gaussian-noise degradation of a trajectory tensor.
+
+    Applies the SAME '20% MCAR + 2x noise' definition as ``_degrade`` (tabular),
+    but independently per timestep across the ``(n, T, d)`` trajectory: each
+    (sample, timestep, channel) entry is noised, then masked with prob ``missing``
+    and median-imputed. This is the sequence analogue of the tabular degraded
+    ('temporal') regime.
+    """
+    Xd = X_seq.copy().astype(float)
+    n, T, d = Xd.shape
+    flat = Xd.reshape(-1, d)
+    col_std = flat.std(axis=0)
+    col_std[col_std == 0] = 1.0
+    col_median = np.median(flat, axis=0)
+    flat = flat + rng.normal(0, 1.0, flat.shape) * col_std * (noise - 1.0) * 0.1
+    mask = rng.random(flat.shape) < missing
+    for j in range(d):
+        flat[mask[:, j], j] = col_median[j]
+    return flat.reshape(n, T, d)
+
+
 def evaluate_models(df: pd.DataFrame) -> dict:
-    """Train and evaluate each supported model under static + temporal splits."""
+    """Train and evaluate each supported model under static + temporal splits.
+
+    Tabular models (LR / RF / GB / XGBoost) consume the initial-state feature
+    table; sequence models (LSTM / TCN) consume the per-twin 24-hour trajectory
+    tensor. For tabular models the 'temporal' regime is the degraded feature table
+    (``_degrade``); for sequence models it is the per-timestep-degraded trajectory
+    (``_degrade_sequence``) -- both use the identical 20% MCAR + 2x noise definition.
+    """
     rng = np.random.RandomState(SEED)
     X = df[_FEATURE_COLUMNS].to_numpy(dtype=float)
     y = df["outcome"].to_numpy(dtype=int)
     tiers = df["risk_tier"].to_numpy()
+
+    # Per-twin trajectory tensor (n x T x d), aligned to cohort row order.
+    X_seq = build_trajectory_tensor(df)
 
     n = len(df)
     idx = rng.permutation(n)
@@ -355,8 +450,17 @@ def evaluate_models(df: pd.DataFrame) -> dict:
     X_cal, y_cal = X[cal], y[cal]
     X_te, y_te, tiers_te = X[te], y[te], tiers[te]
 
+    # Sequence-model splits (same indices, trajectory tensor instead of table).
+    Xs_tr, Xs_cal, Xs_te = X_seq[tr], X_seq[cal], X_seq[te]
+
     # Degraded ('temporal') variant of the test features.
     X_te_temporal = _degrade(X_te, np.random.RandomState(SEED + 1))
+    Xs_te_temporal = _degrade_sequence(Xs_te, np.random.RandomState(SEED + 2))
+
+    # Unified model registry: (name, factory, kind) where kind selects which
+    # feature representation + degradation the model receives.
+    tabular_eval = {"static": X_te, "temporal": X_te_temporal}
+    sequence_eval = {"static": Xs_te, "temporal": Xs_te_temporal}
 
     metric_rows = []
     calib_rows = []
@@ -365,11 +469,23 @@ def evaluate_models(df: pd.DataFrame) -> dict:
     dca_rows = []
     conformal_rows = []
 
-    for name, factory in MODEL_FACTORIES.items():
-        model = factory()
-        model.fit(X_tr, y_tr)
+    # (name, factory, kind): tabular models train on X_tr; sequence models train
+    # on the trajectory tensor Xs_tr. Both share the same train/test indices.
+    all_models = [
+        (name, factory, "tabular") for name, factory in MODEL_FACTORIES.items()
+    ] + [
+        (name, factory, "sequence")
+        for name, factory in SEQUENCE_MODEL_FACTORIES.items()
+    ]
 
-        for regime, X_eval in (("static", X_te), ("temporal", X_te_temporal)):
+    for name, factory, kind in all_models:
+        model = factory()
+        train_X = X_tr if kind == "tabular" else Xs_tr
+        eval_set = tabular_eval if kind == "tabular" else sequence_eval
+        model.fit(train_X, y_tr)
+
+        for regime in ("static", "temporal"):
+            X_eval = eval_set[regime]
             prob = model.predict_proba(X_eval)[:, 1]
             pred = (prob >= 0.5).astype(int)
 
@@ -442,11 +558,16 @@ def evaluate_models(df: pd.DataFrame) -> dict:
                 )
 
     # Conformal coverage (committed split-conformal classifier), evaluated on a
-    # labeled held-out test set so empirical coverage can be measured.
-    for name, factory in MODEL_FACTORIES.items():
+    # labeled held-out test set so empirical coverage can be measured. Sequence
+    # models flow through the identical split-conformal code on the trajectory
+    # tensor (the wrapper's fit/predict_proba accept (n, T, d) arrays).
+    for name, factory, kind in all_models:
+        c_tr = X_tr if kind == "tabular" else Xs_tr
+        c_cal = X_cal if kind == "tabular" else Xs_cal
+        c_te = X_te if kind == "tabular" else Xs_te
         for alpha, target in ((0.10, 0.90), (0.05, 0.95)):
             result = split_conformal_classification(
-                factory(), X_tr, y_tr, X_cal, y_cal, X_te, alpha=alpha
+                factory(), c_tr, y_tr, c_cal, y_cal, c_te, alpha=alpha
             )
             covered = [
                 int(y_te[i] in set(result.prediction_sets[i]))
@@ -1161,17 +1282,30 @@ def main() -> None:
     bews.to_csv(RESULTS_DIR / "bews.csv", index=False)
 
     print("[5/5] Writing run metadata...")
+    import torch as _torch
+    import xgboost as _xgboost
+    torch_version = _torch.__version__
+    xgboost_version = _xgboost.__version__
     metadata = {
         "seed": SEED,
         "python": platform.python_version(),
         "numpy": np.__version__,
         "pandas": pd.__version__,
-        "supported_models": sorted(MODEL_FACTORIES.keys()),
+        "supported_models": sorted(
+            list(MODEL_FACTORIES.keys()) + list(SEQUENCE_MODEL_FACTORIES.keys())
+        ),
+        "tabular_models": sorted(MODEL_FACTORIES.keys()),
+        "sequence_models": sorted(SEQUENCE_MODEL_FACTORIES.keys()),
+        "torch": torch_version,
+        "xgboost": xgboost_version,
         "note": (
             "Metrics are computed from seeded digital-twin simulation using the "
-            "committed package code only. Deep sequence models (LSTM, TCN) and "
-            "XGBoost are not part of the committed dependency set and are not "
-            "evaluated here. The counterfactual antibiotic-delay sweep now emits "
+            "committed package code only. All six manuscript model families are "
+            "reproduced: LR / RF / GB / XGBoost are tabular models over the "
+            "initial-state feature table; LSTM and TCN are genuine torch sequence "
+            "models trained on the per-twin 24-hour trajectory tensor (clean = "
+            "static, per-timestep MCAR+noise = temporal), all seeded to 42. The "
+            "counterfactual antibiotic-delay sweep now emits "
             "a calibrated mortality probability (mortality_prob), derived from "
             "the terminal cumulative organ-damage state D via a logistic link "
             "(damage_to_mortality, anchored to Kumar 2006, not tuned to any "

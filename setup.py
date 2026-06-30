@@ -39,6 +39,8 @@ setup(
         "pandas",
         "scipy",
         "scikit-learn",
+        "xgboost>=2.0",
+        "torch>=2.0",
         "matplotlib",
         "pyyaml",
         "tqdm",
