@@ -79,7 +79,14 @@ if str(SRC) not in sys.path:
 from basics_cdss.clinical_metrics.conformal_prediction import (  # noqa: E402
     split_conformal_classification,
 )
+from basics_cdss.clinical_metrics.fairness_metrics import (  # noqa: E402
+    calibration_by_group,
+    demographic_parity,
+    equalized_odds,
+)
 from basics_cdss.clinical_metrics.utility_metrics import (  # noqa: E402
+    calculate_nnt,
+    clinical_impact_analysis,
     decision_curve_analysis,
 )
 from basics_cdss.metrics.calibration import (  # noqa: E402
@@ -112,13 +119,15 @@ from basics_cdss.temporal.sequence_models import (  # noqa: E402
 SEED = 42
 RESULTS_DIR = REPO_ROOT / "results"
 
-# Cohort composition mirrors the manuscript split proportions (sepsis-heavy).
-# Sizes are reduced for a deterministic, minutes-scale reproducibility run; the
-# pipeline scales linearly if larger cohorts are desired.
+# Cohort composition = the manuscript's stated design (N = 1,000): sepsis 400,
+# ARDS 350, ACS/cardiac 250. With the seeded 60/20/20 permutation split this
+# yields train = 600, calibration = 200, test = 200 (the manuscript's stated
+# split), so the released run IS the canonical experiment. The pipeline scales
+# linearly if a different cohort size is desired.
 COHORT = {
-    "sepsis": 200,
-    "ards": 175,
-    "cardiac": 125,
+    "sepsis": 400,
+    "ards": 350,
+    "cardiac": 250,
 }
 HORIZON_HOURS = 24.0
 DT = 1.0
@@ -290,6 +299,16 @@ def build_cohort() -> pd.DataFrame:
     # Dedicated, seeded RNG for the Bernoulli outcome draws so the cohort
     # simulation RNG stream (initial states) is unaffected and deterministic.
     label_rng = np.random.RandomState(SEED + 7919)
+    # Dedicated, seeded RNG for the SYNTHETIC demographic group attribute. This
+    # attribute is FABRICATED FOR FAIRNESS-METHODOLOGY DEMONSTRATION ONLY: the
+    # simulator has no real demographics. Group "A"/"B" is drawn ~Bernoulli(0.5)
+    # but the assignment probability is mildly tilted by the twin's latent
+    # mortality risk (logistic in mortality_prob), so the two groups differ in
+    # base rate and the fairness metrics have something non-trivial to measure.
+    # It is NOT a real protected attribute and carries no clinical meaning; see
+    # REPRODUCIBILITY.md. Kept on its own RNG so the cohort/label streams are
+    # unchanged and deterministic.
+    group_rng = np.random.RandomState(SEED + 104729)
     models = {
         "sepsis": SepsisModel(),
         "ards": RespiratoryDistressModel(),
@@ -321,6 +340,12 @@ def build_cohort() -> pd.DataFrame:
             mortality_prob = float(mortality_map(terminal_damage))
             # Seeded Bernoulli realisation of the calibrated mortality risk.
             outcome = int(label_rng.random() < mortality_prob)
+            # SYNTHETIC demographic group (fairness demo only; see docstring).
+            # P(group = "B") tilts mildly with the latent mortality risk so the
+            # groups have unequal base rates -- a deliberate, documented synthetic
+            # disparity for the fairness metrics to surface. Not a real attribute.
+            p_group_b = 1.0 / (1.0 + np.exp(-(2.0 * (mortality_prob - 0.5))))
+            group = "B" if group_rng.random() < p_group_b else "A"
             # Risk tier from terminal severity (drives harm-weighted metrics).
             if severity >= 0.6:
                 tier = "high"
@@ -339,6 +364,7 @@ def build_cohort() -> pd.DataFrame:
                     "mortality_prob": mortality_prob,
                     "risk_tier": tier,
                     "outcome": outcome,
+                    "synthetic_group": group,
                 }
             )
             rows.append(row)
@@ -593,6 +619,395 @@ def evaluate_models(df: pd.DataFrame) -> dict:
         "decision_curve": pd.DataFrame(dca_rows),
         "conformal": pd.DataFrame(conformal_rows),
     }
+
+
+# ---------------------------------------------------------------------------
+# Shared trained-split helper: reproduce the seeded 60/20/20 split, train every
+# model family (tabular + sequence) on it, and return the held-out TEST-set
+# probabilities/predictions so the downstream clinical analyses (NNT, NNS,
+# fairness, noise/masking sweeps) all consume identical, deterministic models.
+# ---------------------------------------------------------------------------
+def _trained_split(df: pd.DataFrame) -> dict:
+    """Return the seeded split, trained models, and test-set probs for all models.
+
+    Mirrors ``evaluate_models`` exactly (same SEED permutation, same train/cal/test
+    indices), so the predictions reused by the clinical analyses are the same
+    models the performance table was computed from.
+    """
+    rng = np.random.RandomState(SEED)
+    X = df[_FEATURE_COLUMNS].to_numpy(dtype=float)
+    y = df["outcome"].to_numpy(dtype=int)
+    X_seq = build_trajectory_tensor(df)
+
+    n = len(df)
+    idx = rng.permutation(n)
+    n_train = int(0.6 * n)
+    n_cal = int(0.2 * n)
+    tr = idx[:n_train]
+    cal = idx[n_train:n_train + n_cal]
+    te = idx[n_train + n_cal:]
+
+    models = {}
+    test_prob = {}
+    for name, factory in MODEL_FACTORIES.items():
+        m = factory()
+        m.fit(X[tr], y[tr])
+        models[name] = ("tabular", m)
+        test_prob[name] = m.predict_proba(X[te])[:, 1]
+    for name, factory in SEQUENCE_MODEL_FACTORIES.items():
+        m = factory()
+        m.fit(X_seq[tr], y[tr])
+        models[name] = ("sequence", m)
+        test_prob[name] = m.predict_proba(X_seq[te])[:, 1]
+
+    return {
+        "X": X, "y": y, "X_seq": X_seq,
+        "tr": tr, "cal": cal, "te": te,
+        "models": models, "test_prob": test_prob,
+        "df": df,
+    }
+
+
+def _bootstrap_nnt(y_true: np.ndarray, y_pred: np.ndarray,
+                   n_boot: int = 1000, seed: int = SEED) -> tuple:
+    """Seeded bootstrap 95% CI for NNT (resample test cases with replacement).
+
+    NNT per replicate = 1 / ARR, ARR = |CER - EER| where CER is the event rate in
+    the model's predicted-low-risk group and EER in the predicted-high-risk group
+    (the committed ``calculate_nnt`` definition). Returns (nnt_point, lo, hi);
+    bounds are the 2.5/97.5 percentiles of the finite bootstrap NNTs.
+    """
+    point = calculate_nnt(y_true, y_pred, confidence_level=0.0).nnt
+    boot_rng = np.random.RandomState(seed)
+    n = len(y_true)
+    vals = []
+    for _ in range(n_boot):
+        b = boot_rng.randint(0, n, n)
+        yb, pb = y_true[b], y_pred[b]
+        hi_mask = pb == 1
+        lo_mask = pb == 0
+        if hi_mask.sum() == 0 or lo_mask.sum() == 0:
+            continue
+        cer = yb[lo_mask].mean()
+        eer = yb[hi_mask].mean()
+        arr = abs(cer - eer)
+        if arr > 0:
+            vals.append(1.0 / arr)
+    if not vals:
+        return float(point), float("nan"), float("nan")
+    lo = float(np.percentile(vals, 2.5))
+    hi = float(np.percentile(vals, 97.5))
+    return float(point), lo, hi
+
+
+def compute_nnt(df: pd.DataFrame, split: dict) -> pd.DataFrame:
+    """NNT per model, overall + per disease + per risk stratum, with bootstrap CI.
+
+    The model's binary recommendation is ``prob >= 0.30`` (the clinically reported
+    decision threshold). NNT, ARR, control/treatment event rates come from the
+    committed ``calculate_nnt``; the 95% CI is a seeded 1000-replicate bootstrap
+    over the held-out test set (``_bootstrap_nnt``). Strata: overall, by disease
+    (sepsis/ards/cardiac), and by terminal-severity risk tier (high/medium/low).
+    Every value is COMPUTED from the seeded test set; none is tuned to the
+    manuscript's prior NNT figures.
+    """
+    te = split["te"]
+    y = split["y"]
+    df_te = df.iloc[te].reset_index(drop=True)
+    y_te = y[te]
+    disease_te = df_te["disease"].to_numpy()
+    tier_te = df_te["risk_tier"].to_numpy()
+
+    rows = []
+    for name, prob in split["test_prob"].items():
+        pred = (prob >= 0.30).astype(int)
+        strata = [("overall", np.ones(len(y_te), dtype=bool))]
+        for dz in COHORT:
+            strata.append((f"disease:{dz}", disease_te == dz))
+        for tier in ("high", "medium", "low"):
+            strata.append((f"risk:{tier}", tier_te == tier))
+        for stratum, mask in strata:
+            if mask.sum() < 5 or len(np.unique(y_te[mask])) < 1:
+                rows.append({
+                    "model": name, "stratum": stratum, "n": int(mask.sum()),
+                    "nnt": float("nan"), "nnt_ci_lo": float("nan"),
+                    "nnt_ci_hi": float("nan"), "arr_pct": float("nan"),
+                    "control_event_rate": float("nan"),
+                    "treatment_event_rate": float("nan"),
+                })
+                continue
+            res = calculate_nnt(y_te[mask], pred[mask], confidence_level=0.0)
+            # Deterministic per-stratum seed (no salted builtin hash, which is
+            # PYTHONHASHSEED-randomised per process and would make the CI jitter).
+            stratum_offset = sum(ord(c) for c in (name + ":" + stratum)) * 31
+            _, lo, hi = _bootstrap_nnt(y_te[mask], pred[mask],
+                                       seed=SEED + stratum_offset)
+            rows.append({
+                "model": name, "stratum": stratum, "n": int(mask.sum()),
+                "nnt": float(res.nnt), "nnt_ci_lo": lo, "nnt_ci_hi": hi,
+                "arr_pct": float(res.arr),
+                "control_event_rate": float(res.control_event_rate),
+                "treatment_event_rate": float(res.treatment_event_rate),
+            })
+    return pd.DataFrame(rows)
+
+
+def compute_nns(df: pd.DataFrame, split: dict,
+                threshold: float = 0.30) -> pd.DataFrame:
+    """Number-needed-to-screen at threshold 0.30, per model (committed estimator).
+
+    NNS = n_high_risk / true_positives at threshold 0.30 (the committed
+    ``clinical_impact_analysis``). Also emits PPV and %high-risk for context. All
+    COMPUTED from the held-out test set.
+    """
+    te = split["te"]
+    y_te = split["y"][te]
+    rows = []
+    for name, prob in split["test_prob"].items():
+        impact = clinical_impact_analysis(y_te, prob, threshold=threshold)
+        rows.append({
+            "model": name, "threshold": threshold,
+            "number_needed_to_screen": float(impact.number_needed_to_screen),
+            "ppv": float(impact.ppv),
+            "percent_high_risk": float(impact.percent_high_risk),
+            "n_high_risk": int(impact.n_high_risk),
+            "n_true_positives": int(impact.n_true_positives),
+        })
+    return pd.DataFrame(rows)
+
+
+def compute_fairness(df: pd.DataFrame, split: dict) -> pd.DataFrame:
+    """Fairness metrics across the SYNTHETIC ``synthetic_group`` attribute, per model.
+
+    IMPORTANT: ``synthetic_group`` is FABRICATED for fairness-methodology
+    demonstration only (see build_cohort docstring + REPRODUCIBILITY.md); it is
+    not a real protected attribute. Using the committed fairness module on the
+    held-out test set, we report (per model, threshold 0.30 binary predictions):
+      * demographic-parity ratio (min/max positive-rate ratio across groups),
+      * equalized-odds: TPR and FPR differences (and the avg-odds-ratio
+        1 - avg_odds_difference as a [0,1] fairness ratio),
+      * calibration fairness: 1 - max per-group ECE (a [0,1] ratio; higher is
+        fairer). All COMPUTED; none tuned to the manuscript's fairness figures.
+    """
+    te = split["te"]
+    y_te = split["y"][te]
+    group_te = df.iloc[te]["synthetic_group"].to_numpy()
+    rows = []
+    for name, prob in split["test_prob"].items():
+        pred = (prob >= 0.30).astype(int)
+        dp = demographic_parity(pred, group_te, threshold=0.1)
+        eo = equalized_odds(y_te, pred, group_te, threshold=0.1)
+        calib = calibration_by_group(y_te, prob, group_te, threshold=0.1)
+        rows.append({
+            "model": name,
+            "demographic_parity_ratio": float(dp.parity_ratio),
+            "demographic_parity_diff": float(dp.parity_difference),
+            "equalized_odds_ratio": float(1.0 - eo.avg_odds_difference),
+            "tpr_difference": float(eo.tpr_difference),
+            "fpr_difference": float(eo.fpr_difference),
+            "calibration_fairness_ratio": float(
+                1.0 - calib.max_calibration_error
+            ),
+            "max_group_ece": float(calib.max_calibration_error),
+        })
+    return pd.DataFrame(rows)
+
+
+def _add_noise(X: np.ndarray, rng: np.random.RandomState, scale: float,
+               dist: str) -> np.ndarray:
+    """Add per-column Gaussian or Student-t(nu=3) noise scaled by column std.
+
+    ``scale`` is the noise multiplier relative to the baseline (1x = the same
+    0.1*std baseline perturbation as ``_degrade``'s noise term). Student-t(3) is
+    variance-normalised to nu/(nu-2)=3 so a 1x t(3) draw has the SAME variance as
+    a 1x Gaussian draw; its heavier tails are the only difference (the manuscript's
+    "heavy-tailed" stress test).
+    """
+    Xd = X.copy().astype(float)
+    col_std = Xd.std(axis=0)
+    col_std[col_std == 0] = 1.0
+    if dist == "gaussian":
+        z = rng.normal(0, 1.0, Xd.shape)
+    elif dist == "t3":
+        nu = 3.0
+        z = rng.standard_t(nu, Xd.shape) / np.sqrt(nu / (nu - 2.0))
+    else:
+        raise ValueError(dist)
+    return Xd + z * col_std * 0.1 * scale
+
+
+def compute_noise_sensitivity(df: pd.DataFrame, split: dict) -> pd.DataFrame:
+    """Noise-sensitivity sweep: AUROC under 1x/2x/3x Gaussian and t(3) noise.
+
+    For each model and each (distribution, scale), the held-out test features are
+    perturbed and re-scored; we report AUROC and accuracy and the AUROC degradation
+    vs the clean test AUROC. Tabular models are perturbed on the static feature
+    row; sequence models on every timestep of the trajectory tensor. Seeded per
+    (dist, scale) for determinism. COMPUTED, not tuned.
+    """
+    te = split["te"]
+    y_te = split["y"][te]
+    X_te = split["X"][te]
+    Xs_te = split["X_seq"][te]
+    from sklearn.metrics import accuracy_score, roc_auc_score
+
+    # Clean baseline AUROC per model (from the already-fit models).
+    clean = {}
+    for name, prob in split["test_prob"].items():
+        clean[name] = float(roc_auc_score(y_te, prob))
+
+    rows = []
+    for dist in ("gaussian", "t3"):
+        for scale in (1.0, 2.0, 3.0):
+            for name, (kind, model) in split["models"].items():
+                nrng = np.random.RandomState(
+                    SEED + int(scale * 100) + (0 if dist == "gaussian" else 5000)
+                )
+                if kind == "tabular":
+                    Xp = _add_noise(X_te, nrng, scale, dist)
+                else:
+                    n, T, d = Xs_te.shape
+                    flat = _add_noise(Xs_te.reshape(-1, d), nrng, scale, dist)
+                    Xp = flat.reshape(n, T, d)
+                prob = model.predict_proba(Xp)[:, 1]
+                pred = (prob >= 0.5).astype(int)
+                auroc = float(roc_auc_score(y_te, prob))
+                rows.append({
+                    "model": name, "noise_dist": dist, "noise_scale": scale,
+                    "auroc": auroc, "accuracy": float(accuracy_score(y_te, pred)),
+                    "auroc_clean": clean[name],
+                    "auroc_degradation": float(clean[name] - auroc),
+                })
+    return pd.DataFrame(rows)
+
+
+def compute_masking_sweep(df: pd.DataFrame, split: dict) -> pd.DataFrame:
+    """Temporal-masking sweep: contiguous gaps of 1h/2h/4h, accuracy degradation.
+
+    A contiguous block of ``gap`` consecutive timesteps is removed from each test
+    twin's trajectory (a realistic monitoring dropout) and forward-filled from the
+    last observed value (last-observation-carried-forward). The gap start is a
+    seeded per-twin position. Sequence models score the masked trajectory directly;
+    tabular models score the (masked) terminal-timestep feature row -- the same
+    representation they were trained on -- so a gap that reaches the terminal step
+    is what perturbs them. We report accuracy and the accuracy degradation vs the
+    clean baseline, per model and gap length. COMPUTED, not tuned.
+    """
+    te = split["te"]
+    y_te = split["y"][te]
+    X_te = split["X"][te]
+    Xs_te = split["X_seq"][te]
+    n, T, d = Xs_te.shape
+    from sklearn.metrics import accuracy_score
+
+    # Clean baseline accuracy (static regime) per model.
+    clean_acc = {}
+    for name, (kind, model) in split["models"].items():
+        Xc = X_te if kind == "tabular" else Xs_te
+        prob = model.predict_proba(Xc)[:, 1]
+        clean_acc[name] = float(accuracy_score(y_te, (prob >= 0.5).astype(int)))
+
+    rows = []
+    for gap in (1, 2, 4):
+        # Build the contiguous-gap-masked trajectory tensor (LOCF imputation).
+        Xs_masked = Xs_te.copy()
+        for twin in range(n):
+            grng = np.random.RandomState(SEED + 313 * gap + twin)
+            start = int(grng.randint(1, max(2, T - gap)))  # keep t=0 observed
+            for t in range(start, min(start + gap, T)):
+                Xs_masked[twin, t, :] = Xs_masked[twin, t - 1, :]  # LOCF
+        # Tabular models see the (possibly masked) terminal-timestep row.
+        X_masked_terminal = Xs_masked[:, -1, :]
+        for name, (kind, model) in split["models"].items():
+            Xeval = X_masked_terminal if kind == "tabular" else Xs_masked
+            prob = model.predict_proba(Xeval)[:, 1]
+            acc = float(accuracy_score(y_te, (prob >= 0.5).astype(int)))
+            rows.append({
+                "model": name, "gap_hours": gap, "accuracy": acc,
+                "accuracy_clean": clean_acc[name],
+                "accuracy_degradation_pct": float(
+                    (clean_acc[name] - acc) * 100.0
+                ),
+            })
+    return pd.DataFrame(rows)
+
+
+def compute_counterfactual_alignment(df: pd.DataFrame, split: dict) -> pd.DataFrame:
+    """Counterfactual alignment + regret per model on held-out sepsis test twins.
+
+    For each held-out sepsis test twin we simulate the committed sepsis twin under
+    a discrete antibiotic-timing action set {treat at 1h, 3h, 6h, 9h, 12h, no
+    treatment}, on the SEEDED stochastic path (deterministic; the evaluator's own
+    stochastic=False path is unseeded, see REPRODUCIBILITY.md), and score terminal
+    harm with the committed CounterfactualEvaluator harm function. The OPTIMAL
+    action is the harm-minimiser. The MODEL's chosen action is derived from its
+    predicted risk: higher predicted risk -> earlier antibiotic (risk binned onto
+    the timing grid), the standard "treat-earlier-if-riskier" policy.
+
+      * alignment = fraction of twins where the model's chosen action == the
+        harm-minimising action;
+      * regret = mean (harm under model action - harm under optimal action),
+        in simulator harm units.
+
+    All COMPUTED from seeded simulation; none tuned to the manuscript's
+    alignment/regret figures.
+    """
+    te = split["te"]
+    df_te = df.iloc[te].reset_index(drop=True)
+    sepsis_pos = np.where(df_te["disease"].to_numpy() == "sepsis")[0]
+
+    model = SepsisModel()
+    harm_fn = CounterfactualEvaluator(
+        horizon_hours=HORIZON_HOURS, dt=DT
+    ).harm_function
+    # Discrete action grid: antibiotic timing (hours); None = no antibiotic.
+    timings = [1.0, 3.0, 6.0, 9.0, 12.0, None]
+
+    # Per-twin harm under each action (shared across models -> compute once).
+    twin_harms = []  # list of (harm_vector over timings)
+    for local_i in sepsis_pos:
+        init = {c: float(df_te.iloc[local_i][c]) for c in _FEATURE_COLUMNS
+                if not pd.isna(df_te.iloc[local_i][c])}
+        harms = []
+        for k, delay in enumerate(timings):
+            twin = PatientDigitalTwin(
+                archetype_id=f"cf_align_{local_i}_{k}",
+                initial_state=init,
+                disease_model=model,
+                seed=SEED + int(local_i) * 17 + k,
+            )
+            schedule = {} if delay is None else {float(delay): {"antibiotic": True}}
+            traj = twin.simulate(
+                horizon_hours=HORIZON_HOURS, dt=DT,
+                intervention_schedule=schedule, stochastic=True,
+            )
+            harms.append(float(harm_fn(traj[-1])))
+        twin_harms.append(np.array(harms))
+    twin_harms = np.array(twin_harms)  # (n_sepsis, len(timings))
+    optimal_action = np.argmin(twin_harms, axis=1)
+    optimal_harm = twin_harms[np.arange(len(twin_harms)), optimal_action]
+
+    n_treat_actions = len(timings) - 1  # exclude the "no antibiotic" action
+    rows = []
+    for name, prob in split["test_prob"].items():
+        prob_sepsis = prob[sepsis_pos]
+        # Map predicted risk -> antibiotic-timing action index: riskier => earlier
+        # antibiotic. Risk in [0,1] split into n_treat_actions bins; bin 0 (highest
+        # risk) -> earliest timing (index 0), last bin -> latest treatment timing.
+        bins = np.clip(
+            (np.floor((1.0 - prob_sepsis) * n_treat_actions)).astype(int),
+            0, n_treat_actions - 1,
+        )
+        chosen_action = bins  # indices into timings (always a treat action)
+        model_harm = twin_harms[np.arange(len(twin_harms)), chosen_action]
+        alignment = float(np.mean(chosen_action == optimal_action))
+        regret = float(np.mean(model_harm - optimal_harm))
+        rows.append({
+            "model": name, "n_sepsis_twins": int(len(sepsis_pos)),
+            "alignment": alignment, "mean_regret": regret,
+            "median_regret": float(np.median(model_harm - optimal_harm)),
+        })
+    return pd.DataFrame(rows)
 
 
 def counterfactual_delay() -> pd.DataFrame:
@@ -1231,7 +1646,7 @@ def main() -> None:
     np.random.seed(SEED)
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    print("[1/4] Building digital-twin cohort...")
+    print("[1/6] Building digital-twin cohort...")
     cohort = build_cohort()
     cohort_summary = {
         "seed": SEED,
@@ -1259,16 +1674,16 @@ def main() -> None:
     )
     cohort.to_csv(RESULTS_DIR / "cohort.csv", index=False)
 
-    print("[2/4] Training + evaluating supported models...")
+    print("[2/6] Training + evaluating supported models...")
     results = evaluate_models(cohort)
     for name, frame in results.items():
         frame.to_csv(RESULTS_DIR / f"{name}.csv", index=False)
 
-    print("[3/5] Running counterfactual antibiotic-delay sweep...")
+    print("[3/6] Running counterfactual antibiotic-delay sweep...")
     cf = counterfactual_delay()
     cf.to_csv(RESULTS_DIR / "counterfactual_delay.csv", index=False)
 
-    print("[4/5] Computing novel temporal metrics (DBRS / TCB / TCS / TCE / BEWS)...")
+    print("[4/6] Computing novel temporal metrics (DBRS / TCB / TCS / TCE / BEWS)...")
     dbrs = compute_dbrs(cohort)
     dbrs.to_csv(RESULTS_DIR / "dbrs.csv", index=False)
     tcb = compute_tcb(results["model_metrics"])
@@ -1281,7 +1696,23 @@ def main() -> None:
     bews = compute_bews(cohort)
     bews.to_csv(RESULTS_DIR / "bews.csv", index=False)
 
-    print("[5/5] Writing run metadata...")
+    print("[5/6] Computing clinical-impact + robustness analyses "
+          "(NNT / NNS / fairness / noise / masking / counterfactual)...")
+    split = _trained_split(cohort)
+    nnt = compute_nnt(cohort, split)
+    nnt.to_csv(RESULTS_DIR / "nnt.csv", index=False)
+    nns = compute_nns(cohort, split)
+    nns.to_csv(RESULTS_DIR / "nns.csv", index=False)
+    fairness = compute_fairness(cohort, split)
+    fairness.to_csv(RESULTS_DIR / "fairness.csv", index=False)
+    noise = compute_noise_sensitivity(cohort, split)
+    noise.to_csv(RESULTS_DIR / "noise_sensitivity.csv", index=False)
+    masking = compute_masking_sweep(cohort, split)
+    masking.to_csv(RESULTS_DIR / "masking_sweep.csv", index=False)
+    cf_align = compute_counterfactual_alignment(cohort, split)
+    cf_align.to_csv(RESULTS_DIR / "counterfactual_alignment.csv", index=False)
+
+    print("[6/6] Writing run metadata...")
     import torch as _torch
     import xgboost as _xgboost
     torch_version = _torch.__version__
@@ -1310,9 +1741,21 @@ def main() -> None:
             "the terminal cumulative organ-damage state D via a logistic link "
             "(damage_to_mortality, anchored to Kumar 2006, not tuned to any "
             "target). The reported slope_pp_per_hr and r_squared are computed "
-            "with np.polyfit over the realised sweep, not hardcoded. See "
+            "with np.polyfit over the realised sweep, not hardcoded. Cohort is "
+            "the manuscript design N=1000 (sepsis 400 / ARDS 350 / ACS 250); the "
+            "seeded 60/20/20 split is train 600 / calibration 200 / test 200. "
+            "Clinical-impact + robustness analyses are computed on the held-out "
+            "test set: NNT (bootstrap 95% CI), number-needed-to-screen@0.30, "
+            "fairness across a SYNTHETIC (fabricated, fairness-demo-only) group "
+            "attribute, a Gaussian/Student-t(3) noise sweep, a contiguous "
+            "temporal-masking sweep, and counterfactual alignment+regret. See "
             "REPRODUCIBILITY.md."
         ),
+        "cohort_design": {"N": int(sum(COHORT.values())), **{k: int(v) for k, v in COHORT.items()}},
+        "split": {"train": int(0.6 * sum(COHORT.values())),
+                  "calibration": int(0.2 * sum(COHORT.values())),
+                  "test": int(sum(COHORT.values()) - int(0.6 * sum(COHORT.values()))
+                             - int(0.2 * sum(COHORT.values())))},
     }
     (RESULTS_DIR / "run_metadata.json").write_text(json.dumps(metadata, indent=2))
 

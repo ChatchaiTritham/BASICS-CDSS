@@ -23,5 +23,16 @@
   ],
   "torch": "2.9.0+cpu",
   "xgboost": "3.1.1",
-  "note": "Metrics are computed from seeded digital-twin simulation using the committed package code only. All six manuscript model families are reproduced: LR / RF / GB / XGBoost are tabular models over the initial-state feature table; LSTM and TCN are genuine torch sequence models trained on the per-twin 24-hour trajectory tensor (clean = static, per-timestep MCAR+noise = temporal), all seeded to 42. The counterfactual antibiotic-delay sweep now emits a calibrated mortality probability (mortality_prob), derived from the terminal cumulative organ-damage state D via a logistic link (damage_to_mortality, anchored to Kumar 2006, not tuned to any target). The reported slope_pp_per_hr and r_squared are computed with np.polyfit over the realised sweep, not hardcoded. See REPRODUCIBILITY.md."
+  "note": "Metrics are computed from seeded digital-twin simulation using the committed package code only. All six manuscript model families are reproduced: LR / RF / GB / XGBoost are tabular models over the initial-state feature table; LSTM and TCN are genuine torch sequence models trained on the per-twin 24-hour trajectory tensor (clean = static, per-timestep MCAR+noise = temporal), all seeded to 42. The counterfactual antibiotic-delay sweep now emits a calibrated mortality probability (mortality_prob), derived from the terminal cumulative organ-damage state D via a logistic link (damage_to_mortality, anchored to Kumar 2006, not tuned to any target). The reported slope_pp_per_hr and r_squared are computed with np.polyfit over the realised sweep, not hardcoded. Cohort is the manuscript design N=1000 (sepsis 400 / ARDS 350 / ACS 250); the seeded 60/20/20 split is train 600 / calibration 200 / test 200. Clinical-impact + robustness analyses are computed on the held-out test set: NNT (bootstrap 95% CI), number-needed-to-screen@0.30, fairness across a SYNTHETIC (fabricated, fairness-demo-only) group attribute, a Gaussian/Student-t(3) noise sweep, a contiguous temporal-masking sweep, and counterfactual alignment+regret. See REPRODUCIBILITY.md.",
+  "cohort_design": {
+    "N": 1000,
+    "sepsis": 400,
+    "ards": 350,
+    "cardiac": 250
+  },
+  "split": {
+    "train": 600,
+    "calibration": 200,
+    "test": 200
+  }
 }
