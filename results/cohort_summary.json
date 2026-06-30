@@ -2,26 +2,26 @@
   "seed": 42,
   "horizon_hours": 24.0,
   "dt_hours": 1.0,
-  "total_twins": 500,
+  "total_twins": 1000,
   "by_disease": {
-    "sepsis": 200,
-    "ards": 175,
-    "cardiac": 125
+    "sepsis": 400,
+    "ards": 350,
+    "cardiac": 250
   },
   "by_risk_tier": {
-    "low": 230,
-    "high": 198,
-    "medium": 72
+    "low": 448,
+    "high": 408,
+    "medium": 144
   },
-  "outcome_prevalence": 0.366,
+  "outcome_prevalence": 0.385,
   "prevalence_by_disease": {
-    "sepsis": 0.315,
-    "ards": 0.5314285714285715,
-    "cardiac": 0.216
+    "sepsis": 0.2975,
+    "ards": 0.5657142857142857,
+    "cardiac": 0.272
   },
   "n_positive_by_disease": {
-    "sepsis": 63,
-    "ards": 93,
-    "cardiac": 27
+    "sepsis": 119,
+    "ards": 198,
+    "cardiac": 68
   }
 }

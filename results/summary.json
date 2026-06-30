@@ -2,65 +2,64 @@
   "seed": 42,
   "dbrs": {
     "n_evaluated": 64,
-    "n_critical_gt_1.15": 4,
-    "dbrs_min": 0.9320695102685624,
-    "dbrs_max": 27.999999999999996,
-    "dbrs_mean": 1.4424288764121886,
+    "n_critical_gt_1.15": 3,
+    "dbrs_min": 0.9594202898550727,
+    "dbrs_max": 1.4048606994665085,
+    "dbrs_mean": 1.0161939161538251,
     "critical_biomarkers": [
-      "ards:heart_rate:xgboost",
-      "ards:respiratory_rate:xgboost",
-      "cardiac:heart_rate:gradient_boosting",
-      "cardiac:st_elevation:logistic_regression"
+      "ards:oxygen_saturation:random_forest",
+      "ards:oxygen_saturation:xgboost",
+      "ards:pf_ratio:gradient_boosting"
     ]
   },
   "tcb": {
     "loss_metric": "brier",
     "rho": 0.2,
-    "delta_min": -0.005323462469883078,
-    "rho_delta_min": -0.0010646924939766156,
-    "fraction_bound_holds": 0.8333333333333334,
+    "delta_min": 0.0008375058514769051,
+    "rho_delta_min": 0.00016750117029538104,
+    "fraction_bound_holds": 1.0,
     "per_model_loss_gap": {
-      "gradient_boosting": 0.016612567532096945,
-      "logistic_regression": 0.024805642077830065,
-      "lstm": 0.0010626160617814018,
-      "random_forest": 0.013055499999999984,
-      "tcn": 0.020755509095348817,
-      "xgboost": -0.005323462469883078
+      "gradient_boosting": 0.06396072664590852,
+      "logistic_regression": 0.008474997189289527,
+      "lstm": 0.0008375058514769051,
+      "random_forest": 0.026040624999999998,
+      "tcn": 0.003786352772907481,
+      "xgboost": 0.05697586382838138
     }
   },
   "tcs": {
     "by_missingness_mean": {
-      "0.2": 0.8175992063492065,
-      "0.4": 0.791829365079365,
-      "0.6": 0.8308263888888888
+      "0.2": 0.80831498015873,
+      "0.4": 0.7554303075396825,
+      "0.6": 0.7724444444444444
     },
-    "min_mean_tcs": 0.6778571428571428,
-    "max_mean_tcs": 0.9516666666666667
+    "min_mean_tcs": 0.6175,
+    "max_mean_tcs": 0.914
   },
   "tce": {
     "loss_form": "L2_trajectory",
     "per_model_mean": {
-      "gradient_boosting": 0.28130423372352353,
-      "logistic_regression": 0.24985246072680842,
-      "random_forest": 0.24283563462588698,
-      "xgboost": 0.2771839733273327
+      "gradient_boosting": 0.34386012449391395,
+      "logistic_regression": 0.33862718990030133,
+      "random_forest": 0.31363897112638567,
+      "xgboost": 0.3386009931676655
     },
-    "overall_mean_tce": 0.2627940756008879,
-    "min_mean_tce": 0.10894046824444577,
-    "max_mean_tce": 0.43088875198414506,
+    "overall_mean_tce": 0.3336818196720666,
+    "min_mean_tce": 0.14961951700323478,
+    "max_mean_tce": 0.5266539547854628,
     "per_model_disease": {
-      "logistic_regression:sepsis": 0.4054604624931185,
-      "logistic_regression:ards": 0.18864966070149372,
-      "logistic_regression:cardiac": 0.155447258985813,
-      "random_forest:sepsis": 0.36953785591682914,
-      "random_forest:ards": 0.25002857971638603,
-      "random_forest:cardiac": 0.10894046824444577,
-      "gradient_boosting:sepsis": 0.39489361707824666,
-      "gradient_boosting:ards": 0.3095031108058834,
-      "gradient_boosting:cardiac": 0.1395159732864405,
-      "xgboost:sepsis": 0.43088875198414506,
-      "xgboost:ards": 0.26868745420280593,
-      "xgboost:cardiac": 0.13197571379504702
+      "logistic_regression:sepsis": 0.5266539547854628,
+      "logistic_regression:ards": 0.3094495350899961,
+      "logistic_regression:cardiac": 0.17977807982544514,
+      "random_forest:sepsis": 0.4546601180759746,
+      "random_forest:ards": 0.33663727829994766,
+      "random_forest:cardiac": 0.14961951700323478,
+      "gradient_boosting:sepsis": 0.5052536879919305,
+      "gradient_boosting:ards": 0.3720938686233105,
+      "gradient_boosting:cardiac": 0.1542328168665009,
+      "xgboost:sepsis": 0.518476530311421,
+      "xgboost:ards": 0.3460775309320351,
+      "xgboost:cardiac": 0.1512489182595405
     }
   },
   "bews": {
@@ -69,92 +68,92 @@
     "per_biomarker": {
       "sepsis:temperature": {
         "lead_time_hours": 24.0,
-        "precision": 0.7974683544303798,
-        "max_deviation": 2.611472185579105
+        "precision": 0.8082191780821918,
+        "max_deviation": 2.668769482411038
       },
       "sepsis:heart_rate": {
         "lead_time_hours": 24.0,
-        "precision": 0.7777777777777778,
-        "max_deviation": 2.518450417101504
+        "precision": 0.7763157894736842,
+        "max_deviation": 2.549333934651108
       },
       "sepsis:respiratory_rate": {
         "lead_time_hours": 24.0,
-        "precision": 0.5754716981132075,
-        "max_deviation": 2.3699644377848013
+        "precision": 0.5858585858585859,
+        "max_deviation": 2.2811203959220885
       },
       "sepsis:white_blood_cell_count": {
         "lead_time_hours": 24.0,
-        "precision": 0.8076923076923077,
-        "max_deviation": 2.812593904640283
+        "precision": 0.7972972972972973,
+        "max_deviation": 2.9173018104850748
       },
       "sepsis:blood_pressure_sys": {
         "lead_time_hours": 24.0,
-        "precision": 0.75,
-        "max_deviation": 2.78048991323597
+        "precision": 0.7712418300653595,
+        "max_deviation": 2.8534097079228204
       },
       "sepsis:lactate": {
         "lead_time_hours": 24.0,
-        "precision": 0.8076923076923077,
-        "max_deviation": 2.701502616036181
+        "precision": 0.8082191780821918,
+        "max_deviation": 2.6993657959054436
       },
       "ards:oxygen_saturation": {
         "lead_time_hours": 24.0,
-        "precision": 0.7079646017699115,
-        "max_deviation": 3.3255868322994924
+        "precision": 0.7224489795918367,
+        "max_deviation": 3.6247651607148526
       },
       "ards:respiratory_rate": {
         "lead_time_hours": 24.0,
-        "precision": 0.7008547008547008,
-        "max_deviation": 4.424871407919314
+        "precision": 0.7489361702127659,
+        "max_deviation": 3.8506719458992644
       },
       "ards:pf_ratio": {
         "lead_time_hours": 24.0,
-        "precision": 0.8080808080808081,
-        "max_deviation": 3.9970344269790954
+        "precision": 0.9042553191489362,
+        "max_deviation": 3.4397482867468705
       },
       "ards:heart_rate": {
         "lead_time_hours": 24.0,
-        "precision": 0.7094017094017094,
-        "max_deviation": 3.1148908639156043
+        "precision": 0.7445887445887446,
+        "max_deviation": 3.282716274101388
       },
       "cardiac:heart_rate": {
-        "lead_time_hours": 24.0,
-        "precision": 0.6428571428571429,
-        "max_deviation": 2.5051494494739166
+        "lead_time_hours": null,
+        "precision": null,
+        "max_deviation": 1.9340079350708914
       },
       "cardiac:blood_pressure_sys": {
-        "lead_time_hours": 24.0,
-        "precision": 0.391304347826087,
-        "max_deviation": 2.2521443192133566
+        "lead_time_hours": null,
+        "precision": null,
+        "max_deviation": 1.6498692408633158
       },
       "cardiac:blood_pressure_dia": {
         "lead_time_hours": null,
         "precision": null,
-        "max_deviation": 1.955911150940617
+        "max_deviation": 1.6041823244868458
       },
       "cardiac:troponin": {
-        "lead_time_hours": 24.0,
-        "precision": 0.675,
-        "max_deviation": 2.677692725334783
+        "lead_time_hours": 23.0,
+        "precision": 0.6931818181818182,
+        "max_deviation": 2.075943190351178
       },
       "cardiac:st_elevation": {
         "lead_time_hours": 24.0,
-        "precision": 0.6585365853658537,
-        "max_deviation": 2.7873528836035955
+        "precision": 0.6702127659574468,
+        "max_deviation": 2.071628046353323
       },
       "cardiac:chest_pain_score": {
-        "lead_time_hours": 24.0,
-        "precision": 0.6585365853658537,
-        "max_deviation": 2.7041200473117493
+        "lead_time_hours": 23.0,
+        "precision": 0.6632653061224489,
+        "max_deviation": 2.0960487904500917
       }
     },
     "lead_time_hours_range": [
-      24.0,
+      23.0,
       24.0
     ],
     "precision_range": [
-      0.391304347826087,
-      0.8080808080808081
+      0.5858585858585859,
+      0.9042553191489362
     ]
   }
 }
