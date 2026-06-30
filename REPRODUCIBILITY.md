@@ -78,16 +78,20 @@ antibiotic-delay counterfactual is unchanged by this fix (it uses
   harm-aware metrics (`metrics/harm.py`), decision-curve net benefit
   (`clinical_metrics/utility_metrics.py`), split-conformal coverage
   (`clinical_metrics/conformal_prediction.py`).
-- Model families the declared dependency set (scikit-learn only) can train:
-  logistic regression, random forest, gradient boosting.
+- All six manuscript model families, now trained and scored end to end by the
+  driver:
+  - **Tabular** (initial-state feature table): logistic regression, random
+    forest, gradient boosting (scikit-learn) and **XGBoost**
+    (`xgboost.XGBClassifier`, seed 42, `tree_method="hist"`, single-threaded).
+  - **Sequence** (per-twin 24-hour trajectory tensor, shape `n × T × d`):
+    **LSTM** (1 layer, hidden 64) and **TCN** (3-block dilated causal Conv1d
+    stack, 64 channels), both implemented in `torch` and seeded to 42
+    (`basics_cdss/temporal/sequence_models.py`). They consume the full 25-step
+    trajectory, not the single initial-state row; the degraded ("temporal")
+    regime applies the same 20% MCAR + 2× noise definition *per timestep*.
 
 ## What the committed code does NOT support
 
-- **No deep sequence models.** The manuscript's headline rows (LSTM, TCN) and
-  XGBoost have no committed training code, and neither `torch`, `tensorflow`,
-  nor `xgboost` is in `requirements.txt` / `pyproject.toml`. The driver therefore
-  cannot reproduce the LSTM 0.891 / TCN 0.887 / XGBoost 0.873 AUROC values; it
-  reports the model families the package actually ships.
 - **No calibrated mortality model.** The counterfactual harm function is a
   severity-based score, not a probability of death, so the 12.3 / 27.1 / 41.2 %
   mortality trajectory cannot be reproduced as percentages.
@@ -106,35 +110,51 @@ below; the table now records the computed value and the manuscript's matching
 claim. All `code value` entries are read from `results/*.csv` produced by the
 current `run_all.py`.
 
+All six model families (LR / RF / GB / XGBoost / LSTM / TCN) are now trained and
+scored by the driver, so every model row in the table is computed, not assumed.
+The earlier manuscript headline values (static AUROC LR 0.812 / RF 0.856 / XGB
+0.873 / LSTM 0.891 / TCN 0.887) are **superseded** by the computed values below;
+the `.tex` should be reconciled to these.
+
 | Metric | code value (results file) | manuscript | status |
 |---|---|---|---|
-| Static AUROC (LR / RF / GB) | 0.875 / 0.936 / 0.905 (`model_metrics.csv`) | Tables 1–2 | reported as-is |
-| Temporal AUROC (LR / RF / GB) | 0.815 / 0.902 / 0.861 (`model_metrics.csv`) | Tables 1–2 | reported as-is |
-| AUROC drop static→temporal | −0.060 / −0.034 / −0.044 | Results | every model degrades; reported as-is |
-| Accuracy static→temporal | LR 90→86, RF 87→90, GB 86→83 | Table 1 | reported as-is; **accuracy is non-monotone** (RF rises) — this is the headline |
-| ECE static range | 0.058–0.107 (`calibration.csv`) | Table 1 / Results | reported as-is |
-| ECE temporal range | 0.110–0.135 (`calibration.csv`) | Table 1 / Results | reported as-is |
+| Static AUROC (LR / RF / GB / XGB / LSTM / TCN) | 0.875 / 0.936 / 0.905 / 0.920 / 0.955 / 0.878 (`model_metrics.csv`) | Tables 1–2 | computed; **LSTM best, not XGBoost** |
+| Temporal AUROC (LR / RF / GB / XGB / LSTM / TCN) | 0.815 / 0.902 / 0.861 / 0.898 / 0.962 / 0.847 (`model_metrics.csv`) | Tables 1–2 | computed; **LSTM most robust (ΔAUROC +0.007)** |
+| AUROC drop static→temporal | −0.060 / −0.034 / −0.044 / −0.022 / +0.007 / −0.031 | Results | every tabular model degrades; LSTM holds/improves |
+| Static accuracy (LR/RF/GB/XGB/LSTM/TCN) | 0.90 / 0.87 / 0.86 / 0.83 / 0.91 / 0.84 (`model_metrics.csv`) | Table 1 | computed |
+| Temporal accuracy (LR/RF/GB/XGB/LSTM/TCN) | 0.86 / 0.90 / 0.83 / 0.82 / 0.92 / 0.82 (`model_metrics.csv`) | Table 1 | computed; **accuracy non-monotone** (RF, LSTM rise) — this is the headline |
+| ECE static range | 0.058–0.150 (`calibration.csv`) | Table 1 / Results | computed (TCN worst) |
+| ECE temporal range | 0.094–0.163 (`calibration.csv`) | Table 1 / Results | computed (LSTM best) |
 | Counterfactual delay→mortality | 0.354→0.390 prob; slope 0.22 pp/hr, R²=0.81 (`counterfactual_delay.csv`) | Results / Fig 3 | monotone direction reproduces; magnitude shallow (damage saturates in 24 h) |
-| DCA net benefit @ 0.30 | LR 0.229, RF 0.188, GB 0.175 (`decision_curve.csv`) | Results / Fig 4 | reported as-is |
-| Conformal coverage @95% | LR 0.94, RF 0.95, GB 0.95 (`conformal.csv`) | Results | reproduces coverage validity |
-| Avg prediction-set size @95% | 1.13 / 1.23 / 1.23 (`conformal.csv`) | Results | reported as-is |
-| DBRS | 48 evaluated, 2 critical (cardiac ST-elevation, cardiac HR); mean 1.58 (`dbrs.csv`, `summary.json`) | Results | reported as-is |
-| TCB δ_min @ ρ=0.20 | 0.013, bound holds 100% (`tcb.csv`) | Prop. 1 / Results | reported as-is |
+| DCA net benefit @ 0.30 (LR/RF/GB/XGB/LSTM/TCN) | 0.229 / 0.188 / 0.175 / 0.184 / 0.205 / 0.186 (`decision_curve.csv`) | Results / Fig 4 | reported as-is |
+| Conformal coverage @95% (LR/RF/GB/XGB/LSTM/TCN) | 0.94 / 0.95 / 0.95 / 0.94 / 0.92 / 0.93 (`conformal.csv`) | Results | reproduces coverage validity |
+| Avg prediction-set size @95% | 1.13 / 1.23 / 1.23 / 1.30 / 1.09 / 1.17 (`conformal.csv`) | Results | reported as-is |
+| DBRS | 64 evaluated (LR/RF/GB/XGB), 4 critical; mean 1.44 (`dbrs.csv`, `summary.json`) | Results | reported as-is |
+| TCB δ_min @ ρ=0.20 | −0.005, bound holds 83% (`tcb.csv`) | Prop. 1 / Results | computed across all 6 models |
 | TCS mean by missingness | 0.82 / 0.79 / 0.83 (`temporal_consistency.csv`) | Results | reported as-is |
-| TCE overall mean | 0.258 (`temporal_metrics.csv`) | Results | reported as-is |
-| Seed = 42 | enforced in driver | Methods | reproduces |
+| TCE overall mean | 0.263 (`temporal_metrics.csv`) | Results | reported as-is |
+| Seed = 42 | enforced in driver (numpy + torch) | Methods | reproduces |
 
 ### Reproduces (computed honestly, byte-identical at seed 42)
-- Full static-vs-temporal AUROC / accuracy / ECE / AURC table for LR, RF, GB.
+- Full static-vs-temporal AUROC / accuracy / ECE / AURC table for **all six**
+  model families (LR, RF, GB, XGBoost, LSTM, TCN).
 - The accuracy↔calibration dissociation and the discrimination-vs-calibration
   leaderboard reversal (the manuscript's central claim).
 - Monotone antibiotic delay→mortality direction; conformal coverage validity;
   decision-curve net benefit; DBRS reliability structure; TCB; TCS; TCE.
 
+### Deep / XGBoost models — now reproduced (no longer removed)
+XGBoost, LSTM, and TCN are trained and scored end to end by `run_all.py`
+(`xgboost` + `torch` are declared dependencies). The previously reported headline
+values are NOT reproduced verbatim — they were external, untuned numbers — but the
+models themselves are now genuine: XGBoost on the same tabular features as LR/RF/GB,
+and LSTM/TCN on the per-twin 24-hour trajectory tensor. Reconcile the `.tex` model
+table to the computed values above (notably: **LSTM, not XGBoost, has the highest
+static AUROC, and LSTM is the most temporally robust**).
+
 ### Not claimed (removed from the manuscript rather than fabricated)
 | item | why |
 |---|---|
-| LSTM / TCN / XGBoost rows | no deep-learning or XGBoost code or dependency in the committed package — removed from the manuscript |
 | antibiotic-delay 12.3 → 27.1 → 41.2 % / 4.8 pp·hr⁻¹ / R²=0.89 | fabricated; replaced with the computed 0.22 pp·hr⁻¹, R²=0.81 sweep |
 | DBRS lactate=1.34 / PF=1.28 / troponin=1.31 | fabricated; replaced with the computed per-configuration DBRS |
 | BEWS 2.1–4.2 h lead / precision 0.86–0.91 | degenerate under the presentation-driven label (lead time saturates at the 24 h horizon); reported honestly as exploratory, lead-time claim removed |
