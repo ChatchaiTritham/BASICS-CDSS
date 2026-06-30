@@ -1,12 +1,14 @@
 {
   "seed": 42,
   "dbrs": {
-    "n_evaluated": 48,
-    "n_critical_gt_1.15": 2,
+    "n_evaluated": 64,
+    "n_critical_gt_1.15": 4,
     "dbrs_min": 0.9320695102685624,
     "dbrs_max": 27.999999999999996,
-    "dbrs_mean": 1.5788209335542278,
+    "dbrs_mean": 1.4424288764121886,
     "critical_biomarkers": [
+      "ards:heart_rate:xgboost",
+      "ards:respiratory_rate:xgboost",
       "cardiac:heart_rate:gradient_boosting",
       "cardiac:st_elevation:logistic_regression"
     ]
@@ -14,34 +16,38 @@
   "tcb": {
     "loss_metric": "brier",
     "rho": 0.2,
-    "delta_min": 0.013055499999999984,
-    "rho_delta_min": 0.002611099999999997,
-    "fraction_bound_holds": 1.0,
+    "delta_min": -0.005323462469883078,
+    "rho_delta_min": -0.0010646924939766156,
+    "fraction_bound_holds": 0.8333333333333334,
     "per_model_loss_gap": {
-      "gradient_boosting": 0.016032165582172797,
+      "gradient_boosting": 0.016612567532096945,
       "logistic_regression": 0.024805642077830065,
-      "random_forest": 0.013055499999999984
+      "lstm": 0.0010626160617814018,
+      "random_forest": 0.013055499999999984,
+      "tcn": 0.020755509095348817,
+      "xgboost": -0.005323462469883078
     }
   },
   "tcs": {
     "by_missingness_mean": {
-      "0.2": 0.8164675925925926,
-      "0.4": 0.7883835978835979,
-      "0.6": 0.8255198412698412
+      "0.2": 0.8175992063492065,
+      "0.4": 0.791829365079365,
+      "0.6": 0.8308263888888888
     },
     "min_mean_tcs": 0.6778571428571428,
-    "max_mean_tcs": 0.942
+    "max_mean_tcs": 0.9516666666666667
   },
   "tce": {
     "loss_form": "L2_trajectory",
     "per_model_mean": {
-      "gradient_boosting": 0.2813007038559972,
+      "gradient_boosting": 0.28130423372352353,
       "logistic_regression": 0.24985246072680842,
-      "random_forest": 0.24283563462588698
+      "random_forest": 0.24283563462588698,
+      "xgboost": 0.2771839733273327
     },
-    "overall_mean_tce": 0.2579962664028975,
+    "overall_mean_tce": 0.2627940756008879,
     "min_mean_tce": 0.10894046824444577,
-    "max_mean_tce": 0.4054604624931185,
+    "max_mean_tce": 0.43088875198414506,
     "per_model_disease": {
       "logistic_regression:sepsis": 0.4054604624931185,
       "logistic_regression:ards": 0.18864966070149372,
@@ -49,9 +55,12 @@
       "random_forest:sepsis": 0.36953785591682914,
       "random_forest:ards": 0.25002857971638603,
       "random_forest:cardiac": 0.10894046824444577,
-      "gradient_boosting:sepsis": 0.394880412584022,
-      "gradient_boosting:ards": 0.3095372124026376,
-      "gradient_boosting:cardiac": 0.13948448658133208
+      "gradient_boosting:sepsis": 0.39489361707824666,
+      "gradient_boosting:ards": 0.3095031108058834,
+      "gradient_boosting:cardiac": 0.1395159732864405,
+      "xgboost:sepsis": 0.43088875198414506,
+      "xgboost:ards": 0.26868745420280593,
+      "xgboost:cardiac": 0.13197571379504702
     }
   },
   "bews": {
