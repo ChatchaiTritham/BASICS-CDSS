@@ -34,6 +34,7 @@ Outputs (overwritten each run, deterministic with seed=42):
     results/coverage_risk.csv
     results/harm.csv
     results/decision_curve.csv
+    results/decision_curve_series.csv   (full per-threshold net benefit per model)
     results/conformal.csv
     results/counterfactual_delay.csv
     results/dbrs.csv
@@ -493,6 +494,7 @@ def evaluate_models(df: pd.DataFrame) -> dict:
     coverage_rows = []
     harm_rows = []
     dca_rows = []
+    dca_series_rows = []
     conformal_rows = []
 
     # (name, factory, kind): tabular models train on X_tr; sequence models train
@@ -582,6 +584,16 @@ def evaluate_models(df: pd.DataFrame) -> dict:
                         "useful_threshold_high": float(dca.threshold_range[1]),
                     }
                 )
+                # Full per-threshold net-benefit series so the decision curve
+                # figure is drawn entirely from computed values (no interpolation).
+                for thr, nb in zip(dca.thresholds, dca.net_benefit_model):
+                    dca_series_rows.append(
+                        {
+                            "model": name,
+                            "threshold": float(thr),
+                            "net_benefit_model": float(nb),
+                        }
+                    )
 
     # Conformal coverage (committed split-conformal classifier), evaluated on a
     # labeled held-out test set so empirical coverage can be measured. Sequence
@@ -617,6 +629,7 @@ def evaluate_models(df: pd.DataFrame) -> dict:
         "coverage_risk": pd.DataFrame(coverage_rows),
         "harm": pd.DataFrame(harm_rows),
         "decision_curve": pd.DataFrame(dca_rows),
+        "decision_curve_series": pd.DataFrame(dca_series_rows),
         "conformal": pd.DataFrame(conformal_rows),
     }
 
