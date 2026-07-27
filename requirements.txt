@@ -6,6 +6,7 @@ scikit-learn
 xgboost>=2.0
 torch>=2.0
 matplotlib
+seaborn
 pyyaml
 tqdm
 pydantic>=2
