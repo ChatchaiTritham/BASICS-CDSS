@@ -79,7 +79,7 @@ def fig_auroc_static_vs_temporal(prov: list) -> None:
     w = 0.38
 
     labels = [m.replace("_", " ").title() for m in models]
-    fig, ax = plt.subplots(figsize=(7.2, 4.0))
+    fig, ax = plt.subplots(figsize=(6.0, 3.6))
     ax.bar(x - w / 2, static.loc[models, "auroc"], w,
            label="Static", color=PALETTE[0])
     ax.bar(x + w / 2, temporal.loc[models, "auroc"], w,
@@ -89,7 +89,6 @@ def fig_auroc_static_vs_temporal(prov: list) -> None:
     ax.set_xlabel("Model")
     ax.set_ylabel("AUROC (unitless)")
     ax.set_ylim(0.5, 1.0)
-    ax.set_title("Static vs temporal discrimination")
     ax.legend(loc="lower right")
     ax.grid(True, axis="y")
     ax.set_axisbelow(True)
@@ -99,7 +98,7 @@ def fig_auroc_static_vs_temporal(prov: list) -> None:
 
 def fig_calibration(prov: list) -> None:
     df = pd.read_csv(_require("model_metrics.csv"))
-    fig, ax = plt.subplots(figsize=(7.2, 4.0))
+    fig, ax = plt.subplots(figsize=(6.0, 3.6))
     styles = (("static", "o", "-", PALETTE[0]), ("temporal", "s", "--", PALETTE[1]))
     for regime, marker, ls, color in styles:
         sub = df[df["regime"] == regime]
@@ -109,7 +108,6 @@ def fig_calibration(prov: list) -> None:
     ax.set_xlabel("Model")
     ax.set_ylabel("Expected calibration error (unitless)")
     ax.set_ylim(bottom=0)
-    ax.set_title("Calibration error by model and regime")
     ax.tick_params(axis="x", rotation=12)
     ax.legend(loc="best")
     ax.grid(True)
@@ -122,7 +120,7 @@ def fig_decision_curve(prov: list) -> None:
     df = pd.read_csv(_require("decision_curve.csv"))
     x = np.arange(len(df))
     labels = [m.replace("_", " ").title() for m in df["model"]]
-    fig, ax = plt.subplots(figsize=(7.2, 4.0))
+    fig, ax = plt.subplots(figsize=(6.0, 3.6))
     ax.bar(x - 0.2, df["net_benefit_at_0.30"], 0.4,
            label="Net benefit @ threshold 0.30", color=PALETTE[0])
     ax.bar(x + 0.2, df["max_net_benefit"], 0.4,
@@ -131,7 +129,6 @@ def fig_decision_curve(prov: list) -> None:
     ax.set_xticklabels(labels, rotation=12, ha="right")
     ax.set_xlabel("Model")
     ax.set_ylabel("Net benefit (true positives per patient)")
-    ax.set_title("Decision-curve net benefit")
     ax.legend(loc="best")
     ax.grid(True, axis="y")
     ax.set_axisbelow(True)
@@ -148,7 +145,7 @@ def fig_conformal(prov: list) -> None:
         metrics.groupby("model")["n_test"].max().astype(int).to_dict()
     )
 
-    fig, ax = plt.subplots(figsize=(7.2, 4.0))
+    fig, ax = plt.subplots(figsize=(6.0, 3.6))
     markers = ("o", "s", "^", "D")
     targets = sorted(df["target_coverage"].unique())
     models = list(dict.fromkeys(df["model"]))
@@ -177,7 +174,6 @@ def fig_conformal(prov: list) -> None:
     ax.set_xticklabels(labels, rotation=12, ha="right")
     ax.set_xlabel("Model")
     ax.set_ylabel("Coverage (fraction of test cases)")
-    ax.set_title("Conformal empirical vs target coverage")
     ax.legend(loc="best")
     ax.grid(True)
     ax.set_axisbelow(True)
@@ -187,21 +183,27 @@ def fig_conformal(prov: list) -> None:
 
 def fig_counterfactual_delay(prov: list) -> None:
     df = pd.read_csv(_require("counterfactual_delay.csv"))
-    fig, ax = plt.subplots(figsize=(7.2, 4.0))
+    x = df["antibiotic_delay_hours"].to_numpy(dtype=float)
+    y = df["mortality_prob"].to_numpy(dtype=float)
+    n = df["n_twins"].to_numpy(dtype=float)
+    # 95% CI of the mean across the seeded twin cohort (paired re-simulation)
+    ci = 1.96 * df["std_mortality_prob"].to_numpy(dtype=float) / np.sqrt(n)
+    slope, intercept = np.polyfit(x, y, 1)
+    yhat = slope * x + intercept
+    ss_res = float(((y - yhat) ** 2).sum())
+    ss_tot = float(((y - y.mean()) ** 2).sum())
+    r2 = 1.0 - ss_res / ss_tot
+
+    fig, ax = plt.subplots(figsize=(6.0, 3.6))
     ax.errorbar(
-        df["antibiotic_delay_hours"],
-        df["mean_terminal_harm"],
-        yerr=df["std_terminal_harm"],
-        marker="o",
-        capsize=4,
-        color=PALETTE[1],
-        ecolor=PALETTE[6],
-        elinewidth=0.9,
-        label="Mean $\\pm$ 1 SD",
+        x, y, yerr=ci,
+        marker="o", capsize=4, color=PALETTE[1], ecolor=PALETTE[6],
+        elinewidth=0.9, label=r"Mean mortality probability $\pm$ 95% CI",
     )
+    ax.plot(x, yhat, linestyle="--", linewidth=1.2, color=PALETTE[6],
+            label=f"Linear fit: {slope * 100:.2f} pp/hour ($R^2$ = {r2:.2f})")
     ax.set_xlabel("Antibiotic delay (hours)")
-    ax.set_ylabel("Terminal harm score (committed-harm units)")
-    ax.set_title("Antibiotic delay vs terminal harm")
+    ax.set_ylabel("Simulated mortality probability")
     ax.legend(loc="best")
     ax.grid(True)
     ax.set_axisbelow(True)
