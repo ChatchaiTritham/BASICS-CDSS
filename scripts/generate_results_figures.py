@@ -79,7 +79,7 @@ def fig_auroc_static_vs_temporal(prov: list) -> None:
     w = 0.38
 
     labels = [m.replace("_", " ").title() for m in models]
-    fig, ax = plt.subplots(figsize=(6.0, 3.6))
+    fig, ax = plt.subplots(figsize=(5.766, 3.6))
     ax.bar(x - w / 2, static.loc[models, "auroc"], w,
            label="Static", color=PALETTE[0])
     ax.bar(x + w / 2, temporal.loc[models, "auroc"], w,
@@ -98,7 +98,7 @@ def fig_auroc_static_vs_temporal(prov: list) -> None:
 
 def fig_calibration(prov: list) -> None:
     df = pd.read_csv(_require("model_metrics.csv"))
-    fig, ax = plt.subplots(figsize=(6.0, 3.6))
+    fig, ax = plt.subplots(figsize=(5.766, 3.6))
     styles = (("static", "o", "-", PALETTE[0]), ("temporal", "s", "--", PALETTE[1]))
     for regime, marker, ls, color in styles:
         sub = df[df["regime"] == regime]
@@ -120,7 +120,7 @@ def fig_decision_curve(prov: list) -> None:
     df = pd.read_csv(_require("decision_curve.csv"))
     x = np.arange(len(df))
     labels = [m.replace("_", " ").title() for m in df["model"]]
-    fig, ax = plt.subplots(figsize=(6.0, 3.6))
+    fig, ax = plt.subplots(figsize=(5.766, 3.6))
     ax.bar(x - 0.2, df["net_benefit_at_0.30"], 0.4,
            label="Net benefit @ threshold 0.30", color=PALETTE[0])
     ax.bar(x + 0.2, df["max_net_benefit"], 0.4,
@@ -145,7 +145,7 @@ def fig_conformal(prov: list) -> None:
         metrics.groupby("model")["n_test"].max().astype(int).to_dict()
     )
 
-    fig, ax = plt.subplots(figsize=(6.0, 3.6))
+    fig, ax = plt.subplots(figsize=(5.766, 3.6))
     markers = ("o", "s", "^", "D")
     targets = sorted(df["target_coverage"].unique())
     models = list(dict.fromkeys(df["model"]))
@@ -194,7 +194,7 @@ def fig_counterfactual_delay(prov: list) -> None:
     ss_tot = float(((y - y.mean()) ** 2).sum())
     r2 = 1.0 - ss_res / ss_tot
 
-    fig, ax = plt.subplots(figsize=(6.0, 3.6))
+    fig, ax = plt.subplots(figsize=(5.766, 3.6))
     ax.errorbar(
         x, y, yerr=ci,
         marker="o", capsize=4, color=PALETTE[1], ecolor=PALETTE[6],
