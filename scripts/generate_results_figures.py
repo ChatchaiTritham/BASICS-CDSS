@@ -117,23 +117,49 @@ def fig_calibration(prov: list) -> None:
 
 
 def fig_decision_curve(prov: list) -> None:
-    df = pd.read_csv(_require("decision_curve.csv"))
-    x = np.arange(len(df))
-    labels = [m.replace("_", " ").title() for m in df["model"]]
-    fig, ax = plt.subplots(figsize=(5.766, 3.6))
-    ax.bar(x - 0.2, df["net_benefit_at_0.30"], 0.4,
-           label="Net benefit @ threshold 0.30", color=PALETTE[0])
-    ax.bar(x + 0.2, df["max_net_benefit"], 0.4,
-           label="Maximum net benefit", color=PALETTE[2])
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels, rotation=12, ha="right")
-    ax.set_xlabel("Model")
+    """Decision curve: net benefit against risk threshold, with the two references.
+
+    Reads the full threshold sweep rather than the single-threshold summary, so
+    the figure shows the curve the caption describes. Treat-all is analytic at
+    each threshold; treat-none is zero everywhere.
+    """
+    series = pd.read_csv(_require("decision_curve_series.csv"))
+    summary = pd.read_csv(_require("decision_curve.csv"))
+    prevalence = float(pd.read_csv(_require("decision_curve_prevalence.csv"))["prevalence"].iloc[0]) \
+        if (results_dir() / "decision_curve_prevalence.csv").exists() else 0.40
+
+    order = ["logistic_regression", "gradient_boosting", "random_forest",
+             "tcn", "xgboost", "lstm"]
+    nice = {"logistic_regression": "Logistic regression", "gradient_boosting": "Gradient boosting",
+            "random_forest": "Random forest", "tcn": "TCN", "xgboost": "XGBoost", "lstm": "LSTM"}
+
+    fig, ax = plt.subplots(figsize=(5.766, 3.8))
+    for i, model in enumerate(order):
+        g = series[series.model == model].sort_values("threshold")
+        ax.plot(g.threshold, g.net_benefit_model, linewidth=1.4,
+                color=PALETTE[i % len(PALETTE)], label=nice.get(model, model), zorder=4)
+
+    t = np.linspace(series.threshold.min(), series.threshold.max(), 400)
+    treat_all = prevalence - (1.0 - prevalence) * t / (1.0 - t)
+    ax.plot(t, treat_all, linestyle=(0, (5, 2)), linewidth=1.1, color="#4D4D4D",
+            label="Treat all", zorder=3)
+    ax.axhline(0.0, linestyle=(0, (1, 2)), linewidth=1.1, color="#1A1A1A",
+               label="Treat none", zorder=3)
+
+    marker_t = float(series.threshold.iloc[(series.threshold - 0.30).abs().argmin()])
+    ax.axvline(marker_t, color="#BBBBBB", linewidth=0.8, zorder=2)
+    ax.annotate("threshold 0.30", xy=(marker_t, 0.40), xytext=(marker_t + 0.03, 0.40),
+                fontsize=8, color="#4D4D4D", va="center")
+
+    ax.set_xlabel("Risk threshold")
     ax.set_ylabel("Net benefit (true positives per patient)")
-    ax.legend(loc="best")
-    ax.grid(True, axis="y")
+    ax.set_xlim(0.0, 0.8)
+    ax.set_ylim(-0.05, 0.45)
+    ax.legend(loc="upper right", frameon=False, ncol=2, fontsize=8)
+    ax.grid(True, linewidth=0.4, alpha=0.35)
     ax.set_axisbelow(True)
     png, pdf = _emit(fig, "fig_decision_curve")
-    prov.append(("F-DCA", png, pdf, "results/decision_curve.csv"))
+    prov.append(("F-DCA", png, pdf, "results/decision_curve_series.csv"))
 
 
 def fig_conformal(prov: list) -> None:
