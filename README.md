@@ -74,6 +74,58 @@ The earlier hardcoded figure scripts (`generate_baseline_metrics.py`, `generate_
 
 No human subjects and no real patient records are used, so no IRB approval is required. The cohort is generated: 1,000 digital twins (sepsis 400, ARDS 350, ACS 250) evolved over a 24-hour horizon by the committed ODE/SDE disease models, split 60/20/20 (train 600 / calibration 200 / test 200) at seed 42. The binary mortality label comes from each twin's terminal cumulative-damage state, mapped through a literature-anchored logistic link and realised as a seeded Bernoulli draw, which keeps the task learnable but not perfectly separable. The realised prevalence (reported, not targeted) is 29.8% sepsis, 56.6% ARDS, 27.2% cardiac (overall 38.5%). The cohort also carries a clearly-labelled **synthetic** `synthetic_group` attribute used only to demonstrate the fairness metrics — it is fabricated and carries no clinical meaning (see `REPRODUCIBILITY.md`).
 
+## Dataset information
+
+No external or clinical dataset is distributed or required. All data are produced by the digital-twin
+simulator at seed 42: 1,000 twins over a 24-hour horizon at one-hour resolution, distributed across
+sepsis (n = 400), acute respiratory distress syndrome (n = 350) and acute coronary syndrome (n = 250),
+each generated from mechanistic ordinary/stochastic differential equation models. Two splits are
+produced from the same twins: a clean split and a degraded split with per-timestep
+missing-completely-at-random masking and additive noise. The committed outputs of a seeded run are the
+tables in `results/` (including `summary.json`, `cohort_summary.json` and `run_metadata.json`, which
+records the exact interpreter and library versions). `data/` and `models/` are placeholders.
+
+## Code information
+
+- `src/basics_cdss/` — the package: disease models, twin simulator, temporal metrics, conformal
+  prediction, decision-curve and risk-coverage diagnostics, sequence models.
+- `scripts/run_all.py` — the deterministic driver (seed 42) that trains the six model families and
+  writes every result table.
+- `evaluation/`, `experiments/`, `visualizations/` — analysis entry points and figure generators.
+- `tests/` — unit tests for the simulator, metrics and model wrappers.
+
+## Requirements
+
+Python 3.9 or newer, no GPU required. Runtime dependencies: NumPy, pandas, SciPy, scikit-learn,
+XGBoost (≥ 2.0), PyTorch (≥ 2.0, CPU build is sufficient), Matplotlib, Seaborn, PyYAML, tqdm and
+Pydantic (≥ 2); see `requirements.txt`. The reported results were produced with CPython 3.13.14,
+NumPy 2.2.6, pandas 2.3.3, XGBoost 3.1.1 and PyTorch 2.9.0+cpu, as recorded in
+`results/run_metadata.json`. `Dockerfile` / `docker-compose.yml` reproduce that stack.
+
+## Methodology
+
+1. Simulate the seeded twin cohort from the mechanistic disease models.
+2. Build two evaluation splits from the same twins: clean, and degraded by per-timestep
+   missing-completely-at-random masking plus additive noise.
+3. Preprocess: impute disease-disjoint missing features with the cohort-wide column median;
+   standardise features inside the logistic-regression pipeline; feed sequence models the per-twin
+   24-hour tensor with the same imputation. No feature selection or resampling is performed.
+4. Train and evaluate six model families (logistic regression, random forest, gradient boosting,
+   XGBoost, long short-term memory network, temporal convolutional network) with a seeded stratified
+   split.
+5. Compute static and temporal metrics, the Digital Biomarker Reliability Score, the Temporal
+   Coverage Bound, conformal coverage, risk-coverage curves and decision-curve net benefit, plus the
+   counterfactual antibiotic-delay sweep.
+6. Write all tables to `results/` and redraw the figures from those tables.
+
+## Usage instructions
+
+```bash
+pip install -e .            # install the package
+python scripts/run_all.py   # regenerate every table in results/ (seed 42)
+pytest -q                   # run the test suite
+```
+
 ## Citation
 
 ```bibtex
@@ -86,9 +138,9 @@ No human subjects and no real patient records are used, so no IRB approval is re
 }
 ```
 
-## License
+## License and contribution guidelines
 
-Released under the MIT License (see `LICENSE`).
+Released under the MIT License (see `LICENSE`). Contributions are welcome: please read `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` before opening an issue or a pull request.
 
 ## Contact
 
