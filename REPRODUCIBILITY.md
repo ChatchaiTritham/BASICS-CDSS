@@ -75,3 +75,28 @@ The source, synthetic outputs, tests, and reproduction drivers are public in
 this repository. An anonymized snapshot should be supplied to reviewers if the
 journal applies double-blind review, and a permanent archival DOI should be
 minted for the accepted version.
+
+## Environment sensitivity (added 2026-09-28)
+
+The committed `results/` were produced by the environment recorded in
+`results/run_metadata.json` (Python 3.13.14, numpy 2.2.6, pandas 2.3.3, torch 2.9.0+cpu,
+xgboost 3.1.1), pinned in `requirements-lock.txt`.
+
+Re-running `scripts/run_all.py` at the same seed under a different stack (Python 3.11.15,
+numpy 2.4.6, pandas 3.0.5, torch 2.13.0+cpu, xgboost 3.2.0) reproduces the four tabular
+families to the reported precision, but **not** the two torch sequence models:
+
+| quantity (seed 42) | pinned environment | other stack |
+| --- | --- | --- |
+| LSTM AUROC (static) | 0.873 | 0.897 |
+| LSTM ECE (static) | 0.222 | 0.066 |
+| LSTM net benefit @0.30 | 0.151 | 0.316 |
+| TCN AUROC (static) | 0.920 | 0.919 |
+| TCB `delta_min` | 0.00084 | 0.0071 |
+
+The seed fixes the cohort, the split and the initialisations; it does not fix the numerical
+path a given torch version takes through training. Any claim about a specific sequence model's
+calibration or net benefit is therefore a property of one training run in one environment, not
+of the architecture. `scripts/multiseed.py` re-runs the cohort and all six model fits across
+many seeds so that between-family differences can be read against that variability, and its
+output (`results/multiseed_*.csv`) is what the manuscript relies on for ordering claims.

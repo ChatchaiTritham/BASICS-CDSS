@@ -1,0 +1,13 @@
+# Environment that produced the committed results/ (see results/run_metadata.json).
+#
+# requirements.txt is deliberately loose so the package installs anywhere; this file is the
+# environment the manuscript's numbers were computed in. Re-running the driver under other
+# versions reproduces the tabular families exactly but not the two torch sequence models, whose
+# training path changed between torch releases -- see REPRODUCIBILITY.md "Environment sensitivity".
+#
+# Install with:  python -m pip install -r requirements-lock.txt   (Python 3.13.14)
+
+numpy==2.2.6
+pandas==2.3.3
+torch==2.9.0
+xgboost==3.1.1

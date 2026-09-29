@@ -133,11 +133,29 @@ def fig_decision_curve(prov: list) -> None:
     nice = {"logistic_regression": "Logistic regression", "gradient_boosting": "Gradient boosting",
             "random_forest": "Random forest", "tcn": "TCN", "xgboost": "XGBoost", "lstm": "LSTM"}
 
+    # Colour AND dash pattern differ per family so the figure reads in grayscale;
+    # the LSTM is the family the text contrasts with the others, so it gets the
+    # heaviest, most distinct stroke.
+    style = {
+        "logistic_regression": ("#0072B2", (0, ()), 1.4),
+        "gradient_boosting": ("#009E73", (0, (6, 2)), 1.3),
+        "random_forest": ("#999999", (0, (2, 1.5)), 1.3),
+        "tcn": ("#56B4E9", (0, (4, 1.5, 1, 1.5)), 1.3),
+        "xgboost": ("#CC79A7", (0, (1, 1.5)), 1.3),
+        "lstm": ("#D55E00", (0, (7, 1.5, 1.5, 1.5)), 2.0),
+    }
     fig, ax = plt.subplots(figsize=(5.766, 3.8))
-    for i, model in enumerate(order):
+    for model in order:
         g = series[series.model == model].sort_values("threshold")
-        ax.plot(g.threshold, g.net_benefit_model, linewidth=1.4,
-                color=PALETTE[i % len(PALETTE)], label=nice.get(model, model), zorder=4)
+        col, dash, lw = style[model]
+        # LSTM and TCN sit close in hue, and the LSTM is the family the text singles
+        # out, so it also carries markers: the two stay separable in print and in
+        # grayscale, where dash pattern alone is not enough.
+        marker = "o" if model == "lstm" else None
+        ax.plot(g.threshold, g.net_benefit_model, linewidth=lw, linestyle=dash,
+                color=col, label=nice.get(model, model), zorder=5 if model == "lstm" else 4,
+                marker=marker, markevery=8, markersize=4.0, markerfacecolor="white",
+                markeredgewidth=0.9)
 
     t = np.linspace(series.threshold.min(), series.threshold.max(), 400)
     treat_all = prevalence - (1.0 - prevalence) * t / (1.0 - t)
@@ -147,9 +165,9 @@ def fig_decision_curve(prov: list) -> None:
                label="Treat none", zorder=3)
 
     marker_t = float(series.threshold.iloc[(series.threshold - 0.30).abs().argmin()])
-    ax.axvline(marker_t, color="#BBBBBB", linewidth=0.8, zorder=2)
+    ax.axvline(marker_t, color="#888888", linewidth=0.8, zorder=2)
     ax.annotate("threshold 0.30", xy=(marker_t, 0.40), xytext=(marker_t + 0.03, 0.40),
-                fontsize=8, color="#4D4D4D", va="center")
+                fontsize=8, color="#1A1A1A", va="center")
 
     ax.set_xlabel("Risk threshold")
     ax.set_ylabel("Net benefit (true positives per patient)")
@@ -237,6 +255,110 @@ def fig_counterfactual_delay(prov: list) -> None:
     prov.append(("F-CF", png, pdf, "results/counterfactual_delay.csv"))
 
 
+def fig_robustness(prov: list) -> None:
+    """Noise-level and observation-gap robustness, from the two committed sweeps.
+
+    Panel (a): AUROC under additive noise at 1x/2x/3x the calibrated measurement sigma,
+    for the three noise families released with the package. Panel (b): held-out accuracy
+    when observations are thinned to one every 1, 2 or 4 hours.
+    """
+    noise = pd.read_csv(_require("noise_sensitivity.csv"))
+    gaps = pd.read_csv(_require("masking_sweep.csv"))
+    order = ["logistic_regression", "random_forest", "gradient_boosting",
+             "xgboost", "lstm", "tcn"]
+    nice = {"logistic_regression": "LR", "random_forest": "RF",
+            "gradient_boosting": "GB", "xgboost": "XGB", "lstm": "LSTM", "tcn": "TCN"}
+    style = {"logistic_regression": ("#0072B2", (0, ()), None),
+             "random_forest": ("#999999", (0, (2, 1.5)), None),
+             "gradient_boosting": ("#009E73", (0, (6, 2)), None),
+             "xgboost": ("#CC79A7", (0, (1, 1.5)), None),
+             "lstm": ("#D55E00", (0, (7, 1.5, 1.5, 1.5)), "o"),
+             "tcn": ("#56B4E9", (0, (4, 1.5, 1, 1.5)), None)}
+
+    fig, (ax_a, ax_b) = plt.subplots(1, 2, figsize=(5.766, 2.6))
+
+    dists = sorted(noise.noise_dist.unique())
+    primary = "gaussian" if "gaussian" in dists else dists[0]
+    sub = noise[noise.noise_dist == primary]
+    for model in order:
+        g = sub[sub.model == model].sort_values("noise_scale")
+        col, dash, mk = style[model]
+        ax_a.plot(g.noise_scale, g.auroc, color=col, linestyle=dash, linewidth=1.3,
+                  marker=mk, markersize=3.6, markerfacecolor="white", markeredgewidth=0.9,
+                  label=nice[model])
+    ax_a.set_xlabel(r"Noise scale ($\times$ calibrated $\sigma$)")
+    ax_a.set_ylabel("AUROC")
+    ax_a.set_xticks(sorted(sub.noise_scale.unique()))
+    ax_a.text(0.0, 1.03, "(a)", transform=ax_a.transAxes, fontweight="bold")
+
+    width = 0.13
+    levels = sorted(gaps.gap_hours.unique())
+    for i, model in enumerate(order):
+        g = gaps[gaps.model == model].sort_values("gap_hours")
+        col = style[model][0]
+        ax_b.bar([j + (i - 2.5) * width for j in range(len(levels))], g.accuracy.values,
+                 width=width, color=col, edgecolor="black", linewidth=0.3,
+                 label=nice[model])
+    ax_b.set_xticks(range(len(levels)), [f"{int(v)} h" for v in levels])
+    ax_b.set_xlabel("Observation gap")
+    ax_b.set_ylabel("Held-out accuracy")
+    ax_b.set_ylim(0, 1.0)
+    ax_b.text(0.0, 1.03, "(b)", transform=ax_b.transAxes, fontweight="bold")
+
+    handles, labels = ax_a.get_legend_handles_labels()
+    fig.legend(handles, labels, loc="lower center", ncol=6, frameon=False,
+               bbox_to_anchor=(0.5, -0.06), handlelength=1.6)
+    fig.tight_layout()
+    png, pdf = _emit(fig, "fig_robustness")
+    prov.append(("fig_robustness", png, pdf, "results/noise_sensitivity.csv; results/masking_sweep.csv"))
+
+
+def fig_multiseed(prov: list) -> None:
+    """Per-family spread of static AUROC and ECE over the repeated seeds.
+
+    Reads results/multiseed_metrics.csv (scripts/multiseed.py). Skipped when that
+    sweep has not been run, so the single-seed pipeline still works on its own.
+    """
+    path = RESULTS / "multiseed_metrics.csv"
+    if not path.exists():
+        print("skip fig_multiseed: run scripts/multiseed.py first")
+        return
+    df = pd.read_csv(path)
+    st = df[df.regime == "static"]
+    order = ["logistic_regression", "random_forest", "gradient_boosting",
+             "xgboost", "lstm", "tcn"]
+    nice = {"logistic_regression": "LR", "random_forest": "RF", "gradient_boosting": "GB",
+            "xgboost": "XGB", "lstm": "LSTM", "tcn": "TCN"}
+    n_seeds = st.seed.nunique()
+
+    fig, (ax_a, ax_b) = plt.subplots(1, 2, figsize=(5.766, 2.7))
+    for ax, col, label in ((ax_a, "auroc", "Static AUROC"), (ax_b, "ece", "Static ECE")):
+        data = [st[st.model == m][col].values for m in order]
+        bp = ax.boxplot(data, widths=0.55, showfliers=False, patch_artist=True,
+                        medianprops=dict(color="#1A1A1A", linewidth=1.1),
+                        boxprops=dict(facecolor="#D9E7F5", edgecolor="#4D4D4D", linewidth=0.7),
+                        whiskerprops=dict(color="#4D4D4D", linewidth=0.7),
+                        capprops=dict(color="#4D4D4D", linewidth=0.7))
+        del bp
+        for i, m in enumerate(order, start=1):
+            v = st[st.model == m][col].values
+            ax.plot(np.random.default_rng(0).normal(i, 0.055, len(v)), v, "o",
+                    markersize=2.2, color="#0072B2", alpha=0.65, zorder=3)
+            seed42 = st[(st.model == m) & (st.seed == st.seed.min())][col]
+            if len(seed42):
+                ax.plot([i], [seed42.iloc[0]], "D", markersize=4.2, color="#D55E00",
+                        zorder=4, label="seed 42" if i == 1 else None)
+        ax.set_xticks(range(1, len(order) + 1), [nice[m] for m in order])
+        ax.set_ylabel(label)
+    ax_a.legend(frameon=False, loc="lower left", fontsize=7)
+    ax_a.text(0.0, 1.04, "(a)", transform=ax_a.transAxes, fontweight="bold")
+    ax_b.text(0.0, 1.04, "(b)", transform=ax_b.transAxes, fontweight="bold")
+    fig.suptitle("")
+    fig.tight_layout()
+    png, pdf = _emit(fig, "fig_multiseed")
+    prov.append(("fig_multiseed", png, pdf, f"results/multiseed_metrics.csv ({n_seeds} seeds)"))
+
+
 def main() -> None:
     apply_pub_style()
     OUTDIR.mkdir(parents=True, exist_ok=True)
@@ -246,6 +368,8 @@ def main() -> None:
     fig_decision_curve(prov)
     fig_conformal(prov)
     fig_counterfactual_delay(prov)
+    fig_robustness(prov)
+    fig_multiseed(prov)
 
     prov_path = OUTDIR / "figure_provenance.csv"
     with prov_path.open("w", newline="", encoding="utf-8") as handle:

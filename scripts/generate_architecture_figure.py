@@ -148,8 +148,8 @@ def main() -> None:
     pw = 22.5
     pgap = (XMAX - 4 * pw) / 3
     specs = [("Missing data", ["MCAR, 20%,", "used in results;", "MAR/MNAR ship only"], SKY, "#DFF0FB"),
-             ("Noise", ["Gaussian, σ × 2,", "used in results;", "Laplacian, t(3) ship"], GREEN, "#D9EFE8"),
-             ("Temporal mask", ["Gaps of 1–4 h;", "ships but is not", "used in any result"], ORANGE, "#F7E2D5"),
+             ("Noise", ["Gaussian and t(3),", "1–3× σ, used in", "the noise sweep"], GREEN, "#D9EFE8"),
+             ("Temporal mask", ["Gaps of 1, 2, 4 h;", "used in the", "gap sweep"], ORANGE, "#F7E2D5"),
              ("Conflict", ["Discordant biomarker", "trends; ships but is", "not used in any result"], RED, "#F6E3EE")]
     for i, (hdr, lines, col, tint) in enumerate(specs):
         x = i * (pw + pgap)
