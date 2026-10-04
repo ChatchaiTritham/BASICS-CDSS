@@ -5,7 +5,7 @@
     "n_critical_gt_1.15": 3,
     "dbrs_min": 0.9594202898550727,
     "dbrs_max": 1.4048606994665085,
-    "dbrs_mean": 1.0161939161538251,
+    "dbrs_mean": 1.0166511580526751,
     "critical_biomarkers": [
       "ards:oxygen_saturation:random_forest",
       "ards:oxygen_saturation:xgboost",
@@ -15,23 +15,23 @@
   "tcb": {
     "loss_metric": "brier",
     "rho": 0.2,
-    "delta_min": 0.0008375058514769051,
-    "rho_delta_min": 0.00016750117029538104,
+    "delta_min": 0.0008939158818209864,
+    "rho_delta_min": 0.0001787831763641973,
     "fraction_bound_holds": 1.0,
     "per_model_loss_gap": {
-      "gradient_boosting": 0.06396072664590852,
+      "gradient_boosting": 0.06311123247289324,
       "logistic_regression": 0.008474997189289527,
-      "lstm": 0.0008375058514769051,
+      "lstm": 0.0008939158818209864,
       "random_forest": 0.026040624999999998,
-      "tcn": 0.003786352772907481,
+      "tcn": 0.02292036725497182,
       "xgboost": 0.05697586382838138
     }
   },
   "tcs": {
     "by_missingness_mean": {
-      "0.2": 0.80831498015873,
-      "0.4": 0.7554303075396825,
-      "0.6": 0.7724444444444444
+      "0.2": 0.808328869047619,
+      "0.4": 0.7554858630952381,
+      "0.6": 0.7724722222222221
     },
     "min_mean_tcs": 0.6175,
     "max_mean_tcs": 0.914
@@ -39,12 +39,12 @@
   "tce": {
     "loss_form": "L2_trajectory",
     "per_model_mean": {
-      "gradient_boosting": 0.34386012449391395,
+      "gradient_boosting": 0.34418538491758016,
       "logistic_regression": 0.33862718990030133,
       "random_forest": 0.31363897112638567,
       "xgboost": 0.3386009931676655
     },
-    "overall_mean_tce": 0.3336818196720666,
+    "overall_mean_tce": 0.3337631347779832,
     "min_mean_tce": 0.14961951700323478,
     "max_mean_tce": 0.5266539547854628,
     "per_model_disease": {
@@ -54,9 +54,9 @@
       "random_forest:sepsis": 0.4546601180759746,
       "random_forest:ards": 0.33663727829994766,
       "random_forest:cardiac": 0.14961951700323478,
-      "gradient_boosting:sepsis": 0.5052536879919305,
-      "gradient_boosting:ards": 0.3720938686233105,
-      "gradient_boosting:cardiac": 0.1542328168665009,
+      "gradient_boosting:sepsis": 0.5052823603166204,
+      "gradient_boosting:ards": 0.37209676224109334,
+      "gradient_boosting:cardiac": 0.15517703219502654,
       "xgboost:sepsis": 0.518476530311421,
       "xgboost:ards": 0.3460775309320351,
       "xgboost:cardiac": 0.1512489182595405

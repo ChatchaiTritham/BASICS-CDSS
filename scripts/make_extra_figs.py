@@ -49,7 +49,7 @@ for j, (reg, col) in enumerate(zip(regimes, (BLUE, ORANGE))):
     ys = [cov[(m, reg)] for m in ORDER]
     print("AURC", reg, dict(zip(ORDER, ys)))
     a.bar([p + (j - 0.5) * w for p in x], ys, width=w, color=col, edgecolor="black",
-          linewidth=0.4, label=reg)
+          linewidth=0.4, label=reg.capitalize())
 a.set_xticks(list(x), [LABEL[m] for m in ORDER])
 a.set_ylabel("Area under risk\u2013coverage curve")
 a.legend(frameon=False, loc="upper left", handlelength=1.1)
@@ -64,18 +64,34 @@ emp = [float(conf[m]["empirical_coverage"]) for m in ORDER]
 size = [float(conf[m]["avg_set_size"]) for m in ORDER]
 target = float(conf[ORDER[0]]["target_coverage"])
 print("conformal", dict(zip(ORDER, zip(emp, size))), "target", target)
-b.axhline(target, color=GREY, ls="--", lw=0.8)
-b.annotate(f"target coverage {target:.2f}", (len(ORDER) - 0.5, target), xytext=(-2, -9),
-           textcoords="offset points", fontsize=7, color=GREY, ha="right")
-b.bar(list(x), emp, width=0.6, color=BLUE, edgecolor="black", linewidth=0.4)
+
+# Coverage is a proportion over the held-out fold, so draw its Wilson 95% interval
+# (n_test is read from the released metrics table, never typed in).
+n_test = int(float(next(r for r in rows("model_metrics.csv") if r.get("n_test"))["n_test"]))
+
+
+def wilson(p, n, z=1.96):
+    d = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / d
+    h = z * (p * (1 - p) / n + z * z / (4 * n * n)) ** 0.5 / d
+    return c - h, c + h
+
+
+err = [[e - wilson(e, n_test)[0] for e in emp], [wilson(e, n_test)[1] - e for e in emp]]
+b.axhspan(target, 1.045, color="#e8f3ec", zorder=0, label="at or above nominal target")
+b.axhline(target, color="#444444", ls="--", lw=0.8, zorder=1, label=f"nominal target {target:.2f}")
+b.bar(list(x), emp, width=0.6, color=BLUE, edgecolor="black", linewidth=0.4, zorder=2,
+      yerr=err, error_kw={"elinewidth": 0.7, "capsize": 2.5, "ecolor": "#222222"})
 for p, (e, sz) in enumerate(zip(emp, size)):
-    # the bar height is coverage; print it, and carry the set size as an explicit second line
-    b.text(p, e + 0.004, f"{e:.3f}\n$|C|$={sz:.2f}", ha="center", va="bottom",
-           fontsize=6.5, linespacing=1.25)
+    b.text(p, 0.9025, f"$|C|$={sz:.2f}", ha="center", va="bottom", fontsize=6.8, color="white")
+    b.text(p, e - 0.0035, f"{e:.3f}", ha="center", va="top", fontsize=6.8, color="white")
+b.legend(loc="upper center", ncol=2, frameon=False, fontsize=6.8, handlelength=1.4)
 b.set_xticks(list(x), [LABEL[m] for m in ORDER])
-b.set_ylim(0.90, 1.012)
+b.set_ylim(0.90, 1.045)
 b.set_ylabel("Empirical coverage")
 b.text(-0.02, 1.02, "(b)", transform=b.transAxes, ha="right", va="bottom", fontweight="bold", fontsize=9)
+b.text(1.0, 1.02, f"bars: Wilson 95% interval, $n$={n_test} held-out twins", transform=b.transAxes,
+       ha="right", va="bottom", fontsize=6.8, color="#444444")
 
 fig.savefig(OUT / "fig_riskcoverage_conformal.pdf")
 print("wrote", OUT / "fig_riskcoverage_conformal.pdf")

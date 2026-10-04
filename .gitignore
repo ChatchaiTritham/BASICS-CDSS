@@ -63,3 +63,4 @@ data/private/
 # local snapshots taken while checking environment reproducibility
 results_backup_*/
 results_py311_rerun_*/
+.venv-lock/

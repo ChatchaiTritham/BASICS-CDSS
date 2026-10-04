@@ -246,6 +246,8 @@ def fig_counterfactual_delay(prov: list) -> None:
     )
     ax.plot(x, yhat, linestyle="--", linewidth=1.2, color=PALETTE[6],
             label=f"Linear fit: {slope * 100:.2f} pp/hour ($R^2$ = {r2:.2f})")
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"{v:g}" for v in x])
     ax.set_xlabel("Antibiotic delay (hours)")
     ax.set_ylabel("Simulated mortality probability")
     ax.legend(loc="best")
@@ -291,18 +293,17 @@ def fig_robustness(prov: list) -> None:
     ax_a.set_xticks(sorted(sub.noise_scale.unique()))
     ax_a.text(0.0, 1.03, "(a)", transform=ax_a.transAxes, fontweight="bold")
 
-    width = 0.13
     levels = sorted(gaps.gap_hours.unique())
-    for i, model in enumerate(order):
+    for model in [m for m in order if m in set(gaps.model)]:
         g = gaps[gaps.model == model].sort_values("gap_hours")
-        col = style[model][0]
-        ax_b.bar([j + (i - 2.5) * width for j in range(len(levels))], g.accuracy.values,
-                 width=width, color=col, edgecolor="black", linewidth=0.3,
-                 label=nice[model])
-    ax_b.set_xticks(range(len(levels)), [f"{int(v)} h" for v in levels])
+        col, dash, mk = style[model]
+        ax_b.plot([0] + list(g.gap_hours), [g.accuracy_clean.iloc[0]] + list(g.accuracy),
+                  color=col, linestyle=dash, linewidth=1.3, marker=mk, markersize=3.6,
+                  markerfacecolor="white", markeredgewidth=0.9)
+    ax_b.set_xticks([0] + levels, ["none"] + [f"{int(v)} h" for v in levels])
     ax_b.set_xlabel("Observation gap")
-    ax_b.set_ylabel("Held-out accuracy")
-    ax_b.set_ylim(0, 1.0)
+    ax_b.set_ylabel("Held-out accuracy (sequence models)")
+    ax_b.set_ylim(0.5, 1.0)
     ax_b.text(0.0, 1.03, "(b)", transform=ax_b.transAxes, fontweight="bold")
 
     handles, labels = ax_a.get_legend_handles_labels()

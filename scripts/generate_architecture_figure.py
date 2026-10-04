@@ -109,11 +109,11 @@ def main() -> None:
     y1 = YMAX - h1 - 1.5
     w, gap = 31.0, 3.5
     box(ax, 0, y1, w, h1, "Sepsis",
-        ["8 state variables", "ODE: pathogen, immune,", "organ damage"], BLUE, "#DCE9F5")
+        ["8 state variables", "severity S, irreversible", "organ damage D"], BLUE, "#DCE9F5")
     box(ax, w + gap, y1, w, h1, "ARDS",
-        ["6 state variables", "SDE: alveolar flooding", "and compliance"], GREEN, "#D9EFE8")
+        ["6 state variables", "lung injury L, cumulative", "lung damage"], GREEN, "#D9EFE8")
     box(ax, 2 * (w + gap), y1, w, h1, "ACS",
-        ["8 state variables", "ODE: troponin, two", "compartments"], ORANGE, "#F7E2D5")
+        ["8 state variables", "latent ischaemia I,", "cumulative infarct"], ORANGE, "#F7E2D5")
     band(ax, y1, h1, "Disease models")
 
     # ---- Layer 2: the twin core -------------------------------------------
@@ -179,7 +179,7 @@ def main() -> None:
             ax.text(x + mw / 2, y5 + 8.1 - 2.3, subs[i], ha="center", va="center",
                     fontsize=BODY_PT, color=INK, zorder=5)
     ax.text(XMAX / 2, y5 + 2.2,
-            "Metrics: AUROC · accuracy · TCS · TCE · DIR · counterfactual regret · DBRS · BEWS",
+            "Metrics: AUROC · accuracy · TCS · TCE · counterfactual regret · DBRS · BEWS",
             ha="center", va="center", fontsize=BODY_PT, color=GREY, zorder=5)
     for i in range(4):
         arrow(ax, i * (pw + pgap) + pw / 2, y4, XMAX / 2, y5 + h5, GREY)

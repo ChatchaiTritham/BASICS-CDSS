@@ -76,6 +76,22 @@ this repository. An anonymized snapshot should be supplied to reviewers if the
 journal applies double-blind review, and a permanent archival DOI should be
 minted for the accepted version.
 
+## Revision of 2026-10-04: observation window and masking sweep
+
+Two errors were corrected and every result was regenerated.
+
+1. **Label leakage.** The sequence models had been trained on the full 24-hour trajectory, whose terminal
+   state determines the outcome label. `build_trajectory_tensor` now returns only the first
+   `OBSERVATION_WINDOW_HOURS = 12` hours (13 hourly rows), with imputation medians computed over that window.
+2. **Masking sweep.** `compute_masking_sweep` scored the tabular models on the terminal-timestep row although
+   they were trained on the presentation (t = 0) row. Because the gap never touches t = 0, the sweep is now
+   reported for the sequence models only.
+
+The regenerated `results/` were produced with Python 3.13.9, numpy 2.2.6, pandas 2.3.3, scikit-learn 1.9.1,
+torch 2.9.0+cpu and xgboost 3.1.1 (`requirements-lock.txt`). The earlier environment comparison below refers
+to the pre-revision configuration and is kept for the record; the tabular families remain insensitive to the
+software stack, while the torch sequence models remain environment-specific.
+
 ## Environment sensitivity (added 2026-09-28)
 
 The committed `results/` were produced by the environment recorded in

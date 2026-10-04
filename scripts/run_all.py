@@ -11,7 +11,7 @@ pipeline and writes the metrics it genuinely computes to ``results/``:
    perturbation operators:
      - tabular (initial-state features): logistic regression, random forest,
        gradient boosting, XGBoost;
-     - sequence (per-twin 24-hour trajectory tensor): LSTM and TCN (torch),
+     - sequence (per-twin 12-hour observation window tensor): LSTM and TCN (torch),
        with the degraded regime applying the same 20% MCAR + 2x noise per
        timestep. All models are seeded to 42.
 4. Evaluate every model with the committed metric modules
@@ -132,11 +132,15 @@ COHORT = {
 }
 HORIZON_HOURS = 24.0
 DT = 1.0
+# The sequence models see only the first OBSERVATION_WINDOW_HOURS of each trajectory
+# and predict the outcome fixed at HORIZON_HOURS. Feeding them the full 24-hour
+# trajectory would leak the terminal state that defines the label.
+OBSERVATION_WINDOW_HOURS = 12.0
 
 # Tabular model families, all trained on the same initial-state feature table.
 # Every model the manuscript headlines is now reproduced by the committed
 # artifact: LR / RF / GB / XGBoost are tabular (this dict); LSTM / TCN are genuine
-# sequence models over the per-twin 24-hour trajectory (SEQUENCE_MODEL_FACTORIES).
+# sequence models over the per-twin 12-hour observation window (SEQUENCE_MODEL_FACTORIES).
 MODEL_FACTORIES = {
     "logistic_regression": lambda: make_pipeline(
         StandardScaler(), LogisticRegression(max_iter=2000, random_state=SEED)
@@ -158,7 +162,7 @@ MODEL_FACTORIES = {
     ),
 }
 
-# Sequence model families. These consume the per-twin 24-hour trajectory tensor
+# Sequence model families. These consume the per-twin 12-hour observation window tensor
 # (n x T x d), NOT the single initial-state row. They are seeded (torch + numpy)
 # and CPU-trainable in seconds; see basics_cdss.temporal.sequence_models.
 SEQUENCE_MODEL_FACTORIES = {
@@ -406,7 +410,7 @@ def build_trajectory_tensor(df: pd.DataFrame) -> np.ndarray:
     table uses) so every channel is finite for the sequence models.
     """
     n = len(df)
-    n_timesteps = int(HORIZON_HOURS / DT) + 1
+    n_timesteps = int(OBSERVATION_WINDOW_HOURS / DT) + 1
     d = len(_FEATURE_COLUMNS)
     tensor = np.full((n, n_timesteps, d), np.nan, dtype=float)
     flat = -1
@@ -454,7 +458,7 @@ def evaluate_models(df: pd.DataFrame) -> dict:
     """Train and evaluate each supported model under static + temporal splits.
 
     Tabular models (LR / RF / GB / XGBoost) consume the initial-state feature
-    table; sequence models (LSTM / TCN) consume the per-twin 24-hour trajectory
+    table; sequence models (LSTM / TCN) consume the per-twin 12-hour observation window
     tensor. For tabular models the 'temporal' regime is the degraded feature table
     (``_degrade``); for sequence models it is the per-timestep-degraded trajectory
     (``_degrade_sequence``) -- both use the identical 20% MCAR + 2x noise definition.
@@ -929,10 +933,12 @@ def compute_masking_sweep(df: pd.DataFrame, split: dict) -> pd.DataFrame:
             start = int(grng.randint(1, max(2, T - gap)))  # keep t=0 observed
             for t in range(start, min(start + gap, T)):
                 Xs_masked[twin, t, :] = Xs_masked[twin, t - 1, :]  # LOCF
-        # Tabular models see the (possibly masked) terminal-timestep row.
-        X_masked_terminal = Xs_masked[:, -1, :]
+        # Tabular models read only the t=0 row, which the gap never masks, so the
+        # sweep is defined for the sequence models alone.
         for name, (kind, model) in split["models"].items():
-            Xeval = X_masked_terminal if kind == "tabular" else Xs_masked
+            if kind == "tabular":
+                continue
+            Xeval = Xs_masked
             prob = model.predict_proba(Xeval)[:, 1]
             acc = float(accuracy_score(y_te, (prob >= 0.5).astype(int)))
             rows.append({
@@ -1747,7 +1753,7 @@ def main() -> None:
             "committed package code only. All six manuscript model families are "
             "reproduced: LR / RF / GB / XGBoost are tabular models over the "
             "initial-state feature table; LSTM and TCN are genuine torch sequence "
-            "models trained on the per-twin 24-hour trajectory tensor (clean = "
+            "models trained on the per-twin 12-hour observation window tensor (clean = "
             "static, per-timestep MCAR+noise = temporal), all seeded to 42. The "
             "counterfactual antibiotic-delay sweep now emits "
             "a calibrated mortality probability (mortality_prob), derived from "

@@ -10,16 +10,16 @@ A model that scores well on a frozen retrospective split often disappoints at th
 
 The point of the simulator is mechanistic grounding rather than realism for its own sake. Because each twin's latent physiological state is known at every step, we can read off a ground-truth risk trajectory, run exact counterfactuals on intervention timing, and ablate one biomarker at a time without recruiting a single patient. That access is what lets the code measure things a static benchmark cannot — a trajectory-level calibration gap, the stability of a recommendation as data go missing, and the reliability of individual markers against a known answer.
 
-What the code reports, it computes. All six model families the manuscript headlines are trained and scored end to end — four tabular (logistic regression, random forest, gradient boosting, XGBoost) on the initial-state feature table, and two sequence models (a torch LSTM and a dilated-Conv1d TCN) on the per-twin 24-hour trajectory — all seeded to 42; nothing is typed in to match a target. The parts of the manuscript story the committed code still cannot regenerate (e.g. the calibrated mortality percentages) are documented rather than faked (see `REPRODUCIBILITY.md`).
+What the code reports, it computes. All six model families the manuscript headlines are trained and scored end to end — four tabular (logistic regression, random forest, gradient boosting, XGBoost) on the initial-state feature table, and two sequence models (a torch LSTM and a dilated-Conv1d TCN) on the first 12 hours of each trajectory (the 24-hour outcome would otherwise leak from the terminal state) — all seeded to 42; nothing is typed in to match a target. The parts of the manuscript story the committed code still cannot regenerate (e.g. the calibrated mortality percentages) are documented rather than faked (see `REPRODUCIBILITY.md`).
 
 ## Key results
 
 All figures below are read from `results/` after `python scripts/run_all.py` at seed 42 (synthetic cohort N = 1,000: sepsis 400 / ARDS 350 / ACS 250; seeded 60/20/20 split → train 600 / calibration 200 / **test 200**). A complete claim-by-claim reconciliation against the manuscript lives in `RECONCILIATION_TABLE.md`.
 
-- **All six model families are computed (seed 42).** Static AUROC: LR 0.916, RF 0.918, GB 0.917, XGBoost 0.905, LSTM 0.873, TCN 0.920; temporal AUROC: 0.902 / 0.875 / 0.845 / 0.822 / 0.842 / 0.907. At N = 1,000 the tabular families cluster tightly (0.905–0.918); **TCN has the highest static AUROC and LSTM the lowest** — the opposite of the earlier literals, reported as-is.
-- **Accuracy is a poor robustness signal.** Under the degraded ("temporal") regime, held-out accuracy fell 8.5 pp (GB) and 8.0 pp (XGB) but *rose* for the sequence models (LSTM 77→81, TCN flat), so an accuracy-only readout misjudges the tree/NN ordering.
-- **Calibration, not discrimination, separates the models.** Logistic regression is best-calibrated (static ECE 0.050, the only model under 0.05) despite mid-pack AUROC; the LSTM has strong-ish AUROC but the **worst ECE (0.222)** — a discrimination-vs-calibration dissociation.
-- **Selective prediction stays valid.** Split-conformal coverage meets its 95% target for every model (0.945–0.98) with average set size 1.30–1.64; the Temporal Coverage Bound held in 100% of configurations (δ_min = 0.0008 at ρ = 0.20, Brier units).
+- **Twenty seeds (`scripts/multiseed.py`).** The static-AUROC leader is the best-calibrated family in only 2 of 20 seeds (mean Spearman between the two rankings 0.10). Gradient boosting, XGBoost and random forest lose AUROC under the degraded regime in 20/20 seeds (mean 0.079, 0.061, 0.046); the LSTM (0.006) and TCN (0.014) barely move.
+- **Seed 42.** Static AUROC: LR 0.916, RF 0.918, GB 0.916, XGBoost 0.905, LSTM 0.930, TCN 0.929, with overlapping bootstrap intervals (`scripts/bootstrap_ci.py`); temporal AUROC 0.902 / 0.875 / 0.846 / 0.822 / 0.923 / 0.912. Only the three tree ensembles have an AUROC loss whose interval excludes zero.
+- **Calibration does not follow discrimination.** Logistic regression is best calibrated (static ECE 0.050) while ranking fourth on AUROC; the LSTM and TCN, first and second on AUROC, have ECE 0.097 and 0.116.
+- **Selective prediction stays valid.** Split-conformal coverage meets its 95% target for every model (0.950–0.980) with average set size 1.30–1.64; every family has a positive static-to-temporal Brier gap (smallest 0.0009, LSTM, at ρ = 0.20).
 - **Tree models are NOT the noise-robust ones here.** Under 2× Gaussian noise the gradient-boosting/XGBoost AUROC degrades most (GB −0.13) while the LSTM/TCN sequence models are nearly flat (|Δ| ≤ 0.015) — refuting the intuition that trees tolerate noise better than neural nets on this trajectory task.
 - **Clinical-impact metrics are computed end to end.** NNT (with bootstrap 95% CI), number-needed-to-screen @ 0.30, decision-curve net benefit, fairness across a clearly-labelled *synthetic* group attribute, and counterfactual alignment/regret are all written to `results/*.csv`; see `RECONCILIATION_TABLE.md` for the verbatim numbers and where they refute the manuscript narrative.
 - **Counterfactual direction reproduces; magnitude is shallow.** The seeded antibiotic-delay sweep is monotone (mortality probability 0.354→0.390 across 1–18 h; slope 0.22 pp/h, R² = 0.81), far below the ~7.6%/h clinical estimate because the simulator's organ-damage state saturates within 24 h — reported honestly, not tuned.
@@ -98,8 +98,8 @@ records the exact interpreter and library versions). `data/` and `models/` are p
 
 Python 3.9 or newer, no GPU required. Runtime dependencies: NumPy, pandas, SciPy, scikit-learn,
 XGBoost (≥ 2.0), PyTorch (≥ 2.0, CPU build is sufficient), Matplotlib, Seaborn, PyYAML, tqdm and
-Pydantic (≥ 2); see `requirements.txt`. The reported results were produced with CPython 3.13.14,
-NumPy 2.2.6, pandas 2.3.3, XGBoost 3.1.1 and PyTorch 2.9.0+cpu, as recorded in
+Pydantic (≥ 2); see `requirements.txt`. The reported results were produced with CPython 3.13.9,
+NumPy 2.2.6, pandas 2.3.3, scikit-learn 1.9.1, XGBoost 3.1.1 and PyTorch 2.9.0+cpu (pinned in `requirements-lock.txt`), as recorded in
 `results/run_metadata.json`. `Dockerfile` / `docker-compose.yml` reproduce that stack.
 
 ## Methodology
