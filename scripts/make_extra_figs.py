@@ -80,17 +80,20 @@ def wilson(p, n, z=1.96):
 err = [[e - wilson(e, n_test)[0] for e in emp], [wilson(e, n_test)[1] - e for e in emp]]
 b.axhspan(target, 1.045, color="#e8f3ec", zorder=0, label="at or above nominal target")
 b.axhline(target, color="#444444", ls="--", lw=0.8, zorder=1, label=f"nominal target {target:.2f}")
-b.bar(list(x), emp, width=0.6, color=BLUE, edgecolor="black", linewidth=0.4, zorder=2,
-      yerr=err, error_kw={"elinewidth": 0.7, "capsize": 2.5, "ecolor": "#222222"})
+# Point estimate with interval (not bars): a truncated bar axis would exaggerate small differences.
+b.errorbar(list(x), emp, yerr=err, fmt="o", color=BLUE, ecolor="#222222", elinewidth=0.9,
+           capsize=3, markersize=5, markeredgecolor="black", markeredgewidth=0.4, zorder=2)
 for p, (e, sz) in enumerate(zip(emp, size)):
-    b.text(p, 0.9025, f"$|C|$={sz:.2f}", ha="center", va="bottom", fontsize=6.8, color="white")
-    b.text(p, e - 0.0035, f"{e:.3f}", ha="center", va="top", fontsize=6.8, color="white")
+    b.text(p, 0.9025, f"$|C|$={sz:.2f}", ha="center", va="bottom", fontsize=6.8, color="#222222")
+    b.text(p + 0.14, e, f"{e:.3f}", ha="left", va="center", fontsize=6.8, color="#222222",
+           bbox={"facecolor": "white", "edgecolor": "none", "pad": 0.6, "alpha": 0.85}, zorder=3)
+b.set_xlim(-0.5, len(ORDER) - 0.3)
 b.legend(loc="upper center", ncol=2, frameon=False, fontsize=6.8, handlelength=1.4)
 b.set_xticks(list(x), [LABEL[m] for m in ORDER])
 b.set_ylim(0.90, 1.045)
 b.set_ylabel("Empirical coverage")
 b.text(-0.02, 1.02, "(b)", transform=b.transAxes, ha="right", va="bottom", fontweight="bold", fontsize=9)
-b.text(1.0, 1.02, f"bars: Wilson 95% interval, $n$={n_test} held-out twins", transform=b.transAxes,
+b.text(1.0, 1.02, f"points with Wilson 95% interval, $n$={n_test} held-out twins", transform=b.transAxes,
        ha="right", va="bottom", fontsize=6.8, color="#444444")
 
 fig.savefig(OUT / "fig_riskcoverage_conformal.pdf")
