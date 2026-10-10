@@ -107,7 +107,13 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--seeds", type=int, default=20)
     ap.add_argument("--start", type=int, default=42)
+    ap.add_argument("--summarise-only", action="store_true",
+                    help="rebuild the summary CSV from the existing metrics CSV")
     args = ap.parse_args()
+    if args.summarise_only:
+        rc.summarise_file(run_all.RESULTS_DIR / "onset_sensitivity_metrics.csv",
+                          run_all.RESULTS_DIR / "onset_sensitivity_summary.csv")
+        return
 
     rows, cohort_rows = [], []
     for k in range(args.seeds):
