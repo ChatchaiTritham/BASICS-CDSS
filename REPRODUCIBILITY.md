@@ -14,6 +14,23 @@ python scripts/generate_results_figures.py
 python -m pytest -q
 ```
 
+### Revision analyses (2026-10-11)
+
+Run after `run_all.py` and `multiseed.py`, from the repository root:
+
+```bash
+python scripts/counterfactual_segments.py   # 1-9 h / 9-18 h slopes, paired 18 h - 1 h effect (bootstrap CI)
+python scripts/noise_realisations.py        # noise sweep averaged over 30 noise draws per point
+python scripts/redundancy_control.py        # tabular on 12-h window, sequence on t=0; 20 seeds
+python scripts/onset_sensitivity.py         # mid-horizon deterioration onset cohort; 20 seeds
+python scripts/stat_tests.py                # Friedman + Nemenyi, Wilcoxon (Holm) over seeds
+python scripts/label_diagnostics.py         # per-disease distribution of simulated p(death)
+python scripts/generate_results_figures.py
+```
+
+`run_all.py` additionally writes `results/counterfactual_delay_per_twin.csv`; all
+previously released `results/` files are unchanged byte-for-byte at seed 42.
+
 The canonical run uses seed 42 and a cohort of 1,000 digital twins: sepsis 400,
 ARDS 350, and ACS/cardiac 250. A seeded 60/20/20 permutation produces 600
 training, 200 calibration, and 200 held-out test cases. The driver pins numerical
