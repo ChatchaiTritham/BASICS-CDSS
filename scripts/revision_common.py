@@ -115,4 +115,20 @@ def summarise_drops(rows) -> "object":
                 drop_mean=("drop", "mean"), drop_sd=("drop", "std"),
                 n_seeds_drop_gt0=("drop", lambda v: int((v > 0).sum())))
            .reset_index())
+    if "auroc_within_group_mean" in df:
+        within = (df.pivot_table(index=["model", "kind", "input"], columns="regime",
+                                 values="auroc_within_group_mean", aggfunc="mean")
+                  .rename(columns={"static": "static_auroc_within_group_mean",
+                                   "temporal": "temporal_auroc_within_group_mean"})
+                  .reset_index())
+        out = out.merge(within, on=["model", "kind", "input"])
     return wide, out
+
+
+def summarise_file(metrics_csv: Path, summary_csv: Path) -> None:
+    """Rebuild a summary CSV from an existing metrics CSV (``--summarise-only``)."""
+    import pandas as pd
+
+    _, out = summarise_drops(pd.read_csv(metrics_csv).to_dict("records"))
+    out.to_csv(summary_csv, index=False)
+    print(out.round(3).to_string())
