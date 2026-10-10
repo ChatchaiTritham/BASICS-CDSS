@@ -226,35 +226,43 @@ def fig_conformal(prov: list) -> None:
 
 
 def fig_counterfactual_delay(prov: list) -> None:
+    """Mean mortality vs antibiotic delay with the 1-9 h and 9-18 h segment fits.
+
+    A single straight line over 1-18 h averages a rising segment and a plateau, so the
+    two segments are fitted separately; their slopes and the paired 18 h - 1 h effect
+    (with twin-bootstrap intervals) are read from results/counterfactual_segments.csv.
+    """
     df = pd.read_csv(_require("counterfactual_delay.csv"))
+    seg = pd.read_csv(_require("counterfactual_segments.csv")).set_index("quantity")
     x = df["antibiotic_delay_hours"].to_numpy(dtype=float)
     y = df["mortality_prob"].to_numpy(dtype=float)
     n = df["n_twins"].to_numpy(dtype=float)
     # 95% CI of the mean across the seeded twin cohort (paired re-simulation)
     ci = 1.96 * df["std_mortality_prob"].to_numpy(dtype=float) / np.sqrt(n)
-    slope, intercept = np.polyfit(x, y, 1)
-    yhat = slope * x + intercept
-    ss_res = float(((y - yhat) ** 2).sum())
-    ss_tot = float(((y - y.mean()) ** 2).sum())
-    r2 = 1.0 - ss_res / ss_tot
 
-    fig, ax = plt.subplots(figsize=(5.766, 3.6))
+    fig, ax = plt.subplots(figsize=(5.766, 3.4))
     ax.errorbar(
         x, y, yerr=ci,
-        marker="o", capsize=4, color=PALETTE[1], ecolor=PALETTE[6],
+        marker="o", capsize=4, color=PALETTE[1], ecolor=PALETTE[6], linestyle="none",
         elinewidth=0.9, label=r"Mean mortality probability $\pm$ 95% CI",
     )
-    ax.plot(x, yhat, linestyle="--", linewidth=1.2, color=PALETTE[6],
-            label=f"Linear fit: {slope * 100:.2f} pp/hour ($R^2$ = {r2:.2f})")
+    for (lo, hi, key, dash) in ((1, 9, "slope_1_9h_pp_per_hr", "--"),
+                                (9, 18, "slope_9_18h_pp_per_hr", ":")):
+        m = (x >= lo) & (x <= hi)
+        b1, b0 = np.polyfit(x[m], y[m], 1)
+        r = seg.loc[key]
+        ax.plot(x[m], b1 * x[m] + b0, linestyle=dash, linewidth=1.3, color=PALETTE[6],
+                label=(f"{lo}–{hi} h fit: {r.estimate:.2f} pp/h "
+                       f"[{r.ci_lo:.2f}, {r.ci_hi:.2f}]"))
     ax.set_xticks(x)
     ax.set_xticklabels([f"{v:g}" for v in x])
     ax.set_xlabel("Antibiotic delay (hours)")
     ax.set_ylabel("Simulated mortality probability")
-    ax.legend(loc="best")
+    ax.legend(loc="lower right")
     ax.grid(True)
     ax.set_axisbelow(True)
     png, pdf = _emit(fig, "fig_counterfactual_delay")
-    prov.append(("F-CF", png, pdf, "results/counterfactual_delay.csv"))
+    prov.append(("F-CF", png, pdf, "results/counterfactual_delay.csv; results/counterfactual_segments.csv"))
 
 
 def fig_robustness(prov: list) -> None:
@@ -264,7 +272,6 @@ def fig_robustness(prov: list) -> None:
     for the three noise families released with the package. Panel (b): held-out accuracy
     when observations are thinned to one every 1, 2 or 4 hours.
     """
-    noise = pd.read_csv(_require("noise_sensitivity.csv"))
     gaps = pd.read_csv(_require("masking_sweep.csv"))
     order = ["logistic_regression", "random_forest", "gradient_boosting",
              "xgboost", "lstm", "tcn"]
@@ -279,18 +286,23 @@ def fig_robustness(prov: list) -> None:
 
     fig, (ax_a, ax_b) = plt.subplots(1, 2, figsize=(5.766, 2.6))
 
-    dists = sorted(noise.noise_dist.unique())
-    primary = "gaussian" if "gaussian" in dists else dists[0]
-    sub = noise[noise.noise_dist == primary]
+    # Panel (a) averages 30 independent noise draws per point
+    # (results/noise_sensitivity_realisations.csv, scripts/noise_realisations.py);
+    # the clean AUROC is plotted at scale 0. Error bars are +/- 1 SD over draws.
+    real = pd.read_csv(_require("noise_sensitivity_realisations.csv"))
+    sub = real[real.noise_dist == "gaussian"]
     for model in order:
         g = sub[sub.model == model].sort_values("noise_scale")
         col, dash, mk = style[model]
-        ax_a.plot(g.noise_scale, g.auroc, color=col, linestyle=dash, linewidth=1.3,
-                  marker=mk, markersize=3.6, markerfacecolor="white", markeredgewidth=0.9,
-                  label=nice[model])
+        xs = [0.0] + list(g.noise_scale)
+        ys = [g.auroc_clean.iloc[0]] + list(g.auroc_mean)
+        es = [0.0] + list(g.auroc_sd)
+        ax_a.errorbar(xs, ys, yerr=es, color=col, linestyle=dash, linewidth=1.3,
+                      marker=mk, markersize=3.6, markerfacecolor="white",
+                      markeredgewidth=0.9, elinewidth=0.8, capsize=1.5, label=nice[model])
     ax_a.set_xlabel(r"Noise scale ($\times$ calibrated $\sigma$)")
     ax_a.set_ylabel("AUROC")
-    ax_a.set_xticks(sorted(sub.noise_scale.unique()))
+    ax_a.set_xticks([0.0] + sorted(sub.noise_scale.unique()))
     ax_a.text(0.0, 1.03, "(a)", transform=ax_a.transAxes, fontweight="bold")
 
     levels = sorted(gaps.gap_hours.unique())
@@ -311,7 +323,8 @@ def fig_robustness(prov: list) -> None:
                bbox_to_anchor=(0.5, -0.06), handlelength=1.6)
     fig.tight_layout()
     png, pdf = _emit(fig, "fig_robustness")
-    prov.append(("fig_robustness", png, pdf, "results/noise_sensitivity.csv; results/masking_sweep.csv"))
+    prov.append(("fig_robustness", png, pdf,
+                 "results/noise_sensitivity_realisations.csv; results/masking_sweep.csv"))
 
 
 def fig_multiseed(prov: list) -> None:
@@ -360,6 +373,49 @@ def fig_multiseed(prov: list) -> None:
     prov.append(("fig_multiseed", png, pdf, f"results/multiseed_metrics.csv ({n_seeds} seeds)"))
 
 
+def fig_input_control(prov: list) -> None:
+    """AUROC drop under degradation by family and input representation.
+
+    (a) canonical cohort (results/redundancy_control_summary.csv); (b) mid-horizon onset
+    cohort (results/onset_sensitivity_summary.csv). Mean +/- SD over seeds.
+    """
+    order = ["logistic_regression", "random_forest", "gradient_boosting",
+             "xgboost", "lstm", "tcn"]
+    nice = {"logistic_regression": "LR", "random_forest": "RF",
+            "gradient_boosting": "GB", "xgboost": "XGB", "lstm": "LSTM", "tcn": "TCN"}
+    variants = [("presentation", "t = 0 input only", "o", "#0072B2", -0.2),
+                ("window_flat", "12-h window input", "s", "#D55E00", 0.0),
+                ("window", "12-h window input", "s", "#D55E00", 0.0),
+                ("window_summary", "12-h window summary (tabular)", "^", "#009E73", 0.2)]
+    fig, axes = plt.subplots(1, 2, figsize=(5.766, 2.8), sharey=True)
+    for ax, fname, tag in ((axes[0], "redundancy_control_summary.csv", "(a) canonical cohort"),
+                           (axes[1], "onset_sensitivity_summary.csv", "(b) mid-horizon onset")):
+        d = pd.read_csv(_require(fname))
+        for inp, lab, mk, col, dx in variants:
+            g = d[d["input"] == inp].set_index("model")
+            ms = [m for m in order if m in g.index]
+            if not ms:
+                continue
+            ax.errorbar([order.index(m) + dx for m in ms], g.loc[ms, "drop_mean"],
+                        yerr=g.loc[ms, "drop_sd"], marker=mk, color=col, linestyle="none",
+                        markersize=4, capsize=2, elinewidth=0.8, label=lab)
+        ax.axhline(0, color="#777777", linewidth=0.7)
+        ax.axvline(3.5, color="#bbbbbb", linewidth=0.7, linestyle=":")
+        ax.set_xticks(range(len(order)), [nice[m] for m in order])
+        ax.text(0.0, 1.03, tag, transform=ax.transAxes, fontweight="bold")
+        ax.grid(True, axis="y")
+        ax.set_axisbelow(True)
+    axes[0].set_ylabel("AUROC drop (static − degraded)")
+    handles, labels = axes[0].get_legend_handles_labels()
+    uniq = dict(zip(labels, handles))
+    fig.legend(uniq.values(), uniq.keys(), loc="lower center", ncol=3, frameon=False,
+               bbox_to_anchor=(0.5, -0.08))
+    fig.tight_layout()
+    png, pdf = _emit(fig, "fig_input_control")
+    prov.append(("fig_input_control", png, pdf,
+                 "results/redundancy_control_summary.csv; results/onset_sensitivity_summary.csv"))
+
+
 def main() -> None:
     apply_pub_style()
     OUTDIR.mkdir(parents=True, exist_ok=True)
@@ -371,6 +427,7 @@ def main() -> None:
     fig_counterfactual_delay(prov)
     fig_robustness(prov)
     fig_multiseed(prov)
+    fig_input_control(prov)
 
     prov_path = OUTDIR / "figure_provenance.csv"
     with prov_path.open("w", newline="", encoding="utf-8") as handle:
