@@ -175,13 +175,20 @@ SEQUENCE_MODEL_FACTORIES = {
 }
 
 
-def _initial_state(disease: str, rng: np.random.RandomState) -> dict:
+def _initial_state(disease: str, rng: np.random.RandomState,
+                   force_worsening: bool | None = None) -> dict:
     """Sample a clinically plausible initial state per disease family.
 
     Two sub-populations are sampled per family (worsening vs. stable) so the
     derived outcome label is learnable rather than degenerate.
+
+    ``force_worsening`` (used only by the mid-horizon-onset sensitivity analysis)
+    overrides the sub-population draw; the draw is still consumed so the RNG
+    stream, and hence the canonical cohort, is unchanged when it is ``None``.
     """
     worsening = rng.random() < 0.4
+    if force_worsening is not None:
+        worsening = bool(force_worsening)
     if disease == "sepsis":
         if worsening:
             return {
@@ -1029,7 +1036,7 @@ def compute_counterfactual_alignment(df: pd.DataFrame, split: dict) -> pd.DataFr
     return pd.DataFrame(rows)
 
 
-def counterfactual_delay() -> pd.DataFrame:
+def counterfactual_delay(return_per_twin: bool = False):
     """Antibiotic-delay -> mortality trajectory using the committed simulator.
 
     Tests the manuscript's claim that earlier antibiotics reduce mortality. For
@@ -1068,6 +1075,7 @@ def counterfactual_delay() -> pd.DataFrame:
         inits.append(init)
 
     rows = []
+    per_twin = []  # one row per (twin, delay): lets downstream scripts compute paired CIs
     for delay in delays:
         harms = []
         damages = []
@@ -1091,6 +1099,9 @@ def counterfactual_delay() -> pd.DataFrame:
             harms.append(harm_fn(terminal))
             damages.append(terminal_d)
             mortalities.append(damage_to_mortality(terminal_d))
+            per_twin.append({"twin": i, "antibiotic_delay_hours": delay,
+                             "terminal_damage": float(terminal_d),
+                             "mortality_prob": float(mortalities[-1])})
         rows.append(
             {
                 "antibiotic_delay_hours": delay,
@@ -1117,6 +1128,8 @@ def counterfactual_delay() -> pd.DataFrame:
     r_squared = 1.0 - ss_res / ss_tot if ss_tot > 0 else 0.0
     df["slope_pp_per_hr"] = float(slope * 100.0)  # prob/hr -> percentage pts/hr
     df["r_squared"] = float(r_squared)
+    if return_per_twin:
+        return df, pd.DataFrame(per_twin)
     return df
 
 
@@ -1562,9 +1575,18 @@ def compute_bews(df: pd.DataFrame) -> pd.DataFrame:
                 dtype=float,
             )
         per_disease[disease].append((outcome, traj_bio))
+    return _bews_from_groups(per_disease, n_timesteps)
 
+
+def _bews_from_groups(per_disease: dict, n_timesteps: int) -> pd.DataFrame:
+    """BEWS rows from per-disease lists of (outcome, {biomarker: trajectory}).
+
+    Shared by ``compute_bews`` (canonical cohort) and the mid-horizon-onset
+    sensitivity analysis (scripts/onset_sensitivity.py), so both use the same
+    definition of D_j(tau), lead time and precision.
+    """
     rows = []
-    for disease in COHORT:
+    for disease in per_disease:
         twins = per_disease[disease]
         biomarkers = _DISEASE_BIOMARKERS[disease]
         failures = [tb for (o, tb) in twins if o == 1]
@@ -1699,8 +1721,9 @@ def main() -> None:
         frame.to_csv(RESULTS_DIR / f"{name}.csv", index=False)
 
     print("[3/6] Running counterfactual antibiotic-delay sweep...")
-    cf = counterfactual_delay()
+    cf, cf_twin = counterfactual_delay(return_per_twin=True)
     cf.to_csv(RESULTS_DIR / "counterfactual_delay.csv", index=False)
+    cf_twin.to_csv(RESULTS_DIR / "counterfactual_delay_per_twin.csv", index=False)
 
     print("[4/6] Computing novel temporal metrics (DBRS / TCB / TCS / TCE / BEWS)...")
     dbrs = compute_dbrs(cohort)
