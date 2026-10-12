@@ -1,0 +1,13 @@
+population,hour,n,theta_damage,frac_S_above_theta,frac_above_among_deaths,frac_above_among_survivors
+canonical_sepsis_untreated,3,400,0.2,0.7025,1.0,0.5765124555160143
+canonical_sepsis_untreated,6,400,0.2,0.73,1.0,0.6156583629893239
+canonical_sepsis_untreated,9,400,0.2,0.7425,1.0,0.6334519572953736
+canonical_sepsis_untreated,12,400,0.2,0.7675,1.0,0.6690391459074733
+canonical_sepsis_untreated,18,400,0.2,0.805,1.0,0.7224199288256228
+canonical_sepsis_untreated,24,400,0.2,0.825,1.0,0.7508896797153025
+delay_sweep_twins_treated_at_18h,3,120,0.2,1.0,,
+delay_sweep_twins_treated_at_18h,6,120,0.2,1.0,,
+delay_sweep_twins_treated_at_18h,9,120,0.2,1.0,,
+delay_sweep_twins_treated_at_18h,12,120,0.2,1.0,,
+delay_sweep_twins_treated_at_18h,18,120,0.2,1.0,,
+delay_sweep_twins_treated_at_18h,24,120,0.2,1.0,,

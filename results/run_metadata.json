@@ -21,9 +21,11 @@
     "lstm",
     "tcn"
   ],
+  "scikit_learn": "1.9.1",
+  "scipy": "1.18.1",
   "torch": "2.9.0+cpu",
   "xgboost": "3.1.1",
-  "note": "Metrics are computed from seeded digital-twin simulation using the committed package code only. All six manuscript model families are reproduced: LR / RF / GB / XGBoost are tabular models over the initial-state feature table; LSTM and TCN are genuine torch sequence models trained on the per-twin 12-hour observation window tensor (clean = static, per-timestep MCAR+noise = temporal), all seeded to 42. The counterfactual antibiotic-delay sweep now emits a calibrated mortality probability (mortality_prob), derived from the terminal cumulative organ-damage state D via a logistic link (damage_to_mortality, anchored to Kumar 2006, not tuned to any target). The reported slope_pp_per_hr and r_squared are computed with np.polyfit over the realised sweep, not hardcoded. Cohort is the manuscript design N=1000 (sepsis 400 / ARDS 350 / ACS 250); the seeded 60/20/20 split is train 600 / calibration 200 / test 200. Clinical-impact + robustness analyses are computed on the held-out test set: NNT (bootstrap 95% CI), number-needed-to-screen@0.30, fairness across a SYNTHETIC (fabricated, fairness-demo-only) group attribute, a Gaussian/Student-t(3) noise sweep, a contiguous temporal-masking sweep, and counterfactual alignment+regret. See REPRODUCIBILITY.md.",
+  "note": "Every value is computed by the committed code from a seeded simulation; nothing is typed in. Cohort: N=1000 digital twins (sepsis 400 / ARDS 350 / ACS 250), simulated WITHOUT any treatment over 24 h; the label is a simulated adverse outcome (Bernoulli draw from p(death) = logistic link of the terminal latent damage). Split 60/20/20 (train/calibration/test). Disease-disjoint features are imputed with training-split medians; the degraded regime uses training-split medians and SDs. Families: LR / RF / GB / XGBoost on the presentation state; LSTM / TCN on the first 12 h. Also written: oracle_metrics.csv (the simulator's own p(death) as a predictor), recalibration.csv (Platt / isotonic fitted on the calibration split), conformal.csv (marginal and Mondrian sets calibrated on clean data, tested on clean and degraded data), nns.csv (alert burden at p_t = 0.30), noise and masking sweeps, the antibiotic-delay sweep and counterfactual alignment (common random numbers). The NNT and synthetic-group fairness outputs of earlier versions were removed in v1.4.0. See REPRODUCIBILITY.md.",
   "cohort_design": {
     "N": 1000,
     "sepsis": 400,

@@ -1,40 +1,40 @@
 # Digital Twin Temporal Evaluation of Clinical Decision Support (BASICS-CDSS)
 
-> A seeded, CPU-only pipeline that stress-tests clinical risk models on simulated patient trajectories and shows where accuracy hides temporal failure that calibration, selective prediction, and decision-curve analysis expose.
+> A seeded, CPU-only stress-test harness that takes candidate clinical risk models through a mechanistic three-disease simulator and reports discrimination against an oracle, calibration before and after recalibration, selective-prediction risk, conformal coverage under degradation and net benefit, over repeated seeds and with input and onset controls.
 
-![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.10%2B-blue) ![Reproducible](https://img.shields.io/badge/reproducible-seed--42-success)
+![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.13.9%20(pinned)-blue) ![Reproducible](https://img.shields.io/badge/reproducible-seeded-success)
 
 ## Overview
 
-A model that scores well on a frozen retrospective split often disappoints at the bedside. The usual culprit is the evaluation itself: a single-timepoint test feeds the model complete, simultaneously available inputs, which is not how clinical data actually arrive, and it never asks whether a recommendation would have helped more had it been issued earlier. This repository takes a different route. It builds patient digital twins from mechanistic ODE/SDE disease models for sepsis, ARDS, and acute coronary syndrome, then evaluates ordinary scikit-learn classifiers on those trajectories under both clean and degraded data conditions.
+Clinical prediction models are usually compared on one discrimination figure computed on complete data. This repository simulates patients with three reduced mechanistic disease models (sepsis, ARDS, acute coronary syndrome), trains six model families on them and evaluates the families under clean and degraded data. Because the simulator knows every patient's true outcome probability, each family can be compared with an oracle, and perturbations and counterfactual treatment schedules can be applied to otherwise identical cohorts.
 
-The point of the simulator is mechanistic grounding rather than realism for its own sake. Because each twin's latent physiological state is known at every step, we can read off a ground-truth risk trajectory, run exact counterfactuals on intervention timing, and ablate one biomarker at a time without recruiting a single patient. That access is what lets the code measure things a static benchmark cannot — a trajectory-level calibration gap, the stability of a recommendation as data go missing, and the reliability of individual markers against a known answer.
+The simulated patients are **untreated**: the label is a *simulated 24-hour adverse outcome* drawn from each patient's latent damage, not clinical mortality. The simulator is not identified on patient data. Its results describe evaluation methods under controlled conditions; they are not clinical findings.
 
-What the code reports, it computes. All six model families the manuscript headlines are trained and scored end to end — four tabular (logistic regression, random forest, gradient boosting, XGBoost) on the initial-state feature table, and two sequence models (a torch LSTM and a dilated-Conv1d TCN) on the first 12 hours of each trajectory (the 24-hour outcome would otherwise leak from the terminal state) — all seeded to 42; nothing is typed in to match a target. The parts of the manuscript story the committed code still cannot regenerate (e.g. the calibrated mortality percentages) are documented rather than faked (see `REPRODUCIBILITY.md`).
+Every number is computed by the scripts in `scripts/` and written to `results/`; nothing is typed in.
 
-## Key results
+## Key results (release v1.4.0)
 
-All figures below are read from `results/` after `python scripts/run_all.py` at seed 42 (synthetic cohort N = 1,000: sepsis 400 / ARDS 350 / ACS 250; seeded 60/20/20 split → train 600 / calibration 200 / **test 200**). A complete claim-by-claim reconciliation against the manuscript lives in `RECONCILIATION_TABLE.md`.
+Cohort N = 1,000 (sepsis 400 / ARDS 350 / ACS 250), split 60/20/20 (train 600 / calibration 200 / test 200), 20 seeds (42–61).
 
-- **Twenty seeds (`scripts/multiseed.py`).** The static-AUROC leader is the best-calibrated family in only 2 of 20 seeds (mean Spearman between the two rankings 0.10). Gradient boosting, XGBoost and random forest lose AUROC under the degraded regime in 20/20 seeds (mean 0.079, 0.061, 0.046); the LSTM (0.006) and TCN (0.014) barely move.
-- **Seed 42.** Static AUROC: LR 0.916, RF 0.918, GB 0.916, XGBoost 0.905, LSTM 0.930, TCN 0.929, with overlapping bootstrap intervals (`scripts/bootstrap_ci.py`); temporal AUROC 0.902 / 0.875 / 0.846 / 0.822 / 0.923 / 0.912. Only the three tree ensembles have an AUROC loss whose interval excludes zero.
-- **Calibration does not follow discrimination.** Logistic regression is best calibrated (static ECE 0.050) while ranking fourth on AUROC; the LSTM and TCN, first and second on AUROC, have ECE 0.097 and 0.116.
-- **Selective prediction stays valid.** Split-conformal coverage meets its 95% target for every model (0.950–0.980) with average set size 1.30–1.64; every family has a positive static-to-temporal Brier gap (smallest 0.0009, LSTM, at ρ = 0.20).
-- **Tree models are NOT the noise-robust ones here.** Under 2× Gaussian noise the gradient-boosting/XGBoost AUROC degrades most (GB −0.13) while the LSTM/TCN sequence models are nearly flat (|Δ| ≤ 0.015) — refuting the intuition that trees tolerate noise better than neural nets on this trajectory task.
-- **Clinical-impact metrics are computed end to end.** NNT (with bootstrap 95% CI), number-needed-to-screen @ 0.30, decision-curve net benefit, fairness across a clearly-labelled *synthetic* group attribute, and counterfactual alignment/regret are all written to `results/*.csv`; see `RECONCILIATION_TABLE.md` for the verbatim numbers and where they refute the manuscript narrative.
-- **Counterfactual direction reproduces; magnitude is shallow.** The seeded antibiotic-delay sweep is monotone (mortality probability 0.354→0.390 across 1–18 h; slope 0.22 pp/h, R² = 0.81), far below the ~7.6%/h clinical estimate because the simulator's organ-damage state saturates within 24 h — reported honestly, not tuned.
-- **BEWS lead time saturates (caveat).** Failure status is fixed largely at presentation, so the early-warning lead time saturates near the 24 h horizon for most markers (precision range 0.59–0.90); we report it as exploratory rather than a graded lead-time claim.
+- **Discrimination vs the oracle** (`results/oracle_gap.csv`). Mean pooled static AUROC 0.919 (LR) to 0.942 (LSTM); oracle 0.954. Within disease the spread is 0.912–0.921 and logistic regression ranks first.
+- **Discrimination does not predict calibration** (`results/rank_agreement.csv`). The AUROC leader is the best-calibrated family in 2/20 seeds; chance expectation 3.3 (permutation test). After Platt recalibration on the calibration split: 3/20; isotonic: 1/20. Recalibration halves the ECE spread across families (0.066 → 0.036).
+- **Degradation** (20% MCAR + noise; `results/multiseed_summary.csv`). Mean AUROC drop: GB 0.080, XGB 0.065, RF 0.045, LR 0.029, TCN 0.011, LSTM 0.005.
+- **Input-redundancy control** (`results/redundancy_ratio.csv`). On the 12-hour window the tree ensembles' loss falls by 38–63%; a TCN given only the presentation state loses 0.048.
+- **Conformal coverage under degradation** (`results/multiseed_conformal_summary.csv`). 95% sets calibrated on clean data keep 0.934–0.964 marginal coverage on degraded data, but coverage among deaths is below 0.95 in most seeds for five of six families; Mondrian (class-conditional) calibration reduces the shortfall.
+- **Net benefit** over p_t = 0.10–0.40 (`results/decision_curve_range.csv`): every family beats treat-all/treat-none from 0.20 to 0.40; families are indistinguishable from one another; 46–55% of patients flagged at 0.30.
+- **Counterfactual timing** (`results/counterfactual_segments.csv`). Paired 18 h − 1 h effect 3.6 percentage points [3.1, 4.2]; slope 0.40 pp/h over 1–9 h, 0.03 over 9–18 h. Far below, and not comparable with, the clinical estimate.
+- **Simulator checks** (`results/dt_convergence.csv`, `results/severity_course.csv`, `results/sensitivity_summary.csv`). Step size: with noise off, 99.3% of labels unchanged between Δt = 1 h and 0.25 h. One-at-a-time ±50% changes of six parameters: the AUROC leader is the best-calibrated family in 0–4 of 10 seeds in 12 of 13 settings (6/10 in one); the LSTM loses ≤ 0.014 under degradation in every setting. At 9 h, 74% of untreated sepsis twins still accrue damage; in the delay sweep all 120 do at every checked hour.
 
 ## Repository structure
 
 ```
-src/basics_cdss/      package: temporal (digital twin, disease models, counterfactual),
-                      metrics, clinical_metrics, causal, xai, visualization, governance
-scripts/              run_all.py (driver) + generate_results_figures.py (figures from results/)
-results/              CSV/JSON written by run_all.py (the source of every reported number)
-figures/results/      figures rendered directly from results/*.csv (the only figures used for claims)
-figures/legacy/       archived illustrative artifacts (not used for headline claims)
-tests/                unit, smoke, and metric checks
+src/basics_cdss/      package: temporal (simulator, disease models, counterfactual), metrics,
+                      clinical_metrics, causal, xai, visualization, governance
+scripts/              run_all.py (seed-42 driver) and the analysis scripts listed below
+results/              CSV/JSON written by the scripts (the source of every reported number)
+figures/results/      figures rendered from results/*.csv
+figures/legacy/       archived illustrative artifacts (not used for any claim)
+tests/                unit, smoke and metric tests
 examples/             runnable demonstrations
 data/, evaluation/    placeholders; the cohort is generated, not loaded
 ```
@@ -45,41 +45,51 @@ data/, evaluation/    placeholders; the cohort is generated, not loaded
 git clone https://github.com/ChatchaiTritham/BASICS-CDSS.git
 cd BASICS-CDSS
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements-lock.txt                # pinned stack (Python 3.13.9)
 pip install -e .
 ```
 
 ## Reproducing the results
 
+Run the scripts in this order (or `bash scripts/run_revision.sh`, which runs them all and prints the wall time of each). Times are wall-clock on one core of a commodity Windows 11 x86-64 CPU, Python 3.13.9, pinned stack.
+
+| Step | Script | Writes | Time |
+|---|---|---|---|
+| 1 | `run_all.py` | seed-42 cohort, model metrics, calibration, recalibration, oracle, AURC, conformal, decision curve, harm, NNA, noise/gap sweeps, delay sweep, alignment, TCS/TCE/DBRS/TCB/BEWS | 2 min |
+| 2 | `multiseed.py` | `multiseed_*.csv` (20 seeds: metrics, oracle, recalibration, conformal) | 6 min |
+| 3 | `redundancy_control.py` | `redundancy_control_*.csv` | 7.5 min |
+| 4 | `onset_sensitivity.py` | `onset_sensitivity_*.csv` | 6 min |
+| 5 | `bootstrap_ci.py` | `bootstrap_ci.csv`, `decision_curve_range.csv` | 2 min |
+| 6 | `noise_realisations.py` | `noise_sensitivity_realisations.csv` | 0.5 min |
+| 7 | `counterfactual_segments.py` | `counterfactual_segments.csv` (needs step 1) | < 0.1 min |
+| 8 | `label_diagnostics.py` | `label_diagnostics.csv` (needs step 1) | < 0.1 min |
+| 9 | `simulator_checks.py` | `dt_convergence.csv`, `severity_course.csv` | 0.5 min |
+| 10 | `stat_tests.py` | `stat_friedman.csv`, `stat_pairwise.csv`, `rank_agreement.csv`, `oracle_gap.csv`, `redundancy_ratio.csv`, seed summaries (needs 2–4) | 5 min |
+| 11 | `sensitivity.py` | `sensitivity_*.csv` | 30 min |
+| 12 | `generate_results_figures.py`, `make_extra_figs.py` | `figures/results/*` | < 0.5 min |
+
 ```bash
-python scripts/run_all.py                  # seed 42; runs on a commodity CPU in minutes
-python scripts/generate_results_figures.py # renders figures/results/* from results/*.csv
-python -m pytest -q                        # 115 passed, 4 skipped
+python -m pytest -q    # 130 passed, 4 skipped (Python 3.13.9, pinned stack)
 ```
 
-`run_all.py` writes the cohort (`cohort.csv`, `cohort_summary.json`), the static-vs-temporal model table (`model_metrics.csv`, `calibration.csv`, `coverage_risk.csv`, `harm.csv`), the conformal and decision-curve outputs (`conformal.csv`, `decision_curve.csv`), the counterfactual sweep (`counterfactual_delay.csv`), the temporal constructs (`dbrs.csv`, `tcb.csv`, `temporal_consistency.csv`, `temporal_metrics.csv`, `bews.csv`), the clinical-impact + robustness analyses (`nnt.csv`, `nns.csv`, `fairness.csv`, `noise_sensitivity.csv`, `masking_sweep.csv`, `counterfactual_alignment.csv`), and a `summary.json` headline roll-up. The driver pins numerical-library thread counts to one before importing the scientific stack; with that in place, two runs from a clean checkout — even on different hosts — produce byte-identical files. The one stochastic path in the simulator (its unseeded `stochastic=False` branch) is avoided by the driver, which drives every twin on the seeded `stochastic=True` path.
+Numerical-library threads are pinned to one. On the pinned stack every result file is reproduced byte for byte. On other builds the tabular families reproduce exactly; the two PyTorch models can differ in the fourth decimal.
 
 ## Results and figures
 
-The honest, results-driven figure set lives in `figures/results/` and is regenerated by `generate_results_figures.py`, which reads only `results/*.csv` (provenance in `figures/results/figure_provenance.csv`):
+Figures are rendered only from `results/*.csv` (provenance in `figures/results/figure_provenance.csv`). The manuscript figures are `fig_multiseed`, `fig_robustness`, `fig_input_control`, `fig_riskcoverage_conformal`, `fig_decision_curve` and `fig_counterfactual_delay`.
 
-- `figures/results/fig_auroc_static_vs_temporal.png` — paired AUROC bars per model. Every bar drops from static to temporal; the gap is largest for LR and smallest for RF, the visual form of the discrimination decay.
-- `figures/results/fig_calibration_ece.png` — ECE by model and regime. All three rise under perturbation; RF's near-doubling against its top static AUROC is the leaderboard reversal at a glance.
-- `figures/results/fig_decision_curve.png` — net benefit at the 0.30 threshold vs. each model's maximum. LR leads at 0.30 despite the weakest AUROC, separating clinical utility from discrimination.
-- `figures/results/fig_conformal_coverage.png` — empirical vs. target conformal coverage. Markers sit on the 0.90/0.95 reference lines, confirming coverage validity under both regimes.
-- `figures/results/fig_counterfactual_delay.png` — terminal harm vs. antibiotic delay over 120 seeded sepsis twins. The curve rises monotonically then flattens, the saturation that makes the fitted slope shallow.
-
-The earlier hardcoded figure scripts (`generate_baseline_metrics.py`, `generate_paper1_figures*.py`) and the curated `figures/manuscript/` set they fed have been removed: they baked in display literals (including XGBoost/LSTM/TCN AUROC values of 0.873/0.891/0.887) over runtime-synthesised inputs. Those three models are now genuinely trained by `run_all.py` (XGBoost on the tabular features; LSTM and TCN as torch sequence models over the trajectory tensor), so their rows are computed rather than typed in — and the computed values differ from those literals (at the canonical N = 1,000, TCN has the highest static AUROC and LSTM the lowest; see `REPRODUCIBILITY.md` and `RECONCILIATION_TABLE.md`). Only `figures/results/`, rendered from `results/*.csv`, is used for any claim.
+Earlier versions of this repository wrote an NNT table and fairness metrics over a fabricated synthetic group attribute. Neither was reported in the manuscript; both were removed in v1.4.0 so that every output file is described in the paper.
 
 ## Data
 
-No human subjects and no real patient records are used, so no IRB approval is required. The cohort is generated: 1,000 digital twins (sepsis 400, ARDS 350, ACS 250) evolved over a 24-hour horizon by the committed ODE/SDE disease models, split 60/20/20 (train 600 / calibration 200 / test 200) at seed 42. The binary mortality label comes from each twin's terminal cumulative-damage state, mapped through a literature-anchored logistic link and realised as a seeded Bernoulli draw, which keeps the task learnable but not perfectly separable. The realised prevalence (reported, not targeted) is 29.8% sepsis, 56.6% ARDS, 27.2% cardiac (overall 38.5%). The cohort also carries a clearly-labelled **synthetic** `synthetic_group` attribute used only to demonstrate the fairness metrics — it is fabricated and carries no clinical meaning (see `REPRODUCIBILITY.md`).
+No human subjects and no real patient records are used, so no IRB approval is required. The cohort is generated: 1,000 digital twins (sepsis 400, ARDS 350, ACS 250) evolved over a 24-hour horizon by the committed ODE/SDE disease models, split 60/20/20 (train 600 / calibration 200 / test 200) at seed 42. The twins receive no treatment. The binary label (a simulated 24-hour adverse outcome, not clinical mortality) comes from each twin's terminal cumulative-damage state, mapped through a logistic link and realised as a seeded Bernoulli draw; the twin's probability is kept as the oracle risk. The realised prevalence (reported, not targeted) is 29.8% sepsis, 56.6% ARDS, 27.2% ACS (overall 38.5%).
 
 ## Dataset information
 
 No external or clinical dataset is distributed or required. All data are produced by the digital-twin
 simulator at seed 42: 1,000 twins over a 24-hour horizon at one-hour resolution, distributed across
 sepsis (n = 400), acute respiratory distress syndrome (n = 350) and acute coronary syndrome (n = 250),
-each generated from mechanistic ordinary/stochastic differential equation models. Two splits are
+each generated by reduced first-order difference-equation models with additive noise (explicit Euler step, Δt = 1 h). Two splits are
 produced from the same twins: a clean split and a degraded split with per-timestep
 missing-completely-at-random masking and additive noise. The committed outputs of a seeded run are the
 tables in `results/` (including `summary.json`, `cohort_summary.json` and `run_metadata.json`, which
@@ -96,10 +106,10 @@ records the exact interpreter and library versions). `data/` and `models/` are p
 
 ## Requirements
 
-Python 3.9 or newer, no GPU required. Runtime dependencies: NumPy, pandas, SciPy, scikit-learn,
+Python 3.10 or newer, no GPU required (results pinned to CPython 3.13.9). Runtime dependencies: NumPy, pandas, SciPy, scikit-learn,
 XGBoost (≥ 2.0), PyTorch (≥ 2.0, CPU build is sufficient), Matplotlib, Seaborn, PyYAML, tqdm and
 Pydantic (≥ 2); see `requirements.txt`. The reported results were produced with CPython 3.13.9,
-NumPy 2.2.6, pandas 2.3.3, scikit-learn 1.9.1, XGBoost 3.1.1 and PyTorch 2.9.0+cpu (pinned in `requirements-lock.txt`), as recorded in
+NumPy 2.2.6, pandas 2.3.3, scikit-learn 1.9.1, SciPy 1.18.1, XGBoost 3.1.1 and PyTorch 2.9.0+cpu (pinned in `requirements-lock.txt`), as recorded in
 `results/run_metadata.json`. `Dockerfile` / `docker-compose.yml` reproduce that stack.
 
 ## Methodology
@@ -107,22 +117,24 @@ NumPy 2.2.6, pandas 2.3.3, scikit-learn 1.9.1, XGBoost 3.1.1 and PyTorch 2.9.0+c
 1. Simulate the seeded twin cohort from the mechanistic disease models.
 2. Build two evaluation splits from the same twins: clean, and degraded by per-timestep
    missing-completely-at-random masking plus additive noise.
-3. Preprocess: impute disease-disjoint missing features with the cohort-wide column median;
-   standardise features inside the logistic-regression pipeline; feed sequence models the per-twin
-   24-hour tensor with the same imputation. No feature selection or resampling is performed.
-4. Train and evaluate six model families (logistic regression, random forest, gradient boosting,
-   XGBoost, long short-term memory network, temporal convolutional network) with a seeded stratified
-   split.
-5. Compute static and temporal metrics, the Digital Biomarker Reliability Score, the Temporal
-   Coverage Bound, conformal coverage, risk-coverage curves and decision-curve net benefit, plus the
-   counterfactual antibiotic-delay sweep.
+3. Preprocess: split 60/20/20 by a seeded permutation (not stratified); impute disease-disjoint
+   missing features with medians of the training split only; standardise features inside the
+   logistic-regression pipeline; feed sequence models the first 12 hours (13 steps) with the same
+   imputation. No feature selection or resampling is performed.
+4. Train six model families (logistic regression, random forest, gradient boosting, XGBoost, LSTM,
+   TCN) with fixed, untuned settings.
+5. Compute AUROC (pooled and within disease), ECE (10 equal-width bins), calibration slope and
+   intercept, Platt/isotonic recalibration on the calibration split, AURC (confidence max(p, 1-p),
+   0-1 loss), split-conformal coverage (marginal and Mondrian; clean and degraded test data; overall
+   and among deaths), net benefit over p_t = 0.10-0.40, the oracle, DBRS, TCS, and the counterfactual
+   delay sweep and action alignment (common random numbers).
 6. Write all tables to `results/` and redraw the figures from those tables.
 
 ## Usage instructions
 
 ```bash
 pip install -e .            # install the package
-python scripts/run_all.py   # regenerate every table in results/ (seed 42)
+bash scripts/run_revision.sh  # every script in run order (see table above)
 pytest -q                   # run the test suite
 ```
 
@@ -132,8 +144,8 @@ pytest -q                   # run the test suite
 @article{tritham_basics_cdss,
   title   = {Digital Twin Simulation for Temporal Evaluation of Clinical Decision Support Systems},
   author  = {Tritham, Chatchai and Snae Namahoot, Chakkrit},
-  journal = {Neural Computing and Applications},
-  note    = {to appear},
+  journal = {PeerJ Computer Science},
+  note    = {under review; code release v1.4.0},
   year    = {2026}
 }
 ```
@@ -173,7 +185,7 @@ What belongs to **this** study is the driver, the computed results and the figur
 
 - `scripts/run_all.py` — seeded driver
 - `results/` — the computed metric tables
-- `RECONCILIATION_TABLE.md` — claim-by-claim map to the computed values
+- `RECONCILIATION_TABLE.md` — historical audit of the first manuscript version (superseded)
 
 Anything under `src/basics_cdss/` that this study does not exercise is inherited from the
 shared package and is not part of the results reported here.
