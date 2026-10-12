@@ -14,7 +14,9 @@ static/temporal regimes of ``run_all.evaluate_models``:
     presentation    the t=0 step only (a length-1 sequence)
 
 Degradation is the canonical 20% MCAR + additive Gaussian noise (SD = 0.1 x feature
-SD) with median imputation. Window inputs are degraded per timestep with
+SD) with median imputation; medians and SDs come from the training split, and the
+disease-disjoint missing features of ``X`` / ``X_seq`` (passed in with NaNs) are imputed
+with training-split medians only. Window inputs are degraded per timestep with
 ``run_all._degrade_sequence`` (the exact tensor the sequence models see), so the
 window_flat / window_summary tabular controls receive the same redundant,
 independently masked observations as the sequence models. The presentation inputs
@@ -53,16 +55,17 @@ def evaluate_inputs(X: np.ndarray, X_seq: np.ndarray, y: np.ndarray, seed: int,
     within-group AUROCs, which removes discrimination that comes only from
     between-group differences in base rate."""
     run_all.SEED = seed  # factories read the module global at call time
-    rng = np.random.RandomState(seed)
-    n = len(y)
-    idx = rng.permutation(n)
-    tr, te = idx[: int(0.6 * n)], idx[int(0.6 * n) + int(0.2 * n):]
+    tr, _, te = run_all.split_indices(len(y))
+    X = run_all.impute_table(X, tr)
+    X_seq = run_all.impute_tensor(X_seq, tr)
     y_tr, y_te = y[tr], y[te]
     g_te = None if groups is None else np.asarray(groups)[te]
 
-    X_te_t = run_all._degrade(X[te], np.random.RandomState(seed + 1))
-    Xs_te_t = run_all._degrade_sequence(X_seq[te], np.random.RandomState(seed + 2))
-    Xs0_te_t = run_all._degrade_sequence(X_seq[te][:, :1, :], np.random.RandomState(seed + 2))
+    X_te_t = run_all._degrade(X[te], np.random.RandomState(seed + 1), ref=X[tr])
+    Xs_te_t = run_all._degrade_sequence(X_seq[te], np.random.RandomState(seed + 2),
+                                        ref=X_seq[tr])
+    Xs0_te_t = run_all._degrade_sequence(X_seq[te][:, :1, :], np.random.RandomState(seed + 2),
+                                         ref=X_seq[tr][:, :1, :])
 
     conds = []
     for name, factory in run_all.MODEL_FACTORIES.items():

@@ -273,3 +273,45 @@ def calibration_summary(
         )
 
     return summary
+
+
+def _logit(p: np.ndarray, eps: float = 1e-6) -> np.ndarray:
+    p = np.clip(np.asarray(p, dtype=float), eps, 1.0 - eps)
+    return np.log(p / (1.0 - p))
+
+
+def _logistic_irls(X: np.ndarray, y: np.ndarray, offset: np.ndarray,
+                   n_iter: int = 100, tol: float = 1e-10) -> np.ndarray:
+    """Unpenalised logistic regression by Newton-Raphson (IRLS) with an offset."""
+    beta = np.zeros(X.shape[1])
+    for _ in range(n_iter):
+        eta = X @ beta + offset
+        mu = 1.0 / (1.0 + np.exp(-eta))
+        w = np.clip(mu * (1.0 - mu), 1e-12, None)
+        grad = X.T @ (y - mu)
+        hess = X.T @ (X * w[:, None])
+        step = np.linalg.solve(hess + 1e-10 * np.eye(X.shape[1]), grad)
+        beta = beta + step
+        if np.max(np.abs(step)) < tol:
+            break
+    return beta
+
+
+def calibration_slope_intercept(y_true: np.ndarray, y_prob: np.ndarray) -> Tuple[float, float]:
+    """Weak-calibration summary (Van Calster et al., 2019 hierarchy).
+
+    * calibration slope: coefficient b in logit P(Y=1) = a + b * logit(p)
+      (ideal 1; < 1 means predictions are too extreme);
+    * calibration intercept (calibration-in-the-large): a in
+      logit P(Y=1) = a + offset(logit(p)) (ideal 0; > 0 means risks are
+      underestimated on average).
+
+    Both are unpenalised maximum-likelihood fits. Probabilities are clipped to
+    [1e-6, 1 - 1e-6] before the logit transform.
+    """
+    y = np.asarray(y_true, dtype=float)
+    lp = _logit(y_prob)
+    ones = np.ones_like(lp)
+    slope = _logistic_irls(np.column_stack([ones, lp]), y, np.zeros_like(lp))[1]
+    intercept = _logistic_irls(ones[:, None], y, lp)[0]
+    return float(slope), float(intercept)

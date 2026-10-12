@@ -1,10 +1,11 @@
 # Calibration metrics
 from .calibration import (CalibrationMetrics, brier_score, calibration_summary,
+                          calibration_slope_intercept,
                           expected_calibration_error, reliability_curve,
                           stratified_calibration_metrics)
 # Coverage-risk metrics
 from .coverage_risk import (SelectivePredictionMetrics, abstention_rate,
-                            area_under_risk_coverage_curve,
+                            area_under_risk_coverage_curve, aurc_confidence,
                             coverage_risk_curve, selective_prediction_metrics,
                             stratified_selective_metrics)
 # Harm-aware metrics
@@ -29,11 +30,13 @@ __all__ = [
     "reliability_curve",
     "stratified_calibration_metrics",
     "calibration_summary",
+    "calibration_slope_intercept",
     # Coverage-Risk
     "SelectivePredictionMetrics",
     "coverage_risk_curve",
     "area_under_risk_coverage_curve",
     "selective_prediction_metrics",
+    "aurc_confidence",
     "abstention_rate",
     "stratified_selective_metrics",
     # Harm-aware

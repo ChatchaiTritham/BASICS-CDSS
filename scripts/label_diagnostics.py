@@ -1,6 +1,6 @@
 """Per-disease distribution of the simulated mortality probability (results/cohort.csv).
 
-Explains the 0.0 'control event rate' in results/nnt.csv for sepsis: it reports how many
+Characterises the label generator: per disease, how many
 twins the generator assigns a near-zero death probability (< 0.05) and how many of them
 died. A predicted-low-risk group drawn from these twins has no events by construction.
 

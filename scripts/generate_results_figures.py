@@ -125,8 +125,8 @@ def fig_decision_curve(prov: list) -> None:
     """
     series = pd.read_csv(_require("decision_curve_series.csv"))
     summary = pd.read_csv(_require("decision_curve.csv"))
-    prevalence = float(pd.read_csv(_require("decision_curve_prevalence.csv"))["prevalence"].iloc[0]) \
-        if (results_dir() / "decision_curve_prevalence.csv").exists() else 0.40
+    # Test-fold prevalence, written by scripts/bootstrap_ci.py (never typed in).
+    prevalence = float(pd.read_csv(_require("decision_curve_range.csv"))["prevalence"].iloc[0])
 
     order = ["logistic_regression", "gradient_boosting", "random_forest",
              "tcn", "xgboost", "lstm"]
@@ -164,14 +164,14 @@ def fig_decision_curve(prov: list) -> None:
     ax.axhline(0.0, linestyle=(0, (1, 2)), linewidth=1.1, color="#1A1A1A",
                label="Treat none", zorder=3)
 
-    marker_t = float(series.threshold.iloc[(series.threshold - 0.30).abs().argmin()])
-    ax.axvline(marker_t, color="#888888", linewidth=0.8, zorder=2)
-    ax.annotate("threshold 0.30", xy=(marker_t, 0.40), xytext=(marker_t + 0.03, 0.40),
-                fontsize=8, color="#1A1A1A", va="center")
+    # Pre-specified threshold range of the analysis (0.10-0.40), shaded.
+    ax.axvspan(0.10, 0.40, color="#EDEDED", zorder=0, linewidth=0)
+    ax.annotate("pre-specified range 0.10–0.40", xy=(0.25, 0.43), ha="center",
+                fontsize=7.5, color="#1A1A1A", va="center")
 
     ax.set_xlabel("Risk threshold")
     ax.set_ylabel("Net benefit (true positives per patient)")
-    ax.set_xlim(0.0, 0.8)
+    ax.set_xlim(0.0, 0.6)
     ax.set_ylim(-0.05, 0.45)
     ax.legend(loc="upper right", frameon=False, ncol=2, fontsize=8)
     ax.grid(True, linewidth=0.4, alpha=0.35)
@@ -182,6 +182,7 @@ def fig_decision_curve(prov: list) -> None:
 
 def fig_conformal(prov: list) -> None:
     df = pd.read_csv(_require("conformal.csv"))
+    df = df[(df["method"] == "marginal") & (df["regime"] == "static")]
     # n_test per model backs the binomial (Wilson) CI on empirical coverage;
     # read from the computed metrics table, never hardcoded.
     metrics = pd.read_csv(_require("model_metrics.csv"))

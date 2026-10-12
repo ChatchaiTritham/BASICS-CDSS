@@ -46,7 +46,7 @@ def main() -> None:
         cohort = run_all.build_cohort()
         X = cohort[run_all._FEATURE_COLUMNS].to_numpy(dtype=float)
         y = cohort["outcome"].to_numpy(dtype=int)
-        X_seq = run_all.build_trajectory_tensor(cohort)
+        X_seq = run_all.build_trajectory_tensor(cohort)  # NaNs kept; imputed on train
         rows += rc.evaluate_inputs(X, X_seq, y, seed, groups=cohort["disease"].to_numpy())
 
     res = run_all.RESULTS_DIR
