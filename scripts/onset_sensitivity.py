@@ -58,7 +58,10 @@ class _OnsetInsult(DiseaseModel):
 
 
 def build_onset_cohort(seed: int):
-    """Return (X, X_seq, y, meta_df, per_disease_full_trajectories)."""
+    """Return (X, X_seq, y, meta_df, per_disease_full_trajectories, n_full).
+
+    ``X`` and ``X_seq`` keep NaN for disease-disjoint features; ``evaluate_inputs``
+    imputes them with training-split medians."""
     rng = np.random.RandomState(seed)
     onset_rng = np.random.RandomState(seed + 31337)
     label_rng = np.random.RandomState(seed + 7919)
@@ -93,12 +96,7 @@ def build_onset_cohort(seed: int):
                 for b in run_all._DISEASE_BIOMARKERS[disease]}))
 
     df = pd.DataFrame(rows)
-    df[cols] = df[cols].fillna(df[cols].median(numeric_only=True))
-    X_seq = np.stack(seqs)
-    for j in range(X_seq.shape[2]):  # same imputation as build_trajectory_tensor
-        col = X_seq[:, :, j]
-        med = np.nanmedian(col)
-        col[np.isnan(col)] = 0.0 if np.isnan(med) else med
+    X_seq = np.stack(seqs)  # NaNs kept; imputed with training medians downstream
     return (df[cols].to_numpy(dtype=float), X_seq, df["outcome"].to_numpy(dtype=int),
             df, per_disease, n_full)
 

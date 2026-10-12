@@ -29,6 +29,8 @@ def main() -> None:
     te = split["te"]
     y = split["y"][te]
     X_te, Xs_te = split["X"][te], split["X_seq"][te]
+    tr = split["tr"]
+    X_tr, Xs_tr = split["X"][tr], split["X_seq"][tr]
     rows = []
     for dist in ("gaussian", "t3"):
         for scale in (1.0, 2.0, 3.0):
@@ -39,10 +41,11 @@ def main() -> None:
                     rng = np.random.RandomState(run_all.SEED + 100_000 + 1_000 * r
                                                 + int(scale * 10) + (0 if dist == "gaussian" else 500))
                     if kind == "tabular":
-                        Xp = run_all._add_noise(X_te, rng, scale, dist)
+                        Xp = run_all._add_noise(X_te, rng, scale, dist, ref=X_tr)
                     else:
                         n, T, d = Xs_te.shape
-                        Xp = run_all._add_noise(Xs_te.reshape(-1, d), rng, scale, dist).reshape(n, T, d)
+                        Xp = run_all._add_noise(Xs_te.reshape(-1, d), rng, scale, dist,
+                                                ref=Xs_tr.reshape(-1, d)).reshape(n, T, d)
                     aucs.append(float(roc_auc_score(y, model.predict_proba(Xp)[:, 1])))
                 a = np.array(aucs)
                 rows.append({"model": name, "kind": kind, "noise_dist": dist, "noise_scale": scale,

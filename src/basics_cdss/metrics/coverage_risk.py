@@ -313,3 +313,36 @@ def stratified_selective_metrics(
         stratified_metrics[str(tier)] = metrics
 
     return stratified_metrics
+
+
+def aurc_confidence(
+    y_true: np.ndarray,
+    y_prob: np.ndarray,
+    target_coverage: float = 0.8,
+    decision_threshold: float = DEFAULT_CONFIDENCE_ACCEPTANCE_THRESHOLD,
+) -> Tuple[float, float]:
+    """Exact area under the risk-coverage curve for a binary classifier.
+
+    Follows the selective-classification definition of Geifman and El-Yaniv
+    (2017): the confidence of a prediction is the probability of the predicted
+    class, ``max(p, 1 - p)`` (softmax response), and the risk is the 0-1 loss of
+    the prediction ``1[p >= decision_threshold]``. Cases are ranked by decreasing
+    confidence (ties keep input order); for every coverage k/n the selective risk
+    is the error rate among the k most confident cases, and
+
+        AURC = (1/n) * sum_{k=1..n} risk(k/n).
+
+    Returns ``(aurc, risk_at_target_coverage)`` where the second value is the
+    selective risk among the ceil(target_coverage * n) most confident cases.
+    """
+    y = np.asarray(y_true, dtype=float)
+    p = np.asarray(y_prob, dtype=float)
+    n = len(y)
+    if n == 0:
+        return EMPTY_METRIC_VALUE, EMPTY_METRIC_VALUE
+    conf = np.maximum(p, 1.0 - p)
+    err = ((p >= decision_threshold).astype(float) != y).astype(float)
+    order = np.argsort(-conf, kind="mergesort")
+    risk = np.cumsum(err[order]) / np.arange(1, n + 1)
+    k = int(np.ceil(target_coverage * n))
+    return float(risk.mean()), float(risk[max(k, 1) - 1])

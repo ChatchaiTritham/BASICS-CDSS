@@ -10,6 +10,9 @@ call time, so each seed reproduces the pipeline exactly as ``run_all.main`` woul
 
 Outputs
   results/multiseed_metrics.csv   one row per (seed, model, regime)
+  results/multiseed_oracle.csv    the simulator's own p(death) scored per seed (oracle)
+  results/multiseed_recalibration.csv  Platt / isotonic recalibration per (seed, model, regime)
+  results/multiseed_conformal.csv marginal / Mondrian conformal coverage, clean and degraded
   results/multiseed_summary.csv   mean / sd / 2.5-97.5 percentile per (model, regime, metric)
   results/multiseed_ranks.csv     per-seed rank of each model, per metric
 
@@ -30,15 +33,21 @@ sys.path.insert(0, str(REPO / "scripts"))
 
 import run_all  # noqa: E402
 
-METRICS = ["auroc", "auprc", "accuracy", "ece", "brier"]
+METRICS = ["auroc", "auroc_within_disease", "auprc", "accuracy", "ece", "brier",
+           "cal_slope", "cal_intercept"]
+EXTRA = ("oracle_metrics", "recalibration", "conformal")
 
 
-def run_seed(seed: int) -> pd.DataFrame:
+def run_seed(seed: int) -> dict:
     run_all.SEED = seed
     np.random.seed(seed)
     cohort = run_all.build_cohort()
-    out = run_all.evaluate_models(cohort)["model_metrics"].copy()
-    out.insert(0, "seed", seed)
+    res = run_all.evaluate_models(cohort)
+    out = {}
+    for key in ("model_metrics",) + EXTRA:
+        frame = res[key].copy()
+        frame.insert(0, "seed", seed)
+        out[key] = frame
     return out
 
 
@@ -48,15 +57,21 @@ def main() -> None:
     ap.add_argument("--start", type=int, default=42)
     args = ap.parse_args()
 
-    frames = []
+    per_seed = []
     for k in range(args.seeds):
         seed = args.start + k
         print(f"[seed {seed}] ({k + 1}/{args.seeds})", flush=True)
-        frames.append(run_seed(seed))
-    rows = pd.concat(frames, ignore_index=True)
+        per_seed.append(run_seed(seed))
+    rows = pd.concat([d["model_metrics"] for d in per_seed], ignore_index=True)
 
     res = REPO / "results"
     rows.to_csv(res / "multiseed_metrics.csv", index=False)
+    pd.concat([d["oracle_metrics"] for d in per_seed], ignore_index=True).to_csv(
+        res / "multiseed_oracle.csv", index=False)
+    pd.concat([d["recalibration"] for d in per_seed], ignore_index=True).to_csv(
+        res / "multiseed_recalibration.csv", index=False)
+    pd.concat([d["conformal"] for d in per_seed], ignore_index=True).to_csv(
+        res / "multiseed_conformal.csv", index=False)
 
     recs = []
     for (model, regime), g in rows.groupby(["model", "regime"]):
@@ -79,6 +94,8 @@ def main() -> None:
         for m in METRICS:
             if m not in g:
                 continue
+            if m in ("cal_slope", "cal_intercept"):
+                continue  # ideal is 1 / 0, not an extreme; not ranked
             asc = m in ("ece", "brier")  # lower is better
             order = g.sort_values(m, ascending=asc)["model"].tolist()
             for pos, model in enumerate(order, start=1):

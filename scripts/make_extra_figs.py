@@ -1,6 +1,6 @@
 """Additional manuscript figures drawn from the released BASICS-CDSS result tables.
 
-Reads results/coverage_risk.csv and results/conformal.csv from the repository; no value is typed in
+Reads results/coverage_risk.csv and results/multiseed_conformal.csv from the repository; no value is typed in
 by hand. Output: figures/results/fig_riskcoverage_conformal.pdf (PeerJ text-block width).
 
 Usage: python make_extra_figs.py [path/to/BASICS-CDSS/results]
@@ -40,9 +40,8 @@ def rows(name):
 cov = {(r["model"], r["regime"]): float(r["aurc"]) for r in rows("coverage_risk.csv")}
 regimes = sorted({k[1] for k in cov})
 print("regimes:", regimes)
-conf = {r["model"]: r for r in rows("conformal.csv")}
 
-fig, (a, b) = plt.subplots(2, 1, figsize=(5.75, 4.6), constrained_layout=True)
+fig, (a, b) = plt.subplots(2, 1, figsize=(5.75, 5.0), constrained_layout=True)
 x = range(len(ORDER))
 w = 0.38
 for j, (reg, col) in enumerate(zip(regimes, (BLUE, ORANGE))):
@@ -60,40 +59,39 @@ for j, reg in enumerate(regimes):
 a.set_ylim(0, max(cov.values()) * 1.18)
 a.text(-0.02, 1.02, "(a)", transform=a.transAxes, ha="right", va="bottom", fontweight="bold", fontsize=9)
 
-emp = [float(conf[m]["empirical_coverage"]) for m in ORDER]
-size = [float(conf[m]["avg_set_size"]) for m in ORDER]
-target = float(conf[ORDER[0]]["target_coverage"])
-print("conformal", dict(zip(ORDER, zip(emp, size))), "target", target)
-
-# Coverage is a proportion over the held-out fold, so draw its Wilson 95% interval
-# (n_test is read from the released metrics table, never typed in).
-n_test = int(float(next(r for r in rows("model_metrics.csv") if r.get("n_test"))["n_test"]))
-
-
-def wilson(p, n, z=1.96):
-    d = 1 + z * z / n
-    c = (p + z * z / (2 * n)) / d
-    h = z * (p * (1 - p) / n + z * z / (4 * n * n)) ** 0.5 / d
-    return c - h, c + h
-
-
-err = [[e - wilson(e, n_test)[0] for e in emp], [wilson(e, n_test)[1] - e for e in emp]]
-b.axhspan(target, 1.045, color="#e8f3ec", zorder=0, label="at or above nominal target")
-b.axhline(target, color="#444444", ls="--", lw=0.8, zorder=1, label=f"nominal target {target:.2f}")
-# Point estimate with interval (not bars): a truncated bar axis would exaggerate small differences.
-b.errorbar(list(x), emp, yerr=err, fmt="o", color=BLUE, ecolor="#222222", elinewidth=0.9,
-           capsize=3, markersize=5, markeredgecolor="black", markeredgewidth=0.4, zorder=2)
-for p, (e, sz) in enumerate(zip(emp, size)):
-    b.text(p, 0.9025, f"$|C|$={sz:.2f}", ha="center", va="bottom", fontsize=6.8, color="#222222")
-    b.text(p + 0.14, e, f"{e:.3f}", ha="left", va="center", fontsize=6.8, color="#222222",
-           bbox={"facecolor": "white", "edgecolor": "none", "pad": 0.6, "alpha": 0.85}, zorder=3)
-b.set_xlim(-0.5, len(ORDER) - 0.3)
-b.legend(loc="upper center", ncol=2, frameon=False, fontsize=6.8, handlelength=1.4)
+# Panel (b): 95% split-conformal coverage over the 20 seeds (multiseed_conformal.csv).
+# Sets are calibrated on the clean calibration split; coverage is measured on the
+# clean and on the degraded test split, overall and among deaths, for the marginal
+# and the class-conditional (Mondrian) procedure. Point = mean over seeds,
+# bar = min-max over seeds.
+mc = list(csv.DictReader(open(RES / "multiseed_conformal.csv", encoding="utf-8")))
+series = [("marginal", "static", "empirical_coverage", "Marginal, clean: all", "o", BLUE),
+          ("marginal", "temporal", "empirical_coverage", "Marginal, degraded: all", "s", ORANGE),
+          ("marginal", "temporal", "coverage_deaths", "Marginal, degraded: deaths", "v", "#D55E00"),
+          ("mondrian", "temporal", "coverage_deaths", "Mondrian, degraded: deaths", "^", "#009E73")]
+target = 0.95
+offs = [-0.27, -0.09, 0.09, 0.27]
+lo_all = 1.0
+for (meth, reg, col, lab, mk, colr), dx in zip(series, offs):
+    means, los, his = [], [], []
+    for m in ORDER:
+        v = [float(r[col]) for r in mc if r["model"] == m and r["method"] == meth
+             and r["regime"] == reg and abs(float(r["target_coverage"]) - target) < 1e-9]
+        means.append(sum(v) / len(v)); los.append(min(v)); his.append(max(v))
+    lo_all = min(lo_all, min(los))
+    print("conformal", meth, reg, col, [round(x, 3) for x in means])
+    b.errorbar([p + dx for p in x], means, yerr=[[a - c for a, c in zip(means, los)],
+               [c - a for a, c in zip(means, his)]], fmt=mk, color=colr, ecolor=colr,
+               elinewidth=0.8, capsize=1.8, markersize=4, markeredgecolor="black",
+               markeredgewidth=0.3, label=lab)
+b.axhline(target, color="#444444", ls="--", lw=0.8, zorder=1)
 b.set_xticks(list(x), [LABEL[m] for m in ORDER])
-b.set_ylim(0.90, 1.045)
-b.set_ylabel("Empirical coverage")
+b.set_ylim(max(0.0, lo_all - 0.03), 1.04)
+b.set_ylabel("Coverage at 95% target")
+b.legend(loc="upper center", bbox_to_anchor=(0.5, -0.12), ncol=4, frameon=False, fontsize=6.5, handlelength=1.0, columnspacing=0.8)
 b.text(-0.02, 1.02, "(b)", transform=b.transAxes, ha="right", va="bottom", fontweight="bold", fontsize=9)
-b.text(1.0, 1.02, f"points with Wilson 95% interval, $n$={n_test} held-out twins", transform=b.transAxes,
+n_seeds = len({r["seed"] for r in mc})
+b.text(1.0, 1.02, f"mean and min–max over {n_seeds} seeds", transform=b.transAxes,
        ha="right", va="bottom", fontsize=6.8, color="#444444")
 
 fig.savefig(OUT / "fig_riskcoverage_conformal.pdf")
