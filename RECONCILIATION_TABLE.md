@@ -1,3 +1,5 @@
+> **Historical record (superseded).** This table audited the *first* manuscript version (2026-06) against the code of that time. Its values predate the label-leakage fix, the 2026-10 revisions and the v1.4.0 re-run, so none of them is current. The numbers reported in the paper are the files in `results/` produced by release v1.4.0.
+
 # BASICS-CDSS — Complete Manuscript ↔ Code Reconciliation Table
 
 Canonical run: **seed 42**, cohort **N = 1,000** (sepsis 400 / ARDS 350 / ACS 250),

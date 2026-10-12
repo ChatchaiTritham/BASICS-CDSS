@@ -58,16 +58,21 @@ uses deterministic execution settings.
 - `results/model_metrics.csv`: static and temporally perturbed AUROC and accuracy.
 - `results/calibration.csv`: ECE and Brier scores.
 - `results/decision_curve.csv`: decision-curve net benefit.
-- `results/conformal.csv`: split-conformal coverage and set size.
+- `results/conformal.csv`: split-conformal coverage (marginal and Mondrian, clean and
+  degraded test data, overall and among deaths) and set size.
+- `results/recalibration.csv` and `results/oracle_metrics.csv`: Platt/isotonic
+  recalibration on the calibration split, and the simulator's own risk scored as a predictor.
 - `results/dbrs.csv`, `results/tcb.csv`, `results/temporal_consistency.csv`, and
   `results/temporal_metrics.csv`: the manuscript's digital-twin robustness
   measures.
-- `results/nnt.csv` and `results/nns.csv`: clinical-impact summaries.
+- `results/nns.csv`: alert burden (PPV, number needed to alert, % flagged) at p_t = 0.30.
 - `results/noise_sensitivity.csv` and `results/masking_sweep.csv`: robustness
   sweeps.
-- `results/counterfactual_alignment.csv`: counterfactual alignment and regret.
-- `results/fairness.csv`: a methodology demonstration using a fabricated
-  `synthetic_group` attribute.
+- `results/counterfactual_alignment.csv`: counterfactual alignment and regret
+  (common random numbers across actions since v1.4.0).
+
+The NNT table and the fairness demonstration over a fabricated `synthetic_group`
+attribute were removed in v1.4.0; they were never reported in the manuscript.
 - `results/run_metadata.json` and `results/summary.json`: cohort, split, seed,
   and headline run metadata.
 
