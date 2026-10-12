@@ -227,43 +227,41 @@ def fig_conformal(prov: list) -> None:
 
 
 def fig_counterfactual_delay(prov: list) -> None:
-    """Mean mortality vs antibiotic delay with the 1-9 h and 9-18 h segment fits.
+    """Paired difference in simulated adverse-outcome risk from the 1-h arm, by delay.
 
-    A single straight line over 1-18 h averages a rising segment and a plateau, so the
-    two segments are fitted separately; their slopes and the paired 18 h - 1 h effect
-    (with twin-bootstrap intervals) are read from results/counterfactual_segments.csv.
+    The same 120 twins are re-simulated in every arm, so the relevant uncertainty is that
+    of the paired difference, not of each arm's mean. Points and twin-bootstrap 95%
+    intervals come from results/counterfactual_paired_diff.csv; the 1-9 h and 9-18 h
+    segment slopes (with intervals) from results/counterfactual_segments.csv.
     """
-    df = pd.read_csv(_require("counterfactual_delay.csv"))
+    pdf_ = pd.read_csv(_require("counterfactual_paired_diff.csv"))
     seg = pd.read_csv(_require("counterfactual_segments.csv")).set_index("quantity")
-    x = df["antibiotic_delay_hours"].to_numpy(dtype=float)
-    y = df["mortality_prob"].to_numpy(dtype=float)
-    n = df["n_twins"].to_numpy(dtype=float)
-    # 95% CI of the mean across the seeded twin cohort (paired re-simulation)
-    ci = 1.96 * df["std_mortality_prob"].to_numpy(dtype=float) / np.sqrt(n)
+    x = pdf_["antibiotic_delay_hours"].to_numpy(dtype=float)
+    y = pdf_["mean_paired_diff_vs_1h_pp"].to_numpy(dtype=float)
+    lo = pdf_["ci_lo"].to_numpy(dtype=float)
+    hi = pdf_["ci_hi"].to_numpy(dtype=float)
 
     fig, ax = plt.subplots(figsize=(5.766, 3.4))
-    ax.errorbar(
-        x, y, yerr=ci,
-        marker="o", capsize=4, color=PALETTE[1], ecolor=PALETTE[6], linestyle="none",
-        elinewidth=0.9, label=r"Mean mortality probability $\pm$ 95% CI",
-    )
-    for (lo, hi, key, dash) in ((1, 9, "slope_1_9h_pp_per_hr", "--"),
-                                (9, 18, "slope_9_18h_pp_per_hr", ":")):
-        m = (x >= lo) & (x <= hi)
-        b1, b0 = np.polyfit(x[m], y[m], 1)
-        r = seg.loc[key]
-        ax.plot(x[m], b1 * x[m] + b0, linestyle=dash, linewidth=1.3, color=PALETTE[6],
-                label=(f"{lo}–{hi} h fit: {r.estimate:.2f} pp/h "
-                       f"[{r.ci_lo:.2f}, {r.ci_hi:.2f}]"))
+    ax.axhline(0, color="#777777", linewidth=0.7)
+    ax.errorbar(x, y, yerr=[y - lo, hi - y], marker="o", capsize=4, color=PALETTE[1],
+                ecolor=PALETTE[6], linestyle="-", linewidth=0.8, elinewidth=0.9,
+                label="Mean paired difference from 1 h, twin-bootstrap 95% CI")
+    txt = "\n".join(f"{a}–{b} h slope: {seg.loc[k].estimate:.2f} pp/h "
+                     f"[{seg.loc[k].ci_lo:.2f}, {seg.loc[k].ci_hi:.2f}]"
+                     for a, b, k in ((1, 9, "slope_1_9h_pp_per_hr"),
+                                     (9, 18, "slope_9_18h_pp_per_hr")))
+    ax.text(0.98, 0.05, txt, transform=ax.transAxes, ha="right", va="bottom", fontsize=8)
     ax.set_xticks(x)
     ax.set_xticklabels([f"{v:g}" for v in x])
     ax.set_xlabel("Antibiotic delay (hours)")
-    ax.set_ylabel("Simulated mortality probability")
-    ax.legend(loc="lower right")
+    ax.set_ylabel("Change in simulated adverse-outcome\nrisk vs 1 h (percentage points)")
+    ax.set_ylim(top=float(hi.max()) * 1.22)
+    ax.legend(loc="upper left")
     ax.grid(True)
     ax.set_axisbelow(True)
     png, pdf = _emit(fig, "fig_counterfactual_delay")
-    prov.append(("F-CF", png, pdf, "results/counterfactual_delay.csv; results/counterfactual_segments.csv"))
+    prov.append(("F-CF", png, pdf,
+                 "results/counterfactual_paired_diff.csv; results/counterfactual_segments.csv"))
 
 
 def fig_robustness(prov: list) -> None:

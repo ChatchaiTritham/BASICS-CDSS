@@ -1,3 +1,4 @@
 metric,n_seeds,k,friedman_chi2,p_value,mean_rank_logistic_regression,mean_rank_random_forest,mean_rank_gradient_boosting,mean_rank_xgboost,mean_rank_lstm,mean_rank_tcn
 static_auroc,20,6,40.1142857142857,1.416179328028879e-07,5.1,2.45,3.2,4.05,1.95,4.25
 auroc_drop,20,6,65.08583690987123,1.0757181932643811e-12,3.275,3.85,5.6,4.6,1.675,2.0
+static_auroc_within_disease,20,6,6.485714285714266,0.2617814902860016,2.9,3.1,4.0,3.65,3.3,4.05

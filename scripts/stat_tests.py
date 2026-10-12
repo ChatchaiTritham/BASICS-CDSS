@@ -4,7 +4,7 @@ All inputs are written by ``multiseed.py``, ``redundancy_control.py`` and
 ``onset_sensitivity.py``; nothing is recomputed from the simulator here.
 
 1. Friedman omnibus test over the seeds (blocks) for the six families, on static
-   AUROC and on the static-to-temporal AUROC drop. Post-hoc comparisons use
+   AUROC (pooled and mean within-disease) and on the static-to-temporal AUROC drop. Post-hoc comparisons use
    Holm-adjusted Wilcoxon signed-rank tests only (Benavoli et al., 2016, advise
    against the mean-rank Nemenyi test), each reported with an effect size: the
    median paired difference with a seed-bootstrap 95% interval and the
@@ -79,14 +79,21 @@ def _drops(df, keys):
 def family_tests():
     ms = pd.read_csv(RES / "multiseed_metrics.csv")
     w = _drops(ms, ["seed", "model"])
+    within = (ms[ms.regime == "static"][["seed", "model", "auroc_within_disease"]]
+              .rename(columns={"auroc_within_disease": "within"}))
+    w = w.merge(within, on=["seed", "model"], how="left")
     rng = np.random.RandomState(run_all.SEED)
     fr_rows, pw_rows = [], []
-    for metric, higher_better in (("static", True), ("drop", False)):
+    names = {"static": "static_auroc", "drop": "auroc_drop",
+             "within": "static_auroc_within_disease"}
+    # The within-disease test is appended last so the bootstrap draws of the first two
+    # metrics (and hence their committed intervals) are unchanged.
+    for metric, higher_better in (("static", True), ("drop", False), ("within", True)):
         M = w.pivot(index="seed", columns="model", values=metric)[FAMILIES]
         k, n = M.shape[1], M.shape[0]
         stat, p = friedmanchisquare(*[M[m].to_numpy() for m in FAMILIES])
         ranks = (-M if higher_better else M).rank(axis=1).mean()
-        name = "static_auroc" if metric == "static" else "auroc_drop"
+        name = names[metric]
         fr_rows.append({"metric": name, "n_seeds": n, "k": k, "friedman_chi2": stat,
                         "p_value": p, **{f"mean_rank_{m}": ranks[m] for m in FAMILIES}})
         pairs = list(itertools.combinations(FAMILIES, 2))

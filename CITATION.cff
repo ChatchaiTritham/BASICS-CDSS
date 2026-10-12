@@ -25,9 +25,9 @@ authors:
       Science, Naresuan University, Phitsanulok 65000, Thailand
 license: MIT
 repository-code: "https://github.com/ChatchaiTritham/BASICS-CDSS"
-version: 1.4.0
+version: 1.5.0
 date-released: "2026-10-12"
-doi: "10.5281/zenodo.22716823"  # concept DOI (all versions); v1.4.0 deposit pending
+doi: "10.5281/zenodo.22716823"  # concept DOI (all versions); v1.5.0 deposit pending
 keywords:
   - clinical decision support systems
   - beyond-accuracy evaluation

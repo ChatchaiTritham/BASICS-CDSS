@@ -953,6 +953,10 @@ def compute_counterfactual_alignment(df: pd.DataFrame, split: dict) -> pd.DataFr
             "alignment": alignment, "mean_regret": regret,
             "median_regret": float(np.median(model_harm - optimal_harm)),
             "frac_zero_regret": float(np.mean(model_harm - optimal_harm <= 1e-12)),
+            "q25_regret": float(np.percentile(model_harm - optimal_harm, 25)),
+            "q75_regret": float(np.percentile(model_harm - optimal_harm, 75)),
+            "frac_regret_gt1": float(np.mean(model_harm - optimal_harm > 1.0)),
+            "max_regret": float(np.max(model_harm - optimal_harm)),
         })
     out = pd.DataFrame(rows)
     # How often each action is harm-minimising (same for every model).
