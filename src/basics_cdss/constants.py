@@ -14,7 +14,7 @@ ISO_DATETIME_FORMAT: Final[str] = "%Y-%m-%dT%H:%M:%S"
 ISO_TIMEZONE_UTC: Final[str] = "UTC"
 
 PACKAGE_NAME: Final[str] = "basics_cdss"
-PACKAGE_VERSION: Final[str] = "2.1.0"
+PACKAGE_VERSION: Final[str] = "1.5.0"
 FRAMEWORK_NAME: Final[str] = "BASICS-CDSS"
 
 SUPPORTED_PYTHON_VERSION_MIN: Final[str] = "3.9"

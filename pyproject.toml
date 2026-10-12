@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "basics-cdss"
-version = "2.1.0"
+version = "1.5.0"
 description = "BASICS-CDSS: Simulation-based evaluation for safety-critical clinical decision support systems with XAI and Clinical Metrics"
 readme = "README.md"
 requires-python = ">=3.9"

@@ -48,7 +48,7 @@ for j, (reg, col) in enumerate(zip(regimes, (BLUE, ORANGE))):
     ys = [cov[(m, reg)] for m in ORDER]
     print("AURC", reg, dict(zip(ORDER, ys)))
     a.bar([p + (j - 0.5) * w for p in x], ys, width=w, color=col, edgecolor="black",
-          linewidth=0.4, label=reg.capitalize())
+          linewidth=0.4, label={"static": "Clean", "temporal": "Degraded"}.get(reg, reg))
 a.set_xticks(list(x), [LABEL[m] for m in ORDER])
 a.set_ylabel("Area under risk\u2013coverage curve")
 a.legend(frameon=False, loc="upper left", handlelength=1.1)
@@ -61,14 +61,14 @@ a.text(-0.02, 1.02, "(a)", transform=a.transAxes, ha="right", va="bottom", fontw
 
 # Panel (b): 95% split-conformal coverage over the 20 seeds (multiseed_conformal.csv).
 # Sets are calibrated on the clean calibration split; coverage is measured on the
-# clean and on the degraded test split, overall and among deaths, for the marginal
+# clean and on the degraded test split, overall and among patients with the outcome, for the marginal
 # and the class-conditional (Mondrian) procedure. Point = mean over seeds,
 # bar = min-max over seeds.
 mc = list(csv.DictReader(open(RES / "multiseed_conformal.csv", encoding="utf-8")))
 series = [("marginal", "static", "empirical_coverage", "Marginal, clean: all", "o", BLUE),
           ("marginal", "temporal", "empirical_coverage", "Marginal, degraded: all", "s", ORANGE),
-          ("marginal", "temporal", "coverage_deaths", "Marginal, degraded: deaths", "v", "#D55E00"),
-          ("mondrian", "temporal", "coverage_deaths", "Mondrian, degraded: deaths", "^", "#009E73")]
+          ("marginal", "temporal", "coverage_deaths", "Marginal, degraded: with outcome", "v", "#D55E00"),
+          ("mondrian", "temporal", "coverage_deaths", "Mondrian, degraded: with outcome", "^", "#009E73")]
 target = 0.95
 offs = [-0.27, -0.09, 0.09, 0.27]
 lo_all = 1.0

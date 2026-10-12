@@ -4,6 +4,24 @@ All notable changes to this repository are documented here.
 
 ## Unreleased
 
+## v1.5.0 (2026-10-12)
+
+Round-2 revision. No existing result value changed; every previously committed result file
+regenerates byte for byte, and the changes below only add rows, columns or files.
+
+- `stat_tests.py`: Friedman test and Holm-adjusted Wilcoxon tests on mean within-disease static
+  AUROC (new rows in `stat_friedman.csv` and `stat_pairwise.csv`).
+- `simulator_checks.py`: severity course for every antibiotic-delay arm (1-18 h), plus the share of
+  twins whose cumulative damage grew since the previous checked hour (`severity_course.csv`).
+- `counterfactual_segments.py`: paired difference of each delay arm from the 1-h arm with
+  twin-bootstrap intervals (`counterfactual_paired_diff.csv`).
+- `run_all.py`: regret quartiles, share of regret > 1 and maximum regret in
+  `counterfactual_alignment.csv`.
+- Figures: the counterfactual figure now plots the paired difference from 1 h; outcome labels say
+  "with outcome" instead of "deaths"; risk-coverage legend says Clean/Degraded.
+- `requirements-lock.txt` pins SciPy 1.18.1. README describes the disease models as explicit-Euler
+  difference equations with additive noise. Package version set to 1.5.0 to match the release tag.
+
 ## v1.4.0 (2026-10-12)
 
 Revision answering a simulated ten-reviewer PeerJ CS review. All results were regenerated on the

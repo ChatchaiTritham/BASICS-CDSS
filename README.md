@@ -12,7 +12,7 @@ The simulated patients are **untreated**: the label is a *simulated 24-hour adve
 
 Every number is computed by the scripts in `scripts/` and written to `results/`; nothing is typed in.
 
-## Key results (release v1.4.0)
+## Key results (release v1.5.0)
 
 Cohort N = 1,000 (sepsis 400 / ARDS 350 / ACS 250), split 60/20/20 (train 600 / calibration 200 / test 200), 20 seeds (42–61).
 
@@ -61,7 +61,7 @@ Run the scripts in this order (or `bash scripts/run_revision.sh`, which runs the
 | 4 | `onset_sensitivity.py` | `onset_sensitivity_*.csv` | 6 min |
 | 5 | `bootstrap_ci.py` | `bootstrap_ci.csv`, `decision_curve_range.csv` | 2 min |
 | 6 | `noise_realisations.py` | `noise_sensitivity_realisations.csv` | 0.5 min |
-| 7 | `counterfactual_segments.py` | `counterfactual_segments.csv` (needs step 1) | < 0.1 min |
+| 7 | `counterfactual_segments.py` | `counterfactual_segments.csv`, `counterfactual_paired_diff.csv` (needs step 1) | < 0.1 min |
 | 8 | `label_diagnostics.py` | `label_diagnostics.csv` (needs step 1) | < 0.1 min |
 | 9 | `simulator_checks.py` | `dt_convergence.csv`, `severity_course.csv` | 0.5 min |
 | 10 | `stat_tests.py` | `stat_friedman.csv`, `stat_pairwise.csv`, `rank_agreement.csv`, `oracle_gap.csv`, `redundancy_ratio.csv`, seed summaries (needs 2–4) | 5 min |
@@ -82,7 +82,7 @@ Earlier versions of this repository wrote an NNT table and fairness metrics over
 
 ## Data
 
-No human subjects and no real patient records are used, so no IRB approval is required. The cohort is generated: 1,000 digital twins (sepsis 400, ARDS 350, ACS 250) evolved over a 24-hour horizon by the committed ODE/SDE disease models, split 60/20/20 (train 600 / calibration 200 / test 200) at seed 42. The twins receive no treatment. The binary label (a simulated 24-hour adverse outcome, not clinical mortality) comes from each twin's terminal cumulative-damage state, mapped through a logistic link and realised as a seeded Bernoulli draw; the twin's probability is kept as the oracle risk. The realised prevalence (reported, not targeted) is 29.8% sepsis, 56.6% ARDS, 27.2% ACS (overall 38.5%).
+No human subjects and no real patient records are used, so no IRB approval is required. The cohort is generated: 1,000 digital twins (sepsis 400, ARDS 350, ACS 250) evolved over a 24-hour horizon by the committed disease models (explicit-Euler difference equations with additive Gaussian noise), split 60/20/20 (train 600 / calibration 200 / test 200) at seed 42. The twins receive no treatment. The binary label (a simulated 24-hour adverse outcome, not clinical mortality) comes from each twin's terminal cumulative-damage state, mapped through a logistic link and realised as a seeded Bernoulli draw; the twin's probability is kept as the oracle risk. The realised prevalence (reported, not targeted) is 29.8% sepsis, 56.6% ARDS, 27.2% ACS (overall 38.5%).
 
 ## Dataset information
 
@@ -145,7 +145,7 @@ pytest -q                   # run the test suite
   title   = {Digital Twin Simulation for Temporal Evaluation of Clinical Decision Support Systems},
   author  = {Tritham, Chatchai and Snae Namahoot, Chakkrit},
   journal = {PeerJ Computer Science},
-  note    = {under review; code release v1.4.0},
+  note    = {under review; code release v1.5.0},
   year    = {2026}
 }
 ```

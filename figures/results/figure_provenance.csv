@@ -3,7 +3,7 @@ F-AUROC,figures\results\fig_auroc_static_vs_temporal.png,figures\results\fig_aur
 F-ECE,figures\results\fig_calibration_ece.png,figures\results\fig_calibration_ece.pdf,results/model_metrics.csv
 F-DCA,figures\results\fig_decision_curve.png,figures\results\fig_decision_curve.pdf,results/decision_curve_series.csv
 F-CONF,figures\results\fig_conformal_coverage.png,figures\results\fig_conformal_coverage.pdf,results/conformal.csv; results/model_metrics.csv
-F-CF,figures\results\fig_counterfactual_delay.png,figures\results\fig_counterfactual_delay.pdf,results/counterfactual_delay.csv; results/counterfactual_segments.csv
+F-CF,figures\results\fig_counterfactual_delay.png,figures\results\fig_counterfactual_delay.pdf,results/counterfactual_paired_diff.csv; results/counterfactual_segments.csv
 fig_robustness,figures\results\fig_robustness.png,figures\results\fig_robustness.pdf,results/noise_sensitivity_realisations.csv; results/masking_sweep.csv
 fig_multiseed,figures\results\fig_multiseed.png,figures\results\fig_multiseed.pdf,results/multiseed_metrics.csv (20 seeds)
 fig_input_control,figures\results\fig_input_control.png,figures\results\fig_input_control.pdf,results/redundancy_control_summary.csv; results/onset_sensitivity_summary.csv

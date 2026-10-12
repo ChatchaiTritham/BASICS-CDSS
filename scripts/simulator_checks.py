@@ -14,7 +14,8 @@
    infection severity S exceeds the damage threshold theta_D (S > theta_D means
    organ damage is still accruing) at 0, 3, 6, 9, 12, 18 and 24 h: (a) in the
    canonical, untreated cohort; (b) in the 120 twins of the antibiotic-delay sweep,
-   in the arm treated at 18 h (untreated up to 18 h).
+   in every arm (antibiotic at 1, 3, 6, 9, 12 or 18 h), with the share of twins whose
+   cumulative damage D grew since the previous checked hour.
 
     python scripts/simulator_checks.py -> results/dt_convergence.csv,
                                           results/severity_course.csv
@@ -114,27 +115,34 @@ def severity_course() -> pd.DataFrame:
                      "frac_above_among_deaths": float(above[sep["outcome"] == 1].mean()),
                      "frac_above_among_survivors": float(above[sep["outcome"] == 0].mean())})
 
-    # (b) delay-sweep twins, arm treated at 18 h (untreated through 18 h)
-    rng = np.random.RandomState(run_all.SEED)
+    # (b) delay-sweep twins, every arm (antibiotic at 1, 3, 6, 9, 12 or 18 h). Besides
+    # the share with S above theta_D, report the share whose cumulative damage D grew
+    # over the interval ending at each checked hour (damage still accruing).
     model = run_all._disease_models()["sepsis"]
-    S2 = []
-    for i in range(120):
-        init = run_all._initial_state("sepsis", rng)
-        init["temperature"] = max(init["temperature"], 38.3)
-        init["lactate"] = max(init["lactate"], 2.2)
-        twin = run_all.PatientDigitalTwin(archetype_id=f"sepsis_cf_{i:04d}", initial_state=init,
-                                          disease_model=model, seed=run_all.SEED + i)
-        traj = twin.simulate(horizon_hours=run_all.HORIZON_HOURS, dt=run_all.DT,
-                             intervention_schedule={18.0: {"antibiotic": True}}, stochastic=True)
-        S2.append([float(traj[k].features.get("_infection_severity", np.nan)) if k > 0
-                   else np.nan for k in idx])
-    S2 = np.array(S2)
-    for j, h in enumerate(CHECK_HOURS):
-        if h == 0:
-            continue
-        rows.append({"population": "delay_sweep_twins_treated_at_18h", "hour": h, "n": len(S2),
-                     "theta_damage": theta, "frac_S_above_theta": float((S2[:, j] > theta).mean()),
-                     "frac_above_among_deaths": np.nan, "frac_above_among_survivors": np.nan})
+    for arm in (1.0, 3.0, 6.0, 9.0, 12.0, 18.0):
+        rng = np.random.RandomState(run_all.SEED)
+        S2, D2 = [], []
+        for i in range(120):
+            init = run_all._initial_state("sepsis", rng)
+            init["temperature"] = max(init["temperature"], 38.3)
+            init["lactate"] = max(init["lactate"], 2.2)
+            twin = run_all.PatientDigitalTwin(archetype_id=f"sepsis_cf_{i:04d}", initial_state=init,
+                                              disease_model=model, seed=run_all.SEED + i)
+            traj = twin.simulate(horizon_hours=run_all.HORIZON_HOURS, dt=run_all.DT,
+                                 intervention_schedule={arm: {"antibiotic": True}}, stochastic=True)
+            S2.append([float(traj[k].features.get("_infection_severity", np.nan)) if k > 0
+                       else np.nan for k in idx])
+            D2.append([float(traj[k].features.get("_organ_damage", 0.0)) for k in idx])
+        S2, D2 = np.array(S2), np.array(D2)
+        for j, h in enumerate(CHECK_HOURS):
+            if h == 0:
+                continue
+            rows.append({"population": f"delay_sweep_twins_treated_at_{int(arm)}h", "hour": h,
+                         "n": len(S2), "theta_damage": theta,
+                         "frac_S_above_theta": float((S2[:, j] > theta).mean()),
+                         "frac_above_among_deaths": np.nan, "frac_above_among_survivors": np.nan,
+                         "frac_damage_increased_since_prev_check":
+                             float((D2[:, j] > D2[:, j - 1]).mean())})
     return pd.DataFrame(rows)
 
 

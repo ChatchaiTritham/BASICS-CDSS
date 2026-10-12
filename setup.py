@@ -21,7 +21,7 @@ def read_readme() -> str:
 
 setup(
     name="basics-cdss",
-    version="2.1.0",
+    version="1.5.0",
     author="Chatchai Tritham, Chakkrit Snae Namahoot",
     author_email="chatchait66@nu.ac.th, chakkrits@nu.ac.th",
     description=(

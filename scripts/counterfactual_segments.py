@@ -11,7 +11,8 @@ The full-sweep linear fit in results/counterfactual_delay.csv averages over a pl
 
 95% intervals: 2,000 bootstrap resamples of the 120 twins (paired across delays).
 
-    python scripts/counterfactual_segments.py -> results/counterfactual_segments.csv
+    python scripts/counterfactual_segments.py -> results/counterfactual_segments.csv,
+                                                 results/counterfactual_paired_diff.csv
 """
 from __future__ import annotations
 
@@ -62,6 +63,20 @@ def main() -> None:
     out = pd.DataFrame(rows)
     out.to_csv(run_all.RESULTS_DIR / "counterfactual_segments.csv", index=False)
     print(out.round(4).to_string())
+
+    # Paired difference of each delay from the 1-h arm (percentage points), with a
+    # twin-bootstrap 95% interval. Separate stream so the rows above are unchanged.
+    D = (P - P[:, [0]]) * 100.0
+    rng2 = np.random.RandomState(run_all.SEED + 1)
+    bm = np.array([D[rng2.randint(0, len(D), len(D))].mean(axis=0) for _ in range(N_BOOT)])
+    pdiff = pd.DataFrame({"antibiotic_delay_hours": delays,
+                          "mean_paired_diff_vs_1h_pp": D.mean(axis=0),
+                          "ci_lo": np.percentile(bm, 2.5, axis=0),
+                          "ci_hi": np.percentile(bm, 97.5, axis=0),
+                          "frac_twins_higher_than_1h": (D > 0).mean(axis=0),
+                          "n_twins": len(D), "n_boot": N_BOOT})
+    pdiff.to_csv(run_all.RESULTS_DIR / "counterfactual_paired_diff.csv", index=False)
+    print(pdiff.round(4).to_string())
 
 
 if __name__ == "__main__":
